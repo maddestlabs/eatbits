@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
+import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
 import '../wren/wren_preset_library.dart';
 
@@ -14,86 +15,165 @@ class WrenWorkbenchView extends StatefulWidget {
 
 class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
   late TextEditingController _codeController;
+  late String _lastTrackId;
 
   @override
   void initState() {
     super.initState();
-    _codeController = TextEditingController(text: widget.dawState.wrenCode);
+    final activeTrack = widget.dawState.activeTrack;
+    _lastTrackId = activeTrack.id;
+    _codeController = TextEditingController(text: activeTrack.wrenScriptCode);
+  }
+
+  @override
+  void didUpdateWidget(covariant WrenWorkbenchView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final activeTrack = widget.dawState.activeTrack;
+    if (activeTrack.id != _lastTrackId) {
+      _lastTrackId = activeTrack.id;
+      _codeController.text = activeTrack.wrenScriptCode;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final activeTrack = widget.dawState.activeTrack;
+    final tracks = widget.dawState.activePattern.tracks;
     final result = widget.dawState.compilationResult;
+
+    // Sync controller if external load happened
+    if (_lastTrackId != activeTrack.id) {
+      _lastTrackId = activeTrack.id;
+      _codeController.text = activeTrack.wrenScriptCode;
+    }
 
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Header Bar
+          // Header Bar with Track Selector & Presets
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             color: DawTheme.panelHeader,
-            child: Row(
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                const Icon(Icons.code, color: DawTheme.accentGreen, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'SCRIPTS (WREN DSP ENGINE)',
-                  style: TextStyle(
-                    color: DawTheme.textPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-                const Spacer(),
-
-                // Preset Loader Dropdown
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  decoration: BoxDecoration(
-                    color: DawTheme.controlBackground,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<WrenPreset>(
-                      hint: Text('LOAD PRESET', style: TextStyle(color: DawTheme.textSecondary, fontSize: 11)),
-                      dropdownColor: DawTheme.panelBackground,
-                      items: WrenPresetLibrary.presets.map((preset) {
-                        return DropdownMenuItem<WrenPreset>(
-                          value: preset,
-                          child: Text(
-                            preset.name,
-                            style: TextStyle(color: DawTheme.textPrimary, fontSize: 11),
-                          ),
-                        );
-                      }).toList(),
-                      onChanged: (preset) {
-                        if (preset != null) {
-                          setState(() {
-                            _codeController.text = preset.code;
-                          });
-                          widget.dawState.loadWrenPreset(preset);
-                        }
-                      },
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.code, color: DawTheme.accentGreen, size: 20),
+                    const SizedBox(width: 8),
+                    Text(
+                      'WREN SCRIPT EDITOR',
+                      style: TextStyle(
+                        color: DawTheme.textPrimary,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        letterSpacing: 1.0,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
 
-                const SizedBox(width: 12),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Active Track Selector Dropdown
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: DawTheme.controlBackground,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: activeTrack.color, width: 1.5),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int>(
+                          value: widget.dawState.activeTrackIndex,
+                          dropdownColor: DawTheme.panelBackground,
+                          items: List.generate(tracks.length, (idx) {
+                            final t = tracks[idx];
+                            return DropdownMenuItem<int>(
+                              value: idx,
+                              child: Row(
+                                children: [
+                                  Container(width: 8, height: 8, decoration: BoxDecoration(color: t.color, shape: BoxShape.circle)),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    t.name,
+                                    style: TextStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }),
+                          onChanged: (idx) {
+                            if (idx != null) {
+                              widget.dawState.activeTrackIndex = idx;
+                              final newTrack = tracks[idx];
+                              _lastTrackId = newTrack.id;
+                              _codeController.text = newTrack.wrenScriptCode;
+                            }
+                          },
+                        ),
+                      ),
+                    ),
 
-                // Compile & Run Button
-                ElevatedButton.icon(
-                  onPressed: () {
-                    widget.dawState.compileWrenCode(_codeController.text);
-                  },
-                  icon: Icon(Icons.play_arrow, size: 16, color: DawTheme.backgroundDark),
-                  label: Text('COMPILE DSP', style: TextStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 11)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: DawTheme.accentGreen,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                  ),
+                    const SizedBox(width: 8),
+
+                    // Preset Loader Dropdown
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: DawTheme.controlBackground,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<WrenPreset>(
+                          hint: Text('LOAD PRESET', style: TextStyle(color: DawTheme.textSecondary, fontSize: 11)),
+                          dropdownColor: DawTheme.panelBackground,
+                          items: WrenPresetLibrary.presets.map((preset) {
+                            return DropdownMenuItem<WrenPreset>(
+                              value: preset,
+                              child: Text(
+                                preset.name,
+                                style: TextStyle(color: DawTheme.textPrimary, fontSize: 11),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (preset) {
+                            if (preset != null) {
+                              setState(() {
+                                _codeController.text = preset.code;
+                                activeTrack.wrenScriptCode = preset.code;
+                              });
+                              widget.dawState.loadWrenPreset(preset);
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Compile & Run Button
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        activeTrack.wrenScriptCode = _codeController.text;
+                        activeTrack.type = TrackType.wrenScript;
+                        widget.dawState.compileWrenCode(_codeController.text);
+                      },
+                      icon: Icon(Icons.play_arrow, size: 16, color: DawTheme.backgroundDark),
+                      label: Text('COMPILE DSP', style: TextStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 11)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DawTheme.accentGreen,
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -136,13 +216,16 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                           children: [
                             Icon(Icons.terminal, size: 14, color: DawTheme.textMuted),
                             const SizedBox(width: 6),
-                            Text('WREN SOURCE SCRIPT (LIVELINK)', style: TextStyle(color: DawTheme.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
+                            Text(
+                              'SCRIPT SOURCE: ${activeTrack.name.toUpperCase()}',
+                              style: TextStyle(color: DawTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
+                            ),
                           ],
                         ),
                       ),
                       TextField(
                         controller: _codeController,
-                        maxLines: 12,
+                        maxLines: 14,
                         style: TextStyle(
                           fontFamily: 'monospace',
                           color: DawTheme.textPrimary,
@@ -197,7 +280,7 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                 // Dynamic Wren Interactive Parameter Controls
                 if (result.params.isNotEmpty) ...[
                   Text(
-                    'DYNAMIC SCRIPT PARAMETERS',
+                    'LIVE SCRIPT PARAMETERS (${activeTrack.name})',
                     style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0),
                   ),
                   const SizedBox(height: 8),
@@ -205,7 +288,6 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                     spacing: 12,
                     runSpacing: 12,
                     children: result.params.map((param) {
-                      final activeTrack = widget.dawState.activeTrack;
                       final currentVal = activeTrack.wrenParams[param.name] ?? param.defaultValue;
 
                       return Container(

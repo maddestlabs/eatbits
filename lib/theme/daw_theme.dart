@@ -17,7 +17,7 @@ class DawTheme {
       case DawThemePreset.synthwavePurple:
         return const Color(0xFF130024);
       case DawThemePreset.studioLight:
-        return const Color(0xFFE2E8F0);
+        return const Color(0xFFF4F6F9); // Crisp clean light background
       case DawThemePreset.cyberpunkCyan:
       default:
         return const Color(0xFF0B0E14);
@@ -31,7 +31,7 @@ class DawTheme {
       case DawThemePreset.synthwavePurple:
         return const Color(0xFF22003B);
       case DawThemePreset.studioLight:
-        return const Color(0xFFF1F5F9);
+        return const Color(0xFFFFFFFF); // Pure white panel
       case DawThemePreset.cyberpunkCyan:
       default:
         return const Color(0xFF131822);
@@ -45,7 +45,7 @@ class DawTheme {
       case DawThemePreset.synthwavePurple:
         return const Color(0xFF320056);
       case DawThemePreset.studioLight:
-        return const Color(0xFFCBD5E1);
+        return const Color(0xFFE2E8F0); // Light grey header
       case DawThemePreset.cyberpunkCyan:
       default:
         return const Color(0xFF1A212F);
@@ -59,7 +59,7 @@ class DawTheme {
       case DawThemePreset.synthwavePurple:
         return const Color(0xFF430072);
       case DawThemePreset.studioLight:
-        return const Color(0xFF94A3B8);
+        return const Color(0xFFCBD5E1); // Soft control fill
       case DawThemePreset.cyberpunkCyan:
       default:
         return const Color(0xFF242E42);
@@ -71,7 +71,7 @@ class DawTheme {
       case DawThemePreset.synthwavePurple:
         return const Color(0xFFFF007F); // Neon Pink highlight
       case DawThemePreset.studioLight:
-        return const Color(0xFF008080); // Teal
+        return const Color(0xFF007799); // Deep Teal for high contrast
       case DawThemePreset.midnightOled:
       case DawThemePreset.cyberpunkCyan:
       default:
@@ -93,7 +93,7 @@ class DawTheme {
   }
 
   static Color get textSecondary {
-    return currentPreset == DawThemePreset.studioLight ? const Color(0xFF475569) : const Color(0xFF8E9BAE);
+    return currentPreset == DawThemePreset.studioLight ? const Color(0xFF334155) : const Color(0xFF8E9BAE);
   }
 
   static Color get textMuted {

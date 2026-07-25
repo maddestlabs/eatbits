@@ -36,18 +36,24 @@ class TrackInspectorView extends StatelessWidget {
                   decoration: BoxDecoration(color: track.color, borderRadius: BorderRadius.circular(4)),
                 ),
                 const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      track.name.toUpperCase(),
-                      style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
-                    ),
-                    Text(
-                      'TYPE: ${track.type.name.toUpperCase()}',
-                      style: TextStyle(color: track.color, fontSize: 11, fontWeight: FontWeight.w600),
-                    ),
-                  ],
+                GestureDetector(
+                  onDoubleTap: () {
+                    // DOUBLE TAP TRACK TITLE: Navigate to Scripts Section (tab 4)
+                    dawState.activeTabIndex = 4;
+                  },
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        track.name.toUpperCase(),
+                        style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      Text(
+                        'TYPE: ${track.type.name.toUpperCase()} (DOUBLE-TAP FOR CODE)',
+                        style: TextStyle(color: track.color, fontSize: 10, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
                 ),
                 const Spacer(),
                 // Mute & Solo
