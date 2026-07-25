@@ -40,7 +40,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Web Production App
-        run: flutter build web --release --base-href "/eatbits/" --pwa-strategy=none
+        run: flutter build web --release --base-href "/eatbits/"
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3
