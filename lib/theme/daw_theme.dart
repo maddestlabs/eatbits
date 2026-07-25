@@ -113,9 +113,9 @@ class DawTheme {
         secondary: secondaryMagenta,
         surface: panelBackground,
       ),
-      textTheme: ThemeData.dark().textTheme.apply(fontFamily: 'monospace').copyWith(
-        bodyMedium: const TextStyle(color: textPrimary, fontSize: 13),
-        bodySmall: const TextStyle(color: textSecondary, fontSize: 11),
+      textTheme: baseTheme.textTheme.apply(fontFamily: 'monospace').copyWith(
+        bodyMedium: TextStyle(color: textPrimary, fontSize: 13),
+        bodySmall: TextStyle(color: textSecondary, fontSize: 11),
       ),
       sliderTheme: SliderThemeData(
         activeTrackColor: primaryCyan,
