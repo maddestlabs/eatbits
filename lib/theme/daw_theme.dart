@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class DawTheme {
   // Primary Dark DAW Palette (Ableton/FL Studio/OpenDAW inspired)
@@ -35,10 +34,11 @@ class DawTheme {
         secondary: secondaryMagenta,
         surface: panelBackground,
       ),
-      textTheme: GoogleFonts.jetBrainsMonoTextTheme(ThemeData.dark().textTheme).copyWith(
+      textTheme: ThemeData.dark().textTheme.copyWith(
         bodyMedium: const TextStyle(color: textPrimary, fontSize: 13),
         bodySmall: const TextStyle(color: textSecondary, fontSize: 11),
       ),
+      fontFamily: 'monospace',
       sliderTheme: SliderThemeData(
         activeTrackColor: primaryCyan,
         inactiveTrackColor: controlBackground,
