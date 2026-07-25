@@ -3,6 +3,12 @@
 
 ---
 
+## 🌐 Live Web App
+
+👉 **[https://maddestlabs.github.io/eatbits/](https://maddestlabs.github.io/eatbits/)**
+
+---
+
 ## 🌟 Features
 
 - **FL Studio Mobile & Cubasis Style Multitrack Arranger**:
@@ -54,7 +60,7 @@ flutter run -d chrome
 
 ### Building Web Release
 ```bash
-flutter build web --pwa-strategy=none
+flutter build web --release --base-href "/eatbits/" --pwa-strategy=none
 ```
 
 ---
