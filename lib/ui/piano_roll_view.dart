@@ -57,12 +57,12 @@ class _PianoRollViewState extends State<PianoRollView> {
               const SizedBox(width: 8),
               Text(
                 'PIANO ROLL: ${track.name.toUpperCase()}',
-                style: const TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
               ),
               const Spacer(),
 
               // View Mode Selector
-              const Text('VIEW: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 11)),
+              Text('VIEW: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 11)),
               ChoiceChip(
                 label: const Text('PIANO ROLL', style: TextStyle(fontSize: 10)),
                 selected: track.activeView == MusicViewType.pianoRoll,
@@ -82,7 +82,7 @@ class _PianoRollViewState extends State<PianoRollView> {
               ),
               const SizedBox(width: 12),
 
-              const Text('SNAP: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 11)),
+              Text('SNAP: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 11)),
               DropdownButton<double>(
                 value: _quantizeSnap,
                 dropdownColor: DawTheme.panelBackground,
@@ -221,7 +221,7 @@ class _PianoRollViewState extends State<PianoRollView> {
                                   child: Center(
                                     child: Text(
                                       _getNoteName(note.pitch),
-                                      style: const TextStyle(color: DawTheme.backgroundDark, fontSize: 9, fontWeight: FontWeight.bold),
+                                      style: TextStyle(color: DawTheme.backgroundDark, fontSize: 9, fontWeight: FontWeight.bold),
                                     ),
                                   ),
                                 ),

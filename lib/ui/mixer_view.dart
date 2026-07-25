@@ -18,7 +18,7 @@ class MixerView extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           color: DawTheme.panelHeader,
-          child: const Row(
+          child: Row(
             children: [
               Text(
                 'MULTI-CHANNEL AUDIO MIXER & FX RACK',
@@ -68,7 +68,7 @@ class MixerView extends StatelessWidget {
       ),
       child: Column(
         children: [
-          const Text(
+          Text(
             'MASTER',
             style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 13),
           ),
@@ -109,7 +109,7 @@ class MixerView extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '${(dawState.masterVolume * 100).toInt()}%',
-            style: const TextStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
+            style: TextStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -152,7 +152,7 @@ class MixerView extends StatelessWidget {
               track.name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 10),
+              style: TextStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 10),
             ),
           ),
           const SizedBox(height: 6),
@@ -196,7 +196,7 @@ class MixerView extends StatelessWidget {
           const SizedBox(height: 8),
 
           // Pan Knob
-          const Text('PAN', style: TextStyle(color: DawTheme.textMuted, fontSize: 8)),
+          Text('PAN', style: TextStyle(color: DawTheme.textMuted, fontSize: 8)),
           SizedBox(
             height: 24,
             child: Slider(
@@ -227,7 +227,7 @@ class MixerView extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             '${(track.volume * 100).toInt()}%',
-            style: const TextStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
+            style: TextStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
           ),
 
           const SizedBox(height: 8),
@@ -242,7 +242,7 @@ class MixerView extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
               minimumSize: const Size(double.infinity, 24),
             ),
-            child: const Text('FX RACK', style: TextStyle(color: DawTheme.primaryCyan, fontSize: 9, fontWeight: FontWeight.bold)),
+            child: Text('FX RACK', style: TextStyle(color: DawTheme.primaryCyan, fontSize: 9, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -256,7 +256,7 @@ class MixerView extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           backgroundColor: DawTheme.panelBackground,
-          title: Text('FX INSERT RACK: ${track.name}', style: const TextStyle(color: DawTheme.primaryCyan)),
+          title: Text('FX INSERT RACK: ${track.name}', style: TextStyle(color: DawTheme.primaryCyan)),
           content: SizedBox(
             width: 320,
             child: Column(
@@ -264,7 +264,7 @@ class MixerView extends StatelessWidget {
               children: [
                 ListTile(
                   title: const Text('Bitcrusher 8-Bit', style: TextStyle(color: Colors.white, fontSize: 13)),
-                  subtitle: const Text('Sample reduction & bit depth', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
+                  subtitle: Text('Sample reduction & bit depth', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
                   trailing: Switch(
                     value: track.fxRack.any((f) => f.name == 'Bitcrusher'),
                     onChanged: (val) => dawState.toggleBitcrusher(track, val),
@@ -272,7 +272,7 @@ class MixerView extends StatelessWidget {
                 ),
                 ListTile(
                   title: const Text('Tube Distortion', style: TextStyle(color: Colors.white, fontSize: 13)),
-                  subtitle: const Text('Soft clipping warmth', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
+                  subtitle: Text('Soft clipping warmth', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
                   trailing: Switch(
                     value: track.fxRack.any((f) => f.name == 'TubeDistortion'),
                     onChanged: (val) => dawState.toggleDistortion(track, val),
@@ -284,7 +284,7 @@ class MixerView extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('CLOSE', style: TextStyle(color: DawTheme.primaryCyan)),
+              child: Text('CLOSE', style: TextStyle(color: DawTheme.primaryCyan)),
             ),
           ],
         );

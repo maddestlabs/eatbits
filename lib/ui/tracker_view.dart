@@ -37,13 +37,13 @@ class _TrackerViewState extends State<TrackerView> {
               const SizedBox(width: 8),
               Text(
                 'TRACKER VIEW: ${track.name.toUpperCase()}',
-                style: const TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
               ),
               const Spacer(),
 
               // Column Add/Remove
               IconButton(
-                icon: const Icon(Icons.remove_circle_outline, color: DawTheme.textSecondary, size: 20),
+                icon: Icon(Icons.remove_circle_outline, color: DawTheme.textSecondary, size: 20),
                 tooltip: 'Remove Tracker Column',
                 onPressed: () {
                   widget.dawState.setTrackerColumns(track, track.trackerColumns - 1);
@@ -54,7 +54,7 @@ class _TrackerViewState extends State<TrackerView> {
                 style: const TextStyle(color: DawTheme.accentGold, fontWeight: FontWeight.bold, fontSize: 11),
               ),
               IconButton(
-                icon: const Icon(Icons.add_circle_outline, color: DawTheme.primaryCyan, size: 20),
+                icon: Icon(Icons.add_circle_outline, color: DawTheme.primaryCyan, size: 20),
                 tooltip: 'Add Tracker Column',
                 onPressed: () {
                   widget.dawState.setTrackerColumns(track, track.trackerColumns + 1);
@@ -70,7 +70,7 @@ class _TrackerViewState extends State<TrackerView> {
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: Row(
             children: [
-              const SizedBox(
+              SizedBox(
                 width: 44,
                 child: Text(
                   'ROW',
@@ -230,7 +230,7 @@ class _TrackerViewState extends State<TrackerView> {
               backgroundColor: DawTheme.panelBackground,
               title: Text(
                 'ROW ${stepIdx.toString().padLeft(2, '0')} - COL 0${colIdx + 1}',
-                style: const TextStyle(color: DawTheme.primaryCyan, fontSize: 14),
+                style: TextStyle(color: DawTheme.primaryCyan, fontSize: 14),
               ),
               content: SizedBox(
                 width: 280,
@@ -240,7 +240,7 @@ class _TrackerViewState extends State<TrackerView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('NOTE PITCH:', style: TextStyle(color: DawTheme.textSecondary, fontSize: 12)),
+                        Text('NOTE PITCH:', style: TextStyle(color: DawTheme.textSecondary, fontSize: 12)),
                         Text(_formatTrackerNote(selectedPitch), style: const TextStyle(color: DawTheme.accentGold, fontWeight: FontWeight.bold)),
                       ],
                     ),
@@ -262,8 +262,8 @@ class _TrackerViewState extends State<TrackerView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('VELOCITY:', style: TextStyle(color: DawTheme.textSecondary, fontSize: 12)),
-                        Text('${(selectedVol * 100).toInt()}%', style: const TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold)),
+                        Text('VELOCITY:', style: TextStyle(color: DawTheme.textSecondary, fontSize: 12)),
+                        Text('${(selectedVol * 100).toInt()}%', style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold)),
                       ],
                     ),
                     Slider(
@@ -305,7 +305,7 @@ class _TrackerViewState extends State<TrackerView> {
                     );
                     Navigator.pop(context);
                   },
-                  child: const Text('SET NOTE', style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold)),
+                  child: Text('SET NOTE', style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold)),
                 ),
               ],
             );

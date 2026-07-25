@@ -21,6 +21,11 @@ class DawState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setThemePreset(DawThemePreset preset) {
+    DawTheme.currentPreset = preset;
+    notifyListeners();
+  }
+
   // Playback & Clock State
   bool _isPlaying = false;
   bool get isPlaying => _isPlaying;

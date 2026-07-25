@@ -37,7 +37,7 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
               children: [
                 const Icon(Icons.code, color: DawTheme.accentGreen, size: 20),
                 const SizedBox(width: 8),
-                const Text(
+                Text(
                   'SCRIPTS (WREN DSP ENGINE)',
                   style: TextStyle(
                     color: DawTheme.textPrimary,
@@ -57,14 +57,14 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<WrenPreset>(
-                      hint: const Text('LOAD PRESET', style: TextStyle(color: DawTheme.textSecondary, fontSize: 11)),
+                      hint: Text('LOAD PRESET', style: TextStyle(color: DawTheme.textSecondary, fontSize: 11)),
                       dropdownColor: DawTheme.panelBackground,
                       items: WrenPresetLibrary.presets.map((preset) {
                         return DropdownMenuItem<WrenPreset>(
                           value: preset,
                           child: Text(
                             preset.name,
-                            style: const TextStyle(color: DawTheme.textPrimary, fontSize: 11),
+                            style: TextStyle(color: DawTheme.textPrimary, fontSize: 11),
                           ),
                         );
                       }).toList(),
@@ -87,8 +87,8 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                   onPressed: () {
                     widget.dawState.compileWrenCode(_codeController.text);
                   },
-                  icon: const Icon(Icons.play_arrow, size: 16, color: DawTheme.backgroundDark),
-                  label: const Text('COMPILE DSP', style: TextStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 11)),
+                  icon: Icon(Icons.play_arrow, size: 16, color: DawTheme.backgroundDark),
+                  label: Text('COMPILE DSP', style: TextStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 11)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: DawTheme.accentGreen,
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -132,10 +132,10 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         color: DawTheme.panelHeader,
-                        child: const Row(
+                        child: Row(
                           children: [
                             Icon(Icons.terminal, size: 14, color: DawTheme.textMuted),
-                            SizedBox(width: 6),
+                            const SizedBox(width: 6),
                             Text('WREN SOURCE SCRIPT (LIVELINK)', style: TextStyle(color: DawTheme.textSecondary, fontSize: 10, fontWeight: FontWeight.bold)),
                           ],
                         ),
@@ -143,7 +143,7 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                       TextField(
                         controller: _codeController,
                         maxLines: 12,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'monospace',
                           color: DawTheme.textPrimary,
                           fontSize: 12,
@@ -196,7 +196,7 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
 
                 // Dynamic Wren Interactive Parameter Controls
                 if (result.params.isNotEmpty) ...[
-                  const Text(
+                  Text(
                     'DYNAMIC SCRIPT PARAMETERS',
                     style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0),
                   ),
@@ -224,11 +224,11 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                               children: [
                                 Text(
                                   param.name,
-                                  style: const TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11),
+                                  style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11),
                                 ),
                                 Text(
                                   currentVal.toStringAsFixed(1),
-                                  style: const TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 11),
+                                  style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 11),
                                 ),
                               ],
                             ),

@@ -30,10 +30,10 @@ class EditView extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'EDITING: ${track.name.toUpperCase()}',
-                style: const TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
+                style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
               ),
               const Spacer(),
-              const Text('MODE: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
+              Text('MODE: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
               ChoiceChip(
                 label: const Text('PIANO ROLL', style: TextStyle(fontSize: 10)),
                 selected: track.activeView == MusicViewType.pianoRoll,

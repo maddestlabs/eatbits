@@ -41,7 +41,7 @@ class TrackInspectorView extends StatelessWidget {
                   children: [
                     Text(
                       track.name.toUpperCase(),
-                      style: const TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                      style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                     ),
                     Text(
                       'TYPE: ${track.type.name.toUpperCase()}',
@@ -95,13 +95,13 @@ class TrackInspectorView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('CHANNEL MIXER SETTINGS', style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0)),
+                Text('CHANNEL MIXER SETTINGS', style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0)),
                 const SizedBox(height: 12),
 
                 // Volume Slider
                 Row(
                   children: [
-                    const SizedBox(width: 70, child: Text('VOLUME', style: TextStyle(color: DawTheme.textSecondary, fontSize: 11))),
+                    SizedBox(width: 70, child: Text('VOLUME', style: TextStyle(color: DawTheme.textSecondary, fontSize: 11))),
                     Expanded(
                       child: Slider(
                         value: track.volume,
@@ -111,14 +111,14 @@ class TrackInspectorView extends StatelessWidget {
                         onChanged: (val) => dawState.setTrackVolume(track, val),
                       ),
                     ),
-                    SizedBox(width: 40, child: Text('${(track.volume * 100).toInt()}%', style: const TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
+                    SizedBox(width: 40, child: Text('${(track.volume * 100).toInt()}%', style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
                   ],
                 ),
 
                 // Pan Slider
                 Row(
                   children: [
-                    const SizedBox(width: 70, child: Text('PAN', style: TextStyle(color: DawTheme.textSecondary, fontSize: 11))),
+                    SizedBox(width: 70, child: Text('PAN', style: TextStyle(color: DawTheme.textSecondary, fontSize: 11))),
                     Expanded(
                       child: Slider(
                         value: track.pan,
@@ -128,7 +128,7 @@ class TrackInspectorView extends StatelessWidget {
                         onChanged: (val) => dawState.setTrackPan(track, val),
                       ),
                     ),
-                    SizedBox(width: 40, child: Text(track.pan == 0 ? 'C' : (track.pan < 0 ? 'L${(track.pan.abs() * 100).toInt()}' : 'R${(track.pan * 100).toInt()}'), style: const TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
+                    SizedBox(width: 40, child: Text(track.pan == 0 ? 'C' : (track.pan < 0 ? 'L${(track.pan.abs() * 100).toInt()}' : 'R${(track.pan * 100).toInt()}'), style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
                   ],
                 ),
               ],
@@ -165,7 +165,7 @@ class TrackInspectorView extends StatelessWidget {
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: Row(
                         children: [
-                          SizedBox(width: 100, child: Text(entry.key, style: const TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
+                          SizedBox(width: 100, child: Text(entry.key, style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
                           Expanded(
                             child: Slider(
                               value: entry.value,
@@ -199,18 +199,18 @@ class TrackInspectorView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('FX INSERT RACK', style: TextStyle(color: DawTheme.secondaryMagenta, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0)),
+                Text('FX INSERT RACK', style: TextStyle(color: DawTheme.secondaryMagenta, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0)),
                 const SizedBox(height: 12),
                 SwitchListTile(
                   title: const Text('Bitcrusher 8-Bit', style: TextStyle(color: Colors.white, fontSize: 12)),
-                  subtitle: const Text('Sample & bit depth reducer', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
+                  subtitle: Text('Sample & bit depth reducer', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
                   value: track.fxRack.any((f) => f.name == 'Bitcrusher'),
                   activeColor: DawTheme.secondaryMagenta,
                   onChanged: (val) => dawState.toggleBitcrusher(track, val),
                 ),
                 SwitchListTile(
                   title: const Text('Tube Distortion', style: TextStyle(color: Colors.white, fontSize: 12)),
-                  subtitle: const Text('Soft clipping saturation', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
+                  subtitle: Text('Soft clipping saturation', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
                   value: track.fxRack.any((f) => f.name == 'TubeDistortion'),
                   activeColor: DawTheme.secondaryMagenta,
                   onChanged: (val) => dawState.toggleDistortion(track, val),

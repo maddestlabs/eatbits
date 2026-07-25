@@ -68,9 +68,9 @@ class _DawMainShellState extends State<DawMainShell> {
 
           // Mobile-Focused Bottom Navigation Bar
           bottomNavigationBar: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               color: DawTheme.panelHeader,
-              border: Border(top: BorderSide(color: Color(0xFF2B3245), width: 1)),
+              border: const Border(top: BorderSide(color: Color(0xFF2B3245), width: 1)),
             ),
             child: BottomNavigationBar(
               currentIndex: _dawState.activeTabIndex,
