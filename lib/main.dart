@@ -19,7 +19,7 @@ class WrenDawApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Wren DAW Mobile',
+      title: 'Eatbits',
       debugShowCheckedModeBanner: false,
       theme: DawTheme.themeData,
       home: const DawMainShell(),

@@ -105,43 +105,55 @@ class DawState extends ChangeNotifier {
 
     final trackSnare = TrackChannel(
       id: 't_snare',
-      name: 'Snare',
+      name: 'Snare (Wren DSP)',
       color: DawTheme.primaryCyan,
-      type: TrackType.sampler,
-      sampleName: 'snare',
+      type: TrackType.wrenScript,
+      wrenScriptCode: WrenPresetLibrary.presets[1].code, // Procedural Snare
+      wrenParams: {'ToneFreq': 185.0, 'Snappy': 0.65, 'Decay': 0.22},
       volume: 0.85,
       steps: List.generate(32, (i) => StepEvent(active: i % 8 == 4, velocity: 0.9)),
     );
 
     final trackHat = TrackChannel(
       id: 't_hihat',
-      name: 'Hi-Hat',
+      name: 'Hi-Hat (Wren DSP)',
       color: DawTheme.accentGold,
-      type: TrackType.sampler,
-      sampleName: 'hihat',
+      type: TrackType.wrenScript,
+      wrenScriptCode: WrenPresetLibrary.presets[2].code, // Procedural Hi-Hat
+      wrenParams: {'Cutoff': 8500.0, 'Decay': 0.09, 'Metallic': 0.4},
       volume: 0.75,
       steps: List.generate(32, (i) => StepEvent(active: i % 2 == 0, velocity: i % 4 == 2 ? 0.9 : 0.6)),
     );
 
     final trackClap = TrackChannel(
       id: 't_clap',
-      name: 'Clap',
+      name: 'Clap (Wren DSP)',
       color: DawTheme.accentOrange,
-      type: TrackType.sampler,
-      sampleName: 'clap',
+      type: TrackType.wrenScript,
+      wrenScriptCode: WrenPresetLibrary.presets[3].code, // Procedural Clap
+      wrenParams: {'RoomDecay': 0.18, 'Tone': 2200.0},
       volume: 0.8,
       steps: List.generate(32, (i) => StepEvent(active: i == 12 || i == 28, velocity: 0.85)),
     );
 
-    // Wren Script Track - Acid 303 Synth
+    // Wren Script Track - JC-303 Acid Synth
     final trackWren303 = TrackChannel(
       id: 't_wren_303',
-      name: 'Wren 303 Synth',
+      name: 'JC-303 Acid Synth',
       color: DawTheme.accentGreen,
       type: TrackType.wrenScript,
       volume: 0.9,
-      wrenScriptCode: WrenPresetLibrary.presets.first.code,
-      wrenParams: {'Cutoff': 2200.0, 'Resonance': 6.0, 'EnvMod': 0.8, 'Decay': 0.25},
+      wrenScriptCode: WrenPresetLibrary.presets[0].code, // JC-303 Acid Bass
+      wrenParams: {
+        'Waveform': 0.0,
+        'Cutoff': 1800.0,
+        'Resonance': 8.0,
+        'EnvMod': 0.75,
+        'Decay': 0.28,
+        'Accent': 0.6,
+        'Slide': 0.4,
+        'Overdrive': 0.3,
+      },
       notes: [
         Note(id: 'n1', pitch: 36, startStep: 0, durationSteps: 2, velocity: 0.9), // C2
         Note(id: 'n2', pitch: 36, startStep: 2, durationSteps: 1, velocity: 0.8),
