@@ -86,9 +86,10 @@ class DawState extends ChangeNotifier {
   }
 
   void _startMeterTimer() {
-    Timer.periodic(const Duration(milliseconds: 50), (_) {
-      audioEngine.updateMeters();
-      notifyListeners();
+    Timer.periodic(const Duration(milliseconds: 100), (_) {
+      if (_isPlaying) {
+        audioEngine.updateMeters();
+      }
     });
   }
 
