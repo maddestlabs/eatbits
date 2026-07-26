@@ -111,6 +111,24 @@ class WrenEngine {
     required int note,
     required Map<String, double> params,
   }) {
+    // 0. Procedural Kick Drum
+    if (code.contains('ProceduralKick') || code.contains('StartFreq')) {
+      final startF = params['StartFreq'] ?? 160.0;
+      final endF = params['EndFreq'] ?? 42.0;
+      final pDecay = params['PitchDecay'] ?? 0.035;
+      final aDecay = params['AmpDecay'] ?? 0.35;
+      final click = params['Click'] ?? 0.5;
+
+      final curFreq = endF + (startF - endF) * math.exp(-time / pDecay.clamp(0.005, 0.5));
+      final subSine = math.sin(2.0 * math.pi * curFreq * time);
+      final rnd = math.Random((time * 10000).toInt() % 100000 + 77);
+      final clickTransient = (rnd.nextDouble() * 2.0 - 1.0) * math.exp(-time * 150.0) * click;
+      final env = math.exp(-time / aDecay.clamp(0.01, 1.5));
+
+      final output = (subSine * 0.85 + clickTransient * 0.15) * env;
+      return (math.exp(output * 1.3) - math.exp(-output * 1.3)) / (math.exp(output * 1.3) + math.exp(-output * 1.3));
+    }
+
     // 1. JC-303 Acid Bass Engine (Modelled after midilab/jc303)
     if (code.contains('Acid303') || code.contains('Cutoff')) {
       final waveType = params['Waveform'] ?? 0.0;

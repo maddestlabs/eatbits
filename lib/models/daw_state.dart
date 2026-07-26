@@ -95,12 +95,16 @@ class DawState extends ChangeNotifier {
   void _initDemoTracks() {
     final trackKick = TrackChannel(
       id: 't_kick',
-      name: 'Kick Drum',
+      name: 'Kick Drum (Wren DSP)',
       color: DawTheme.secondaryMagenta,
-      type: TrackType.sampler,
-      sampleName: 'kick',
+      type: TrackType.wrenScript,
+      wrenScriptCode: WrenPresetLibrary.presets[1].code, // Procedural Kick
+      wrenParams: {'StartFreq': 160.0, 'EndFreq': 42.0, 'PitchDecay': 0.035, 'AmpDecay': 0.35, 'Click': 0.5},
       volume: 0.95,
-      steps: List.generate(32, (i) => StepEvent(active: i % 4 == 0, velocity: 0.95)),
+      steps: List.generate(32, (i) => StepEvent(active: i % 4 == 0, velocity: 0.95, pitch: 36)),
+      notes: List.generate(32, (i) => i % 4 == 0 ? Note(id: 'k_$i', pitch: 36, startStep: i.toDouble(), durationSteps: 1.0, velocity: 0.95) : null)
+          .whereType<Note>()
+          .toList(),
     );
 
     final trackSnare = TrackChannel(
@@ -108,10 +112,13 @@ class DawState extends ChangeNotifier {
       name: 'Snare (Wren DSP)',
       color: DawTheme.primaryCyan,
       type: TrackType.wrenScript,
-      wrenScriptCode: WrenPresetLibrary.presets[1].code, // Procedural Snare
+      wrenScriptCode: WrenPresetLibrary.presets[2].code, // Procedural Snare
       wrenParams: {'ToneFreq': 185.0, 'Snappy': 0.65, 'Decay': 0.22},
       volume: 0.85,
-      steps: List.generate(32, (i) => StepEvent(active: i % 8 == 4, velocity: 0.9)),
+      steps: List.generate(32, (i) => StepEvent(active: i % 8 == 4, velocity: 0.9, pitch: 38)),
+      notes: List.generate(32, (i) => i % 8 == 4 ? Note(id: 's_$i', pitch: 38, startStep: i.toDouble(), durationSteps: 1.0, velocity: 0.9) : null)
+          .whereType<Note>()
+          .toList(),
     );
 
     final trackHat = TrackChannel(
@@ -119,10 +126,13 @@ class DawState extends ChangeNotifier {
       name: 'Hi-Hat (Wren DSP)',
       color: DawTheme.accentGold,
       type: TrackType.wrenScript,
-      wrenScriptCode: WrenPresetLibrary.presets[2].code, // Procedural Hi-Hat
+      wrenScriptCode: WrenPresetLibrary.presets[3].code, // Procedural Hi-Hat
       wrenParams: {'Cutoff': 8500.0, 'Decay': 0.09, 'Metallic': 0.4},
       volume: 0.75,
-      steps: List.generate(32, (i) => StepEvent(active: i % 2 == 0, velocity: i % 4 == 2 ? 0.9 : 0.6)),
+      steps: List.generate(32, (i) => StepEvent(active: i % 2 == 0, velocity: i % 4 == 2 ? 0.9 : 0.6, pitch: 42)),
+      notes: List.generate(32, (i) => i % 2 == 0 ? Note(id: 'h_$i', pitch: 42, startStep: i.toDouble(), durationSteps: 1.0, velocity: i % 4 == 2 ? 0.9 : 0.6) : null)
+          .whereType<Note>()
+          .toList(),
     );
 
     final trackClap = TrackChannel(
@@ -130,10 +140,13 @@ class DawState extends ChangeNotifier {
       name: 'Clap (Wren DSP)',
       color: DawTheme.accentOrange,
       type: TrackType.wrenScript,
-      wrenScriptCode: WrenPresetLibrary.presets[3].code, // Procedural Clap
+      wrenScriptCode: WrenPresetLibrary.presets[4].code, // Procedural Clap
       wrenParams: {'RoomDecay': 0.18, 'Tone': 2200.0},
       volume: 0.8,
-      steps: List.generate(32, (i) => StepEvent(active: i == 12 || i == 28, velocity: 0.85)),
+      steps: List.generate(32, (i) => StepEvent(active: i == 12 || i == 28, velocity: 0.85, pitch: 39)),
+      notes: List.generate(32, (i) => (i == 12 || i == 28) ? Note(id: 'c_$i', pitch: 39, startStep: i.toDouble(), durationSteps: 1.0, velocity: 0.85) : null)
+          .whereType<Note>()
+          .toList(),
     );
 
     // Wren Script Track - JC-303 Acid Synth
@@ -168,12 +181,14 @@ class DawState extends ChangeNotifier {
       steps: List.generate(32, (i) => StepEvent(active: i % 2 == 0, velocity: 0.85, pitch: 36 + (i * 3) % 12)),
     );
 
-    // Standard PolySynth Track
+    // Poly Lead Synth Track (Wren DSP)
     final trackPolySynth = TrackChannel(
       id: 't_polysynth',
-      name: 'Poly Lead Synth',
+      name: 'Poly Lead (Wren DSP)',
       color: DawTheme.accentPurple,
-      type: TrackType.synth,
+      type: TrackType.wrenScript,
+      wrenScriptCode: WrenPresetLibrary.presets[5].code, // Poly Lead Synth
+      wrenParams: {'Cutoff': 4500.0, 'Resonance': 3.0, 'Detune': 3.0, 'Attack': 0.01, 'Release': 0.35},
       synthWaveform: 'sawtooth',
       cutoff: 4000.0,
       volume: 0.8,
@@ -185,10 +200,10 @@ class DawState extends ChangeNotifier {
       ],
     );
 
-    trackKick.clips.add(TrackClip(id: 'c_k1', name: 'Kick Beat A', trackId: trackKick.id, startBar: 0, barLength: 4));
-    trackSnare.clips.add(TrackClip(id: 'c_s1', name: 'Snare Pattern', trackId: trackSnare.id, startBar: 0, barLength: 4));
-    trackHat.clips.add(TrackClip(id: 'c_h1', name: 'Hi-Hat Groove', trackId: trackHat.id, startBar: 0, barLength: 4));
-    trackClap.clips.add(TrackClip(id: 'c_c1', name: 'Clap Fill', trackId: trackClap.id, startBar: 2, barLength: 2));
+    trackKick.clips.add(TrackClip(id: 'c_k1', name: 'Kick Beat A', trackId: trackKick.id, startBar: 0, barLength: 4, notes: trackKick.notes));
+    trackSnare.clips.add(TrackClip(id: 'c_s1', name: 'Snare Pattern', trackId: trackSnare.id, startBar: 0, barLength: 4, notes: trackSnare.notes));
+    trackHat.clips.add(TrackClip(id: 'c_h1', name: 'Hi-Hat Groove', trackId: trackHat.id, startBar: 0, barLength: 4, notes: trackHat.notes));
+    trackClap.clips.add(TrackClip(id: 'c_c1', name: 'Clap Fill', trackId: trackClap.id, startBar: 2, barLength: 2, notes: trackClap.notes));
     trackWren303.clips.add(TrackClip(id: 'c_w1', name: 'Acid 303 Riff', trackId: trackWren303.id, startBar: 0, barLength: 4, notes: trackWren303.notes));
     trackPolySynth.clips.add(TrackClip(id: 'c_p1', name: 'Lead Chord', trackId: trackPolySynth.id, startBar: 0, barLength: 4, notes: trackPolySynth.notes));
 
@@ -373,13 +388,27 @@ class DawState extends ChangeNotifier {
   // Step Editing
   void toggleStep(TrackChannel track, int stepIndex) {
     if (stepIndex >= 0 && stepIndex < track.steps.length) {
-      track.steps[stepIndex].active = !track.steps[stepIndex].active;
-      if (track.steps[stepIndex].active) {
+      final step = track.steps[stepIndex];
+      step.active = !step.active;
+      
+      if (step.active) {
+        // Add matching note for Piano Roll
+        track.notes.removeWhere((n) => n.startStep.toInt() == stepIndex && n.pitch == step.pitch);
+        track.notes.add(Note(
+          id: 'step_${track.id}_$stepIndex',
+          pitch: step.pitch,
+          startStep: stepIndex.toDouble(),
+          durationSteps: 1.0,
+          velocity: step.velocity,
+        ));
         audioEngine.playNoteOrSample(
           track: track,
-          midiNote: track.steps[stepIndex].pitch,
-          velocity: track.steps[stepIndex].velocity,
+          midiNote: step.pitch,
+          velocity: step.velocity,
         );
+      } else {
+        // Remove matching note
+        track.notes.removeWhere((n) => n.startStep.toInt() == stepIndex && n.pitch == step.pitch);
       }
       notifyListeners();
     }

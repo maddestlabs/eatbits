@@ -13,39 +13,50 @@ class PianoRollView extends StatefulWidget {
 }
 
 class _PianoRollViewState extends State<PianoRollView> {
-  static const double keyHeight = 24.0;
-  static const double stepWidth = 28.0;
   static const int minPitch = 24; // C1
   static const int maxPitch = 84; // C6
   static const int totalKeys = maxPitch - minPitch + 1;
 
-  final ScrollController _verticalScroll = ScrollController();
-  final ScrollController _horizontalScroll = ScrollController();
+  static const double keyHeight = 24.0;
+  static const double stepWidth = 28.0;
+  static const int totalSteps = 32;
 
-  double _quantizeSnap = 1.0; // 1 step = 1/16th note
+  final ScrollController _horizontalScroll = ScrollController();
+  final ScrollController _keysScrollController = ScrollController();
+  final ScrollController _gridScrollController = ScrollController();
+
+  bool _isSyncingScroll = false;
+  double _quantizeSnap = 1.0;
 
   @override
-  void initState() {
-    super.initState();
-    // Scroll to C3 (MIDI note 48) on start
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_verticalScroll.hasClients) {
-        final targetY = (maxPitch - 60) * keyHeight;
-        _verticalScroll.jumpTo(targetY.clamp(0, _verticalScroll.position.maxScrollExtent));
-      }
-    });
+  void dispose() {
+    _horizontalScroll.dispose();
+    _keysScrollController.dispose();
+    _gridScrollController.dispose();
+    super.dispose();
+  }
+
+  bool _isBlackKey(int midiPitch) {
+    final noteInOctave = midiPitch % 12;
+    return noteInOctave == 1 || noteInOctave == 3 || noteInOctave == 6 || noteInOctave == 8 || noteInOctave == 10;
+  }
+
+  String _getNoteName(int midiPitch) {
+    const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    final name = names[midiPitch % 12];
+    final octave = (midiPitch / 12).floor() - 1;
+    return '$name$octave';
   }
 
   @override
   Widget build(BuildContext context) {
     final track = widget.dawState.activeTrack;
-    final totalSteps = widget.dawState.activePattern.lengthSteps;
 
     return Column(
       children: [
-        // Header Toolbar for Piano Roll
+        // Sub-Header Controls: Snap Quantize
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           color: DawTheme.panelHeader,
           child: Row(
             children: [
@@ -100,134 +111,206 @@ class _PianoRollViewState extends State<PianoRollView> {
           ),
         ),
 
-        // Piano Roll Canvas Area
+        // Piano Roll Canvas Area (Synchronized Keys & Grid Scrolling)
         Expanded(
           child: Row(
             children: [
-              // Virtual Piano Keyboard (Left)
+              // Virtual Piano Keyboard Column (Left)
               SizedBox(
                 width: 70,
-                child: ListView.builder(
-                  controller: _verticalScroll,
-                  itemCount: totalKeys,
-                  itemBuilder: (context, idx) {
-                    final pitch = maxPitch - idx;
-                    final isBlackKey = _isBlackKey(pitch);
-                    final noteName = _getNoteName(pitch);
-
-                    return GestureDetector(
-                      onTapDown: (_) {
-                        widget.dawState.audioEngine.playNoteOrSample(
-                          track: track,
-                          midiNote: pitch,
-                          velocity: 0.9,
-                        );
-                      },
-                      child: Container(
-                        height: keyHeight,
-                        padding: const EdgeInsets.only(right: 6),
-                        decoration: BoxDecoration(
-                          color: isBlackKey ? const Color(0xFF1E222D) : const Color(0xFFDCDFE5),
-                          border: Border(
-                            bottom: BorderSide(color: isBlackKey ? Colors.black45 : Colors.grey.shade400, width: 0.5),
-                          ),
-                        ),
-                        alignment: Alignment.centerRight,
-                        child: Text(
-                          noteName,
-                          style: TextStyle(
-                            color: isBlackKey ? Colors.white70 : Colors.black87,
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    );
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (notification) {
+                    if (!_isSyncingScroll && notification is ScrollUpdateNotification) {
+                      _isSyncingScroll = true;
+                      if (_gridScrollController.hasClients) {
+                        _gridScrollController.jumpTo(_keysScrollController.offset);
+                      }
+                      _isSyncingScroll = false;
+                    }
+                    return false;
                   },
+                  child: ListView.builder(
+                    padding: EdgeInsets.zero,
+                    controller: _keysScrollController,
+                    itemCount: totalKeys,
+                    itemBuilder: (context, idx) {
+                      final pitch = maxPitch - idx;
+                      final isBlackKey = _isBlackKey(pitch);
+                      final noteName = _getNoteName(pitch);
+
+                      return GestureDetector(
+                        onTapDown: (_) {
+                          widget.dawState.audioEngine.playNoteOrSample(
+                            track: track,
+                            midiNote: pitch,
+                            velocity: 0.9,
+                          );
+                        },
+                        child: Container(
+                          height: keyHeight,
+                          padding: const EdgeInsets.only(right: 6),
+                          decoration: BoxDecoration(
+                            color: isBlackKey ? const Color(0xFF1E222D) : const Color(0xFFDCDFE5),
+                            border: Border(
+                              bottom: BorderSide(color: isBlackKey ? Colors.black45 : Colors.grey.shade400, width: 0.5),
+                            ),
+                          ),
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            noteName,
+                            style: TextStyle(
+                              color: isBlackKey ? Colors.white70 : Colors.black87,
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
 
-              // Note Grid Surface
+              // Note Grid Surface (Right, Synced Vertical Scroll)
               Expanded(
                 child: SingleChildScrollView(
                   controller: _horizontalScroll,
                   scrollDirection: Axis.horizontal,
                   child: SizedBox(
                     width: totalSteps * stepWidth,
-                    child: SingleChildScrollView(
-                      controller: _verticalScroll,
-                      child: GestureDetector(
-                        onTapUp: (details) {
-                          final localPos = details.localPosition;
-
-                          final int stepIdx = (localPos.dx / stepWidth).floor();
-                          final int keyIdx = (localPos.dy / keyHeight).floor();
-                          final int pitch = maxPitch - keyIdx;
-
-                          if (stepIdx >= 0 && stepIdx < totalSteps && pitch >= minPitch && pitch <= maxPitch) {
-                            final snappedStep = (stepIdx / _quantizeSnap).floor() * _quantizeSnap;
-                            
-                            // Check if note exists to delete, or create new note
-                            final existingIndex = track.notes.indexWhere((n) =>
-                                n.pitch == pitch && n.startStep <= snappedStep && (n.startStep + n.durationSteps) > snappedStep);
-
-                            if (existingIndex != -1) {
-                              widget.dawState.removeNote(track, track.notes[existingIndex].id);
-                            } else {
-                              widget.dawState.addNote(
-                                track,
-                                Note(
-                                  id: DateTime.now().millisecondsSinceEpoch.toString(),
-                                  pitch: pitch,
-                                  startStep: snappedStep,
-                                  durationSteps: _quantizeSnap,
-                                ),
-                              );
-                            }
+                    child: NotificationListener<ScrollNotification>(
+                      onNotification: (notification) {
+                        if (!_isSyncingScroll && notification is ScrollUpdateNotification) {
+                          _isSyncingScroll = true;
+                          if (_keysScrollController.hasClients) {
+                            _keysScrollController.jumpTo(_gridScrollController.offset);
                           }
-                        },
-                        child: Stack(
-                          children: [
-                            // Grid Lines Painter
-                            CustomPaint(
-                              size: Size(totalSteps * stepWidth, totalKeys * keyHeight),
-                              painter: PianoRollGridPainter(
-                                totalSteps: totalSteps,
-                                totalKeys: totalKeys,
-                                stepWidth: stepWidth,
-                                keyHeight: keyHeight,
-                                currentStep: widget.dawState.isPlaying ? widget.dawState.currentStep : -1,
-                              ),
-                            ),
+                          _isSyncingScroll = false;
+                        }
+                        return false;
+                      },
+                      child: SingleChildScrollView(
+                        controller: _gridScrollController,
+                        scrollDirection: Axis.vertical,
+                        child: GestureDetector(
+                          onTapUp: (details) {
+                            final localPos = details.localPosition;
 
-                            // Notes Overlay
-                            ...track.notes.map((note) {
-                              final keyIdx = maxPitch - note.pitch;
-                              if (keyIdx < 0 || keyIdx >= totalKeys) return const SizedBox();
+                            final int stepIdx = (localPos.dx / stepWidth).floor();
+                            final int keyIdx = (localPos.dy / keyHeight).floor();
+                            final int pitch = maxPitch - keyIdx;
 
-                              return Positioned(
-                                left: note.startStep * stepWidth + 1,
-                                top: keyIdx * keyHeight + 1,
-                                width: (note.durationSteps * stepWidth) - 2,
-                                height: keyHeight - 2,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: track.color,
-                                    borderRadius: BorderRadius.circular(4),
-                                    boxShadow: [
-                                      BoxShadow(color: track.color.withOpacity(0.5), blurRadius: 4),
-                                    ],
+                            if (stepIdx >= 0 && stepIdx < totalSteps && pitch >= minPitch && pitch <= maxPitch) {
+                              final snappedStep = (stepIdx / _quantizeSnap).floor() * _quantizeSnap;
+                              
+                              // Check if note exists to delete, or create new note
+                              final existingIndex = track.notes.indexWhere((n) =>
+                                  n.pitch == pitch && n.startStep <= snappedStep && (n.startStep + n.durationSteps) > snappedStep);
+
+                              if (existingIndex != -1) {
+                                widget.dawState.removeNote(track, track.notes[existingIndex].id);
+                              } else {
+                                widget.dawState.addNote(
+                                  track,
+                                  Note(
+                                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                    pitch: pitch,
+                                    startStep: snappedStep.toDouble(),
+                                    durationSteps: _quantizeSnap,
+                                    velocity: 0.85,
                                   ),
-                                  child: Center(
-                                    child: Text(
-                                      _getNoteName(note.pitch),
-                                      style: TextStyle(color: DawTheme.backgroundDark, fontSize: 9, fontWeight: FontWeight.bold),
-                                    ),
+                                );
+                              }
+                            }
+                          },
+                          child: Container(
+                            height: totalKeys * keyHeight,
+                            color: DawTheme.backgroundDark,
+                            child: Stack(
+                              children: [
+                                // Background Grid Lines & Piano Rows
+                                Column(
+                                  children: List.generate(totalKeys, (idx) {
+                                    final pitch = maxPitch - idx;
+                                    final isBlackKey = _isBlackKey(pitch);
+
+                                    return Container(
+                                      height: keyHeight,
+                                      decoration: BoxDecoration(
+                                        color: isBlackKey ? Colors.white.withOpacity(0.02) : Colors.transparent,
+                                        border: Border(
+                                          bottom: BorderSide(color: Colors.white.withOpacity(0.04), width: 1),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ),
+
+                                // Vertical Bar/Step Grid Lines
+                                Row(
+                                  children: List.generate(totalSteps, (stepIdx) {
+                                    final isBarHeader = stepIdx % 4 == 0;
+                                    return Container(
+                                      width: stepWidth,
+                                      height: totalKeys * keyHeight,
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          right: BorderSide(
+                                            color: isBarHeader ? DawTheme.primaryCyan.withOpacity(0.3) : Colors.white.withOpacity(0.04),
+                                            width: isBarHeader ? 1.5 : 1.0,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ),
+
+                                // Playhead Position Line
+                                Positioned(
+                                  left: widget.dawState.currentStep * stepWidth,
+                                  top: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    width: 2,
+                                    color: DawTheme.primaryCyan,
                                   ),
                                 ),
-                              );
-                            }).toList(),
-                          ],
+
+                                // Render Note Events Blocks
+                                ...track.notes.map((note) {
+                                  final keyIdx = maxPitch - note.pitch;
+                                  if (keyIdx < 0 || keyIdx >= totalKeys) return const SizedBox();
+
+                                  return Positioned(
+                                    left: note.startStep * stepWidth + 1,
+                                    top: keyIdx * keyHeight + 1,
+                                    width: (note.durationSteps * stepWidth) - 2,
+                                    height: keyHeight - 2,
+                                    child: GestureDetector(
+                                      onLongPress: () {
+                                        widget.dawState.removeNote(track, note.id);
+                                      },
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: track.color,
+                                          borderRadius: BorderRadius.circular(4),
+                                          boxShadow: [
+                                            BoxShadow(color: track.color.withOpacity(0.5), blurRadius: 4),
+                                          ],
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            _getNoteName(note.pitch),
+                                            style: TextStyle(color: DawTheme.backgroundDark, fontSize: 9, fontWeight: FontWeight.bold),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -239,75 +322,5 @@ class _PianoRollViewState extends State<PianoRollView> {
         ),
       ],
     );
-  }
-
-  bool _isBlackKey(int pitch) {
-    final note = pitch % 12;
-    return note == 1 || note == 3 || note == 6 || note == 8 || note == 10;
-  }
-
-  String _getNoteName(int pitch) {
-    final names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-    final octave = (pitch ~/ 12) - 1;
-    return '${names[pitch % 12]}$octave';
-  }
-}
-
-class PianoRollGridPainter extends CustomPainter {
-  final int totalSteps;
-  final int totalKeys;
-  final double stepWidth;
-  final double keyHeight;
-  final int currentStep;
-
-  PianoRollGridPainter({
-    required this.totalSteps,
-    required this.totalKeys,
-    required this.stepWidth,
-    required this.keyHeight,
-    required this.currentStep,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final bgPaint = Paint()..color = DawTheme.backgroundDark;
-    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), bgPaint);
-
-    final linePaint = Paint()
-      ..color = const Color(0xFF1F2432)
-      ..strokeWidth = 1.0;
-
-    final barLinePaint = Paint()
-      ..color = const Color(0xFF384259)
-      ..strokeWidth = 1.5;
-
-    // Draw horizontal key dividers
-    for (int i = 0; i <= totalKeys; i++) {
-      final y = i * keyHeight;
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
-    }
-
-    // Draw vertical step dividers
-    for (int i = 0; i <= totalSteps; i++) {
-      final x = i * stepWidth;
-      final isBar = i % 4 == 0;
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), isBar ? barLinePaint : linePaint);
-    }
-
-    // Draw playhead position highlight
-    if (currentStep >= 0 && currentStep < totalSteps) {
-      final playheadPaint = Paint()
-        ..color = DawTheme.primaryCyan.withOpacity(0.35)
-        ..style = PaintingStyle.fill;
-      canvas.drawRect(
-        Rect.fromLTWH(currentStep * stepWidth, 0, stepWidth, size.height),
-        playheadPaint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant PianoRollGridPainter oldDelegate) {
-    return oldDelegate.currentStep != currentStep || oldDelegate.totalSteps != totalSteps;
   }
 }

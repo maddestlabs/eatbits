@@ -72,7 +72,47 @@ class Acid303 {
 ''',
     ),
 
-    // 2. Procedural Snare Drum Preset
+    // 2. Procedural Kick Drum Preset
+    WrenPreset(
+      id: 'procedural_kick',
+      name: 'Procedural Kick Drum',
+      category: 'drum',
+      description: 'Synthesized punchy sub kick drum with exponential pitch sweep and transient click.',
+      code: '''
+// --- Procedural Sub Kick Drum Script ---
+class ProceduralKick {
+  static init() {
+    Param.add("StartFreq", 100.0, 300.0, 160.0)
+    Param.add("EndFreq", 30.0, 60.0, 42.0)
+    Param.add("PitchDecay", 0.01, 0.1, 0.035)
+    Param.add("AmpDecay", 0.1, 0.6, 0.35)
+    Param.add("Click", 0.0, 1.0, 0.5)
+  }
+
+  static process(time, freq, note, params) {
+    var startF = params["StartFreq"]
+    var endF = params["EndFreq"]
+    var pDecay = params["PitchDecay"]
+    var aDecay = params["AmpDecay"]
+    var click = params["Click"]
+
+    // Pitch sweep envelope
+    var curFreq = endF + (startF - endF) * Math.exp(-time / pDecay)
+    var phase = 2.0 * Math.pi * curFreq * time
+    var subSine = Math.sin(phase)
+
+    // Transient click
+    var clickTransient = (Math.random() * 2.0 - 1.0) * Math.exp(-time * 150.0) * click
+
+    var env = Math.exp(-time / aDecay)
+    var output = (subSine * 0.8 + clickTransient * 0.2) * env
+    return Math.tanh(output * 1.3)
+  }
+}
+''',
+    ),
+
+    // 3. Procedural Snare Drum Preset
     WrenPreset(
       id: 'procedural_snare',
       name: 'Procedural Snare Drum',
@@ -107,7 +147,7 @@ class ProceduralSnare {
 ''',
     ),
 
-    // 3. Procedural Hi-Hat Preset
+    // 4. Procedural Hi-Hat Preset
     WrenPreset(
       id: 'procedural_hihat',
       name: 'Procedural Hi-Hat',
@@ -144,7 +184,7 @@ class ProceduralHiHat {
 ''',
     ),
 
-    // 4. Procedural Clap Preset
+    // 5. Procedural Clap Preset
     WrenPreset(
       id: 'procedural_clap',
       name: 'Procedural Handclap',
@@ -178,7 +218,57 @@ class ProceduralClap {
 ''',
     ),
 
-    // 5. Wren Stereo Delay Effect
+    // 6. Poly Lead Synth Preset
+    WrenPreset(
+      id: 'poly_lead',
+      name: 'Poly Lead Synth',
+      category: 'synth',
+      description: 'Dual oscillator sawtooth lead synthesizer with dynamic lowpass filter sweep.',
+      code: '''
+// --- Poly Lead Synth Script ---
+class PolyLeadSynth {
+  static init() {
+    Param.add("Cutoff", 400.0, 12000.0, 4500.0)
+    Param.add("Resonance", 0.5, 8.0, 3.0)
+    Param.add("Detune", 0.0, 10.0, 3.0)
+    Param.add("Attack", 0.001, 0.1, 0.01)
+    Param.add("Release", 0.05, 1.0, 0.35)
+  }
+
+  static process(time, freq, note, params) {
+    var cutoff = params["Cutoff"]
+    var res = params["Resonance"]
+    var detune = params["Detune"]
+    var attack = params["Attack"]
+    var release = params["Release"]
+
+    // ADSR Envelope
+    var env = 1.0
+    if (time < attack) {
+      env = time / attack
+    } else {
+      env = Math.exp(-(time - attack) / release)
+    }
+
+    // Dual Detuned Saw Oscillators
+    var f1 = freq
+    var f2 = freq + detune
+    var phase1 = time * f1
+    var phase2 = time * f2
+
+    var saw1 = 2.0 * (phase1 - Math.floor(phase1)) - 1.0
+    var saw2 = 2.0 * (phase2 - Math.floor(phase2)) - 1.0
+    var rawOsc = (saw1 + saw2) * 0.5
+
+    // Resonant Filter
+    var filtered = DSP.lowpass(rawOsc, cutoff, res)
+    return filtered * env * 0.8
+  }
+}
+''',
+    ),
+
+    // 7. Wren Stereo Delay Effect
     WrenPreset(
       id: 'wren_delay',
       name: 'Wren Stereo Delay FX',
@@ -210,7 +300,7 @@ class StereoDelayFX {
 ''',
     ),
 
-    // 6. Wren Stereo Chorus Effect
+    // 8. Wren Stereo Chorus Effect
     WrenPreset(
       id: 'wren_chorus',
       name: 'Wren Stereo Chorus FX',
@@ -241,7 +331,7 @@ class StereoChorusFX {
 ''',
     ),
 
-    // 7. 8-Bit Retro Crusher FX
+    // 9. 8-Bit Retro Crusher FX
     WrenPreset(
       id: 'bitcrusher_fx',
       name: '8-Bit Retro Crusher FX',
@@ -275,7 +365,7 @@ class BitcrusherFX {
 ''',
     ),
 
-    // 8. Warm Tube Distortion
+    // 10. Warm Tube Distortion
     WrenPreset(
       id: 'tube_distortion',
       name: 'Warm Tube Distortion',
