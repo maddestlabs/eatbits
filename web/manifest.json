@@ -5,7 +5,7 @@
     "display": "standalone",
     "background_color": "#0B0E14",
     "theme_color": "#21f4e8",
-    "description": "Mobile-First WebAudio DAW with Wren Live Scripting.",
+    "description": "Mobile-First WebAudio DAW with Lua Live Scripting.",
     "orientation": "any",
     "prefer_related_applications": false,
     "icons": [

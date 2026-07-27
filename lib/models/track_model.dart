@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 
 enum MusicViewType { pianoRoll, tracker, score }
-enum TrackType { sampler, synth, wrenScript, bass }
+enum TrackType { sampler, synth, luaScript, bass;
+  // Backward compatibility getter
+  bool get isScript => this == TrackType.luaScript;
+}
 
 class Note {
   String id;
@@ -95,7 +98,7 @@ class StepEvent {
   );
 }
 
-enum FXType { biquadFilter, delay, distortion, bitcrusher, wrenFX }
+enum FXType { biquadFilter, delay, distortion, bitcrusher, luaFX }
 
 class FXInsert {
   String id;
@@ -187,9 +190,15 @@ class TrackChannel {
   double attack;
   double release;
 
-  // Wren engine plugin integration
-  String wrenScriptCode;
-  Map<String, double> wrenParams;
+  // Lua engine plugin integration
+  String luaScriptCode;
+  Map<String, double> luaParams;
+
+  // Backwards compatibility getters
+  String get wrenScriptCode => luaScriptCode;
+  set wrenScriptCode(String val) => luaScriptCode = val;
+  Map<String, double> get wrenParams => luaParams;
+  set wrenParams(Map<String, double> val) => luaParams = val;
 
   // Pattern steps & Piano Roll notes & Per-track clips
   List<StepEvent> steps; // 16 or 32 step grid
@@ -218,15 +227,18 @@ class TrackChannel {
     this.resonance = 1.0,
     this.attack = 0.01,
     this.release = 0.3,
-    this.wrenScriptCode = '',
+    String luaScriptCode = '',
+    String wrenScriptCode = '',
     this.trackerColumns = 4,
     this.activeView = MusicViewType.pianoRoll,
+    Map<String, double>? luaParams,
     Map<String, double>? wrenParams,
     List<StepEvent>? steps,
     List<Note>? notes,
     List<TrackClip>? clips,
     List<FXInsert>? fxRack,
-  })  : wrenParams = wrenParams ?? {},
+  })  : luaScriptCode = luaScriptCode.isNotEmpty ? luaScriptCode : wrenScriptCode,
+        luaParams = luaParams ?? wrenParams ?? {},
         steps = steps ?? List.generate(32, (_) => StepEvent()),
         notes = notes ?? [],
         clips = clips ?? [],
@@ -247,9 +259,11 @@ class TrackChannel {
     double? resonance,
     double? attack,
     double? release,
+    String? luaScriptCode,
     String? wrenScriptCode,
     int? trackerColumns,
     MusicViewType? activeView,
+    Map<String, double>? luaParams,
     Map<String, double>? wrenParams,
     List<StepEvent>? steps,
     List<Note>? notes,
@@ -271,10 +285,10 @@ class TrackChannel {
       resonance: resonance ?? this.resonance,
       attack: attack ?? this.attack,
       release: release ?? this.release,
-      wrenScriptCode: wrenScriptCode ?? this.wrenScriptCode,
+      luaScriptCode: luaScriptCode ?? wrenScriptCode ?? this.luaScriptCode,
       trackerColumns: trackerColumns ?? this.trackerColumns,
       activeView: activeView ?? this.activeView,
-      wrenParams: wrenParams ?? Map.from(this.wrenParams),
+      luaParams: luaParams ?? wrenParams ?? Map.from(this.luaParams),
       steps: steps ?? this.steps.map((s) => s.copyWith()).toList(),
       notes: notes ?? this.notes.map((n) => n.copyWith()).toList(),
       clips: clips ?? this.clips.map((c) => c.copyWith()).toList(),
@@ -297,10 +311,12 @@ class TrackChannel {
     'resonance': resonance,
     'attack': attack,
     'release': release,
-    'wrenScriptCode': wrenScriptCode,
+    'luaScriptCode': luaScriptCode,
+    'wrenScriptCode': luaScriptCode,
     'trackerColumns': trackerColumns,
     'activeView': activeView.name,
-    'wrenParams': wrenParams,
+    'luaParams': luaParams,
+    'wrenParams': luaParams,
     'steps': steps.map((s) => s.toJson()).toList(),
     'notes': notes.map((n) => n.toJson()).toList(),
     'fxRack': fxRack.map((f) => f.toJson()).toList(),

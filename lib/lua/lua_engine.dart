@@ -1,12 +1,12 @@
 import 'dart:math' as math;
 
-class WrenParamDef {
+class LuaParamDef {
   final String name;
   final double min;
   final double max;
   final double defaultValue;
 
-  WrenParamDef({
+  LuaParamDef({
     required this.name,
     required this.min,
     required this.max,
@@ -14,14 +14,14 @@ class WrenParamDef {
   });
 }
 
-class WrenCompilationResult {
+class LuaCompilationResult {
   final bool isSuccess;
   final String errorMessage;
   final int errorLine;
-  final List<WrenParamDef> params;
+  final List<LuaParamDef> params;
   final String scriptType; // 'synth', 'drum', or 'effect'
 
-  WrenCompilationResult({
+  LuaCompilationResult({
     required this.isSuccess,
     this.errorMessage = '',
     this.errorLine = 0,
@@ -30,30 +30,34 @@ class WrenCompilationResult {
   });
 }
 
-class WrenEngine {
+class LuaEngine {
   static final RegExp _paramRegExp = RegExp(
-    r'Param\.add\(\s*"([^"]+)"\s*,\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*,\s*([\d\.-]+)\s*\)',
+    "Param\\.add\\(\\s*[\"']([^\"']+)[\"']\\s*,\\s*([\\d\\.-]+)\\s*,\\s*([\\d\\.-]+)\\s*,\\s*([\\d\\.-]+)\\s*\\)",
   );
 
-  static WrenCompilationResult compile(String code) {
+  static final RegExp _v1ParamRegExp = RegExp(
+    "getParam\\(\\s*[\"']([^\"']+)[\"']\\s*\\)",
+  );
+
+  static LuaCompilationResult compile(String code) {
     if (code.trim().isEmpty) {
-      return WrenCompilationResult(
+      return LuaCompilationResult(
         isSuccess: false,
-        errorMessage: 'Script code is empty.',
+        errorMessage: 'Lua script code is empty.',
         params: [],
         scriptType: 'synth',
       );
     }
 
     try {
-      final params = <WrenParamDef>[];
+      final params = <LuaParamDef>[];
       final matches = _paramRegExp.allMatches(code);
       for (final m in matches) {
         final name = m.group(1)!;
         final minVal = double.tryParse(m.group(2)!) ?? 0.0;
         final maxVal = double.tryParse(m.group(3)!) ?? 1.0;
         final defVal = double.tryParse(m.group(4)!) ?? minVal;
-        params.add(WrenParamDef(
+        params.add(LuaParamDef(
           name: name,
           min: minVal,
           max: maxVal,
@@ -61,49 +65,56 @@ class WrenEngine {
         ));
       }
 
+      // Check for eatbits.v1 Param handles in Lua scripts
+      final v1Matches = _v1ParamRegExp.allMatches(code);
+      for (final m in v1Matches) {
+        final name = m.group(1)!;
+        if (!params.any((p) => p.name == name)) {
+          params.add(LuaParamDef(
+            name: name,
+            min: 0.0,
+            max: 1.0,
+            defaultValue: 0.5,
+          ));
+        }
+      }
+
       String scriptType = 'synth';
-      if (code.contains('processSignal')) {
+      if (code.contains('processSignal') || code.contains('StereoDelayFX') || code.contains('Bitcrusher')) {
         scriptType = 'effect';
       }
 
-      // Check basic syntax markers
-      if (!code.contains('class ')) {
-        return WrenCompilationResult(
+      // Check basic Lua syntax markers or eatbits.v1 scripts
+      final isV1Script = code.contains('eatbits.v1') || code.contains('Eatbits.v1') || code.contains('eatbits');
+      final hasFunctionOrLocal = code.contains('function') || code.contains('local') || code.contains('Param.add') || code.contains('--');
+
+      if (!hasFunctionOrLocal && !isV1Script) {
+        return LuaCompilationResult(
           isSuccess: false,
-          errorMessage: 'Syntax Error: Missing class definition.',
+          errorMessage: 'Lua Syntax Error: Missing function definition or script structure.',
           errorLine: 1,
           params: [],
           scriptType: scriptType,
         );
       }
 
-      if (!code.contains('process') && !code.contains('processSignal')) {
-        return WrenCompilationResult(
-          isSuccess: false,
-          errorMessage: 'Syntax Error: Missing process() or processSignal() entry point method.',
-          errorLine: 1,
-          params: [],
-          scriptType: scriptType,
-        );
-      }
-
-      return WrenCompilationResult(
+      return LuaCompilationResult(
         isSuccess: true,
-        errorMessage: 'Compiled successfully! Active parameters: ${params.length}',
+        errorMessage: 'Compiled successfully (Lua Live Scripting - eatbits.v1 Target)! Active parameters: ${params.length}',
         params: params,
         scriptType: scriptType,
       );
     } catch (e) {
-      return WrenCompilationResult(
+      return LuaCompilationResult(
         isSuccess: false,
-        errorMessage: 'Compilation Error: ${e.toString()}',
+        errorMessage: 'Lua Compilation Error: ${e.toString()}',
         params: [],
         scriptType: 'synth',
       );
     }
   }
 
-  // DSP Math & Synthesis Evaluator for Wren custom synths and drum engines
+  // DSP Math & Synthesis Evaluator for Lua custom synths and drum engines
   static double evaluateSynth({
     required String code,
     required double time,
@@ -130,7 +141,7 @@ class WrenEngine {
     }
 
     // 1. JC-303 Acid Bass Engine (Modelled after midilab/jc303)
-    if (code.contains('Acid303') || code.contains('Cutoff')) {
+    if (code.contains('Acid303') || code.contains('Cutoff') || code.contains('TB303')) {
       final waveType = params['Waveform'] ?? 0.0;
       final cutoff = params['Cutoff'] ?? 1600.0;
       final res = params['Resonance'] ?? 8.0;
@@ -216,10 +227,15 @@ class WrenEngine {
       final tone = params['Tone'] ?? 2200.0;
 
       double burstEnv = 0.0;
-      if (time < 0.01) burstEnv = 1.0;
-      else if (time < 0.022) burstEnv = 0.75;
-      else if (time < 0.035) burstEnv = 0.85;
-      else burstEnv = math.exp(-(time - 0.035) / roomDecay.clamp(0.01, 1.0));
+      if (time < 0.01) {
+        burstEnv = 1.0;
+      } else if (time < 0.022) {
+        burstEnv = 0.75;
+      } else if (time < 0.035) {
+        burstEnv = 0.85;
+      } else {
+        burstEnv = math.exp(-(time - 0.035) / roomDecay.clamp(0.01, 1.0));
+      }
 
       final rnd = math.Random((time * 10000).toInt() % 100000 + 999);
       final noise = (rnd.nextDouble() * 2.0 - 1.0);
@@ -268,7 +284,7 @@ class WrenEngine {
     }
   }
 
-  // DSP Math & Synthesis Evaluator for Wren custom FX
+  // DSP Math & Synthesis Evaluator for Lua custom FX
   static double evaluateEffect({
     required String code,
     required double inputSample,

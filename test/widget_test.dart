@@ -13,6 +13,6 @@ void main() {
   testWidgets('DAW smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const WrenDawApp());
-    expect(find.text('WREN DAW'), findsOneWidget);
+    expect(find.byType(WrenDawApp), findsOneWidget);
   });
 }

@@ -4,10 +4,10 @@ import 'models/daw_state.dart';
 import 'theme/daw_theme.dart';
 import 'ui/arranger_view.dart';
 import 'ui/edit_view.dart';
+import 'ui/lua_workbench_view.dart';
 import 'ui/mixer_view.dart';
 import 'ui/track_inspector_view.dart';
 import 'ui/transport_header.dart';
-import 'ui/wren_workbench_view.dart';
 
 void main() {
   runApp(const WrenDawApp());
@@ -58,7 +58,7 @@ class _DawMainShellState extends State<DawMainShell> {
                       EditView(dawState: _dawState),
                       TrackInspectorView(dawState: _dawState),
                       MixerView(dawState: _dawState),
-                      WrenWorkbenchView(dawState: _dawState),
+                      LuaWorkbenchView(dawState: _dawState),
                     ],
                   ),
                 ),
@@ -81,8 +81,9 @@ class _DawMainShellState extends State<DawMainShell> {
               selectedItemColor: DawTheme.primaryCyan,
               unselectedItemColor: DawTheme.textMuted,
               type: BottomNavigationBarType.fixed,
-              selectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-              unselectedLabelStyle: const TextStyle(fontSize: 10),
+              selectedLabelStyle: DawTheme.getPrimaryFontStyle(fontSize: 10, fontWeight: FontWeight.bold),
+              unselectedLabelStyle: DawTheme.getPrimaryFontStyle(fontSize: 10),
+
               items: const [
                 BottomNavigationBarItem(
                   icon: Icon(Icons.view_timeline),

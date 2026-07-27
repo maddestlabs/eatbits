@@ -2,18 +2,19 @@ import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
-import '../wren/wren_preset_library.dart';
+import '../lua/lua_preset_library.dart';
+import 'widgets/eatbits_slider.dart';
 
-class WrenWorkbenchView extends StatefulWidget {
+class LuaWorkbenchView extends StatefulWidget {
   final DawState dawState;
 
-  const WrenWorkbenchView({super.key, required this.dawState});
+  const LuaWorkbenchView({super.key, required this.dawState});
 
   @override
-  State<WrenWorkbenchView> createState() => _WrenWorkbenchViewState();
+  State<LuaWorkbenchView> createState() => _LuaWorkbenchViewState();
 }
 
-class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
+class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
   late TextEditingController _codeController;
   late String _lastTrackId;
 
@@ -22,16 +23,16 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
     super.initState();
     final activeTrack = widget.dawState.activeTrack;
     _lastTrackId = activeTrack.id;
-    _codeController = TextEditingController(text: activeTrack.wrenScriptCode);
+    _codeController = TextEditingController(text: activeTrack.luaScriptCode);
   }
 
   @override
-  void didUpdateWidget(covariant WrenWorkbenchView oldWidget) {
+  void didUpdateWidget(covariant LuaWorkbenchView oldWidget) {
     super.didUpdateWidget(oldWidget);
     final activeTrack = widget.dawState.activeTrack;
     if (activeTrack.id != _lastTrackId) {
       _lastTrackId = activeTrack.id;
-      _codeController.text = activeTrack.wrenScriptCode;
+      _codeController.text = activeTrack.luaScriptCode;
     }
   }
 
@@ -44,7 +45,9 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
     // Sync controller if external load happened
     if (_lastTrackId != activeTrack.id) {
       _lastTrackId = activeTrack.id;
-      _codeController.text = activeTrack.wrenScriptCode;
+      if (_codeController.text != activeTrack.luaScriptCode) {
+        _codeController.text = activeTrack.luaScriptCode;
+      }
     }
 
     return SingleChildScrollView(
@@ -67,12 +70,11 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                     Icon(Icons.code, color: DawTheme.accentGreen, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'WREN SCRIPT EDITOR',
-                      style: TextStyle(
+                      'LUA SCRIPT EDITOR',
+                      style: DawTheme.getPrimaryFontStyle(
                         color: DawTheme.textPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
-                        letterSpacing: 1.0,
                       ),
                     ),
                   ],
@@ -103,7 +105,7 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                                   const SizedBox(width: 6),
                                   Text(
                                     t.name,
-                                    style: TextStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
+                                    style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
                                   ),
                                 ],
                               ),
@@ -114,7 +116,7 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                               widget.dawState.activeTrackIndex = idx;
                               final newTrack = tracks[idx];
                               _lastTrackId = newTrack.id;
-                              _codeController.text = newTrack.wrenScriptCode;
+                              _codeController.text = newTrack.luaScriptCode;
                             }
                           },
                         ),
@@ -131,15 +133,15 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: DropdownButtonHideUnderline(
-                        child: DropdownButton<WrenPreset>(
-                          hint: Text('LOAD PRESET', style: TextStyle(color: DawTheme.textSecondary, fontSize: 11)),
+                        child: DropdownButton<LuaPreset>(
+                          hint: Text('LOAD PRESET', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textSecondary, fontSize: 11)),
                           dropdownColor: DawTheme.panelBackground,
-                          items: WrenPresetLibrary.presets.map((preset) {
-                            return DropdownMenuItem<WrenPreset>(
+                          items: LuaPresetLibrary.presets.map((preset) {
+                            return DropdownMenuItem<LuaPreset>(
                               value: preset,
                               child: Text(
                                 preset.name,
-                                style: TextStyle(color: DawTheme.textPrimary, fontSize: 11),
+                                style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontSize: 11),
                               ),
                             );
                           }).toList(),
@@ -147,9 +149,9 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                             if (preset != null) {
                               setState(() {
                                 _codeController.text = preset.code;
-                                activeTrack.wrenScriptCode = preset.code;
+                                activeTrack.luaScriptCode = preset.code;
                               });
-                              widget.dawState.loadWrenPreset(preset);
+                              widget.dawState.loadLuaPreset(preset);
                             }
                           },
                         ),
@@ -161,18 +163,19 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                     // Compile & Run Button
                     ElevatedButton.icon(
                       onPressed: () {
-                        activeTrack.wrenScriptCode = _codeController.text;
-                        activeTrack.type = TrackType.wrenScript;
-                        widget.dawState.compileWrenCode(_codeController.text);
+                        activeTrack.luaScriptCode = _codeController.text;
+                        activeTrack.type = TrackType.luaScript;
+                        widget.dawState.compileLuaCode(_codeController.text);
                       },
                       icon: Icon(Icons.play_arrow, size: 16, color: DawTheme.backgroundDark),
-                      label: Text('COMPILE DSP', style: TextStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 11)),
+                      label: Text('COMPILE LUA DSP', style: DawTheme.getPrimaryFontStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 11)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: DawTheme.accentGreen,
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
                       ),
                     ),
+
                   ],
                 ),
               ],
@@ -217,8 +220,8 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                             Icon(Icons.terminal, size: 14, color: DawTheme.textMuted),
                             const SizedBox(width: 6),
                             Text(
-                              'SCRIPT SOURCE: ${activeTrack.name.toUpperCase()}',
-                              style: TextStyle(color: DawTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
+                              'LUA SOURCE: ${activeTrack.name.toUpperCase()}',
+                              style: DawTheme.getPrimaryFontStyle(color: DawTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -226,12 +229,11 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                       TextField(
                         controller: _codeController,
                         maxLines: 14,
-                        style: TextStyle(
-                          fontFamily: 'monospace',
+                        style: DawTheme.getDisplayFontStyle(
                           color: DawTheme.textPrimary,
                           fontSize: 12,
-                          height: 1.4,
-                        ),
+                        ).copyWith(height: 1.4),
+
                         decoration: const InputDecoration(
                           contentPadding: EdgeInsets.all(12),
                           border: InputBorder.none,
@@ -264,7 +266,7 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                       Expanded(
                         child: Text(
                           result.errorMessage,
-                          style: TextStyle(
+                          style: DawTheme.getDisplayFontStyle(
                             color: result.isSuccess ? DawTheme.accentGreen : DawTheme.muteColor,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -277,18 +279,18 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
 
                 const SizedBox(height: 16),
 
-                // Dynamic Wren Interactive Parameter Controls
+                // Dynamic Lua Interactive Parameter Controls
                 if (result.params.isNotEmpty) ...[
                   Text(
                     'LIVE SCRIPT PARAMETERS (${activeTrack.name})',
-                    style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0),
+                    style: DawTheme.getPrimaryFontStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
                     children: result.params.map((param) {
-                      final currentVal = activeTrack.wrenParams[param.name] ?? param.defaultValue;
+                      final currentVal = activeTrack.luaParams[param.name] ?? param.defaultValue;
 
                       return Container(
                         width: 170,
@@ -306,21 +308,24 @@ class _WrenWorkbenchViewState extends State<WrenWorkbenchView> {
                               children: [
                                 Text(
                                   param.name,
-                                  style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11),
+                                  style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11),
                                 ),
                                 Text(
                                   currentVal.toStringAsFixed(1),
-                                  style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 11),
+                                  style: DawTheme.getDisplayFontStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 11),
                                 ),
                               ],
                             ),
-                            Slider(
+
+                            EatBitsSlider(
                               value: currentVal.clamp(param.min, param.max),
                               min: param.min,
                               max: param.max,
+                              defaultValue: param.defaultValue,
+                              label: param.name,
                               activeColor: DawTheme.primaryCyan,
                               onChanged: (val) {
-                                widget.dawState.updateWrenParam(param.name, val);
+                                widget.dawState.updateLuaParam(param.name, val);
                               },
                             ),
                           ],

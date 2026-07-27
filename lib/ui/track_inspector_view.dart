@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
+import 'widgets/eatbits_slider.dart';
 
 class TrackInspectorView extends StatelessWidget {
   final DawState dawState;
@@ -46,11 +47,11 @@ class TrackInspectorView extends StatelessWidget {
                     children: [
                       Text(
                         track.name.toUpperCase(),
-                        style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
+                        style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 16),
                       ),
                       Text(
                         'TYPE: ${track.type.name.toUpperCase()} (DOUBLE-TAP FOR CODE)',
-                        style: TextStyle(color: track.color, fontSize: 10, fontWeight: FontWeight.w600),
+                        style: DawTheme.getPrimaryFontStyle(color: track.color, fontSize: 10, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -67,7 +68,7 @@ class TrackInspectorView extends StatelessWidget {
                           color: track.isMuted ? DawTheme.muteColor : DawTheme.panelHeader,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text('MUTE', style: TextStyle(color: track.isMuted ? Colors.white : DawTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+                        child: Text('MUTE', style: DawTheme.getPrimaryFontStyle(color: track.isMuted ? Colors.white : DawTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(width: 6),
@@ -79,7 +80,7 @@ class TrackInspectorView extends StatelessWidget {
                           color: track.isSoloed ? DawTheme.soloColor : DawTheme.panelHeader,
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: Text('SOLO', style: TextStyle(color: track.isSoloed ? Colors.black : DawTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
+                        child: Text('SOLO', style: DawTheme.getPrimaryFontStyle(color: track.isSoloed ? Colors.black : DawTheme.textMuted, fontSize: 11, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -101,50 +102,55 @@ class TrackInspectorView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('CHANNEL MIXER SETTINGS', style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0)),
+                Text('CHANNEL MIXER SETTINGS', style: DawTheme.getPrimaryFontStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 12)),
                 const SizedBox(height: 12),
 
                 // Volume Slider
                 Row(
                   children: [
-                    SizedBox(width: 70, child: Text('VOLUME', style: TextStyle(color: DawTheme.textSecondary, fontSize: 11))),
+                    SizedBox(width: 70, child: Text('VOLUME', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textSecondary, fontSize: 11))),
                     Expanded(
-                      child: Slider(
+                      child: EatBitsSlider(
                         value: track.volume,
                         min: 0.0,
                         max: 1.5,
+                        defaultValue: 1.0,
+                        label: '${track.name} Volume',
                         activeColor: track.color,
                         onChanged: (val) => dawState.setTrackVolume(track, val),
                       ),
                     ),
-                    SizedBox(width: 40, child: Text('${(track.volume * 100).toInt()}%', style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
+                    SizedBox(width: 45, child: Text('${(track.volume * 100).toInt()}%', style: DawTheme.getDisplayFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
                   ],
                 ),
 
                 // Pan Slider
                 Row(
                   children: [
-                    SizedBox(width: 70, child: Text('PAN', style: TextStyle(color: DawTheme.textSecondary, fontSize: 11))),
+                    SizedBox(width: 70, child: Text('PAN', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textSecondary, fontSize: 11))),
                     Expanded(
-                      child: Slider(
+                      child: EatBitsSlider(
                         value: track.pan,
                         min: -1.0,
                         max: 1.0,
+                        defaultValue: 0.0,
+                        label: '${track.name} Pan',
                         activeColor: track.color,
                         onChanged: (val) => dawState.setTrackPan(track, val),
                       ),
                     ),
-                    SizedBox(width: 40, child: Text(track.pan == 0 ? 'C' : (track.pan < 0 ? 'L${(track.pan.abs() * 100).toInt()}' : 'R${(track.pan * 100).toInt()}'), style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
+                    SizedBox(width: 45, child: Text(track.pan == 0 ? 'C' : (track.pan < 0 ? 'L${(track.pan.abs() * 100).toInt()}' : 'R${(track.pan * 100).toInt()}'), style: DawTheme.getDisplayFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
                   ],
                 ),
               ],
             ),
           ),
 
+
           const SizedBox(height: 16),
 
-          // Dynamic Wren Script Parameters (Exposed by Code)
-          if (track.type == TrackType.wrenScript || track.wrenParams.isNotEmpty) ...[
+          // Dynamic Lua Script Parameters (Exposed by Code)
+          if (track.type == TrackType.luaScript || track.luaParams.isNotEmpty) ...[
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -155,35 +161,37 @@ class TrackInspectorView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     children: [
-                      Icon(Icons.code, color: DawTheme.accentGreen, size: 18),
-                      SizedBox(width: 8),
+                      const Icon(Icons.code, color: DawTheme.accentGreen, size: 18),
+                      const SizedBox(width: 8),
                       Text(
                         'DYNAMIC SCRIPT PARAMETERS (CODE DRIVEN)',
-                        style: TextStyle(color: DawTheme.accentGreen, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0),
+                        style: DawTheme.getPrimaryFontStyle(color: DawTheme.accentGreen, fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  ...track.wrenParams.entries.map((entry) {
+                  ...track.luaParams.entries.map((entry) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: Row(
                         children: [
-                          SizedBox(width: 100, child: Text(entry.key, style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
+                          SizedBox(width: 100, child: Text(entry.key, style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
                           Expanded(
-                            child: Slider(
+                            child: EatBitsSlider(
                               value: entry.value,
                               min: 0.0,
-                              max: 10000.0, // Flexible parameter range
+                              max: 10000.0,
+                              defaultValue: entry.value,
+                              label: entry.key,
                               activeColor: DawTheme.accentGreen,
                               onChanged: (val) {
-                                dawState.updateWrenParam(entry.key, val);
+                                dawState.updateLuaParam(entry.key, val);
                               },
                             ),
                           ),
-                          SizedBox(width: 50, child: Text(entry.value.toStringAsFixed(1), style: const TextStyle(color: DawTheme.accentGreen, fontWeight: FontWeight.bold, fontSize: 11))),
+                          SizedBox(width: 55, child: Text(entry.value.toStringAsFixed(1), style: DawTheme.getDisplayFontStyle(color: DawTheme.accentGreen, fontWeight: FontWeight.bold, fontSize: 11))),
                         ],
                       ),
                     );
@@ -205,18 +213,18 @@ class TrackInspectorView extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('FX INSERT RACK', style: TextStyle(color: DawTheme.secondaryMagenta, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 1.0)),
+                Text('FX INSERT RACK', style: DawTheme.getPrimaryFontStyle(color: DawTheme.secondaryMagenta, fontWeight: FontWeight.bold, fontSize: 12)),
                 const SizedBox(height: 12),
                 SwitchListTile(
-                  title: const Text('Bitcrusher 8-Bit', style: TextStyle(color: Colors.white, fontSize: 12)),
-                  subtitle: Text('Sample & bit depth reducer', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
+                  title: Text('Bitcrusher 8-Bit', style: DawTheme.getPrimaryFontStyle(color: Colors.white, fontSize: 12)),
+                  subtitle: Text('Sample & bit depth reducer', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textMuted, fontSize: 10)),
                   value: track.fxRack.any((f) => f.name == 'Bitcrusher'),
                   activeColor: DawTheme.secondaryMagenta,
                   onChanged: (val) => dawState.toggleBitcrusher(track, val),
                 ),
                 SwitchListTile(
-                  title: const Text('Tube Distortion', style: TextStyle(color: Colors.white, fontSize: 12)),
-                  subtitle: Text('Soft clipping saturation', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
+                  title: Text('Tube Distortion', style: DawTheme.getPrimaryFontStyle(color: Colors.white, fontSize: 12)),
+                  subtitle: Text('Soft clipping saturation', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textMuted, fontSize: 10)),
                   value: track.fxRack.any((f) => f.name == 'TubeDistortion'),
                   activeColor: DawTheme.secondaryMagenta,
                   onChanged: (val) => dawState.toggleDistortion(track, val),
@@ -229,3 +237,4 @@ class TrackInspectorView extends StatelessWidget {
     );
   }
 }
+

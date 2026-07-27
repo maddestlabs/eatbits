@@ -2,15 +2,24 @@ import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
+import 'widgets/eatbits_slider.dart';
 
-class MixerView extends StatelessWidget {
+class MixerView extends StatefulWidget {
   final DawState dawState;
 
   const MixerView({super.key, required this.dawState});
 
   @override
+  State<MixerView> createState() => _MixerViewState();
+}
+
+class _MixerViewState extends State<MixerView> {
+  DateTime? _lastTapTime;
+  int? _lastTapTrackIdx;
+
+  @override
   Widget build(BuildContext context) {
-    final pattern = dawState.activePattern;
+    final pattern = widget.dawState.activePattern;
 
     return Column(
       children: [
@@ -42,13 +51,13 @@ class MixerView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Master Channel Strip
-                _buildMasterChannelStrip(dawState),
+                _buildMasterChannelStrip(widget.dawState),
                 const VerticalDivider(color: Color(0xFF2B3245), width: 24, thickness: 1.5),
 
                 // Individual Track Strips
-                ...pattern.tracks.map((track) {
-                  return _buildTrackStrip(context, dawState, track);
-                }).toList(),
+                ...List.generate(pattern.tracks.length, (tIdx) {
+                  return _buildTrackStrip(context, widget.dawState, pattern.tracks[tIdx], tIdx);
+                }),
               ],
             ),
           ),
@@ -81,10 +90,12 @@ class MixerView extends StatelessWidget {
               children: [
                 RotatedBox(
                   quarterTurns: 3,
-                  child: Slider(
+                  child: EatBitsSlider(
                     value: dawState.masterVolume,
                     min: 0.0,
                     max: 1.5,
+                    defaultValue: 0.85,
+                    label: 'Master Volume',
                     activeColor: DawTheme.primaryCyan,
                     onChanged: (val) => dawState.setMasterVolume(val),
                   ),
@@ -109,29 +120,29 @@ class MixerView extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '${(dawState.masterVolume * 100).toInt()}%',
-            style: TextStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
+            style: DawTheme.getDisplayFontStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTrackStrip(BuildContext context, DawState dawState, TrackChannel track) {
-    final isSelected = track == dawState.activeTrack;
+  Widget _buildTrackStrip(BuildContext context, DawState dawState, TrackChannel track, int trackIdx) {
+    final isSelected = trackIdx == dawState.activeTrackIndex;
 
     return GestureDetector(
-      onTap: () {
-        final tIdx = dawState.activePattern.tracks.indexOf(track);
-        if (tIdx != -1) {
-          dawState.activeTrackIndex = tIdx;
+      onTapDown: (_) {
+        final now = DateTime.now();
+        final isDoubleTap = _lastTapTrackIdx == trackIdx &&
+            _lastTapTime != null &&
+            now.difference(_lastTapTime!).inMilliseconds < 300;
+        _lastTapTime = now;
+        _lastTapTrackIdx = trackIdx;
+
+        dawState.activeTrackIndex = trackIdx;
+        if (isDoubleTap) {
+          dawState.activeTabIndex = 2; // Switch to TRACK section
         }
-      },
-      onDoubleTap: () {
-        final tIdx = dawState.activePattern.tracks.indexOf(track);
-        if (tIdx != -1) {
-          dawState.activeTrackIndex = tIdx;
-        }
-        dawState.activeTabIndex = 2; // Switch to TRACK section
       },
       child: Container(
         width: 110,
@@ -144,111 +155,116 @@ class MixerView extends StatelessWidget {
         ),
         child: Column(
           children: [
-          // Track Name & Color badge
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-            decoration: BoxDecoration(color: track.color, borderRadius: BorderRadius.circular(4)),
-            child: Text(
-              track.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 10),
+            // Track Name & Color badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+              decoration: BoxDecoration(color: track.color, borderRadius: BorderRadius.circular(4)),
+              child: Text(
+                track.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: DawTheme.getPrimaryFontStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 10),
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
+            const SizedBox(height: 6),
 
-          // Mute & Solo
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              GestureDetector(
-                onTap: () => dawState.toggleMute(track),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: track.isMuted ? DawTheme.muteColor : DawTheme.panelHeader,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: Text(
-                    'M',
-                    style: TextStyle(color: track.isMuted ? Colors.white : DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
+            // Mute & Solo
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  onTap: () => dawState.toggleMute(track),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: track.isMuted ? DawTheme.muteColor : DawTheme.panelHeader,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      'M',
+                      style: DawTheme.getPrimaryFontStyle(color: track.isMuted ? Colors.white : DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              GestureDetector(
-                onTap: () => dawState.toggleSolo(track),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: track.isSoloed ? DawTheme.soloColor : DawTheme.panelHeader,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: Text(
-                    'S',
-                    style: TextStyle(color: track.isSoloed ? Colors.black : DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: () => dawState.toggleSolo(track),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: track.isSoloed ? DawTheme.soloColor : DawTheme.panelHeader,
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      'S',
+                      style: DawTheme.getPrimaryFontStyle(color: track.isSoloed ? Colors.black : DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 8),
-
-          // Pan Knob
-          Text('PAN', style: TextStyle(color: DawTheme.textMuted, fontSize: 8)),
-          SizedBox(
-            height: 24,
-            child: Slider(
-              value: track.pan,
-              min: -1.0,
-              max: 1.0,
-              activeColor: track.color,
-              onChanged: (val) => dawState.setTrackPan(track, val),
+              ],
             ),
-          ),
 
-          const SizedBox(height: 8),
+            const SizedBox(height: 8),
 
-          // Vertical Volume Fader
-          Expanded(
-            child: RotatedBox(
-              quarterTurns: 3,
-              child: Slider(
-                value: track.volume,
-                min: 0.0,
-                max: 1.5,
+            // Pan Knob
+            Text('PAN', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textMuted, fontSize: 8)),
+            SizedBox(
+              height: 24,
+              child: EatBitsSlider(
+                value: track.pan,
+                min: -1.0,
+                max: 1.0,
+                defaultValue: 0.0,
+                label: '${track.name} Pan',
                 activeColor: track.color,
-                onChanged: (val) => dawState.setTrackVolume(track, val),
+                onChanged: (val) => dawState.setTrackPan(track, val),
               ),
             ),
-          ),
 
-          const SizedBox(height: 6),
-          Text(
-            '${(track.volume * 100).toInt()}%',
-            style: TextStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
-          ),
+            const SizedBox(height: 8),
 
-          const SizedBox(height: 8),
-
-          // FX Insert Rack Trigger Button
-          ElevatedButton(
-            onPressed: () {
-              _showFXRackDialog(context, dawState, track);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: DawTheme.panelHeader,
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-              minimumSize: const Size(double.infinity, 24),
+            // Vertical Volume Fader
+            Expanded(
+              child: RotatedBox(
+                quarterTurns: 3,
+                child: EatBitsSlider(
+                  value: track.volume,
+                  min: 0.0,
+                  max: 1.5,
+                  defaultValue: 1.0,
+                  label: '${track.name} Volume',
+                  activeColor: track.color,
+                  onChanged: (val) => dawState.setTrackVolume(track, val),
+                ),
+              ),
             ),
-            child: Text('FX RACK', style: TextStyle(color: DawTheme.primaryCyan, fontSize: 9, fontWeight: FontWeight.bold)),
-          ),
-        ],
+
+            const SizedBox(height: 6),
+            Text(
+              '${(track.volume * 100).toInt()}%',
+              style: DawTheme.getDisplayFontStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 8),
+
+            // FX Insert Rack Trigger Button
+            ElevatedButton(
+              onPressed: () {
+                _showFXRackDialog(context, dawState, track);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: DawTheme.panelHeader,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                minimumSize: const Size(double.infinity, 24),
+              ),
+              child: Text('FX RACK', style: DawTheme.getPrimaryFontStyle(color: DawTheme.primaryCyan, fontSize: 9, fontWeight: FontWeight.bold)),
+            ),
+
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _showFXRackDialog(BuildContext context, DawState dawState, TrackChannel track) {
     showDialog(

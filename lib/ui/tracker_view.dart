@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
+import 'widgets/eatbits_slider.dart';
 
 class TrackerView extends StatefulWidget {
   final DawState dawState;
@@ -21,6 +22,11 @@ class _TrackerViewState extends State<TrackerView> {
     final totalSteps = widget.dawState.activePattern.lengthSteps;
     final totalColumns = track.trackerColumns;
 
+    final noteMap = <String, Note>{};
+    for (final n in track.notes) {
+      noteMap['${n.startStep.toInt()}_${n.column}'] = n;
+    }
+
     return Column(
       children: [
         // Tracker Header Bar
@@ -37,7 +43,7 @@ class _TrackerViewState extends State<TrackerView> {
               const SizedBox(width: 8),
               Text(
                 'TRACKER VIEW: ${track.name.toUpperCase()}',
-                style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
+                style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
               ),
               const Spacer(),
 
@@ -51,7 +57,7 @@ class _TrackerViewState extends State<TrackerView> {
               ),
               Text(
                 'COLS: $totalColumns',
-                style: const TextStyle(color: DawTheme.accentGold, fontWeight: FontWeight.bold, fontSize: 11),
+                style: DawTheme.getDisplayFontStyle(color: DawTheme.accentGold, fontWeight: FontWeight.bold, fontSize: 11),
               ),
               IconButton(
                 icon: Icon(Icons.add_circle_outline, color: DawTheme.primaryCyan, size: 20),
@@ -63,6 +69,7 @@ class _TrackerViewState extends State<TrackerView> {
             ],
           ),
         ),
+
 
         // Sub-channel Column Titles Header
         Container(
@@ -151,11 +158,8 @@ class _TrackerViewState extends State<TrackerView> {
                         scrollDirection: Axis.horizontal,
                         child: Row(
                           children: List.generate(totalColumns, (colIdx) {
-                            // Find note event matching startStep & column index
-                            final noteMatch = track.notes.firstWhere(
-                              (n) => n.startStep.toInt() == stepIdx && n.column == colIdx,
-                              orElse: () => Note(id: '', pitch: -1, startStep: -1),
-                            );
+                            // Find note event matching startStep & column index via O(1) map
+                            final noteMatch = noteMap['${stepIdx}_$colIdx'] ?? Note(id: '', pitch: -1, startStep: -1);
 
                             final hasNote = noteMatch.pitch != -1;
                             final noteStr = hasNote ? _formatTrackerNote(noteMatch.pitch) : '---';
@@ -181,13 +185,13 @@ class _TrackerViewState extends State<TrackerView> {
                                 ),
                                 child: Text(
                                   '$noteStr  $volStr  $fxStr',
-                                  style: TextStyle(
-                                    fontFamily: 'monospace',
+                                  style: DawTheme.getDisplayFontStyle(
                                     color: hasNote ? DawTheme.textPrimary : DawTheme.textMuted,
                                     fontSize: 11,
                                     fontWeight: hasNote ? FontWeight.bold : FontWeight.normal,
                                   ),
                                 ),
+
                               ),
                             );
                           }),
@@ -244,10 +248,12 @@ class _TrackerViewState extends State<TrackerView> {
                         Text(_formatTrackerNote(selectedPitch), style: const TextStyle(color: DawTheme.accentGold, fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    Slider(
+                    EatBitsSlider(
                       value: selectedPitch.toDouble(),
                       min: 24,
                       max: 84,
+                      defaultValue: 60,
+                      label: 'Note Pitch',
                       activeColor: track.color,
                       onChanged: (val) {
                         setDialogState(() => selectedPitch = val.toInt());
@@ -266,10 +272,12 @@ class _TrackerViewState extends State<TrackerView> {
                         Text('${(selectedVol * 100).toInt()}%', style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    Slider(
+                    EatBitsSlider(
                       value: selectedVol,
                       min: 0.0,
                       max: 1.0,
+                      defaultValue: 0.9,
+                      label: 'Note Velocity',
                       activeColor: DawTheme.primaryCyan,
                       onChanged: (val) {
                         setDialogState(() => selectedVol = val);

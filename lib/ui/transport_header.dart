@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../theme/daw_theme.dart';
 
+
 class TransportHeader extends StatelessWidget {
   final DawState dawState;
 
@@ -37,64 +38,63 @@ class TransportHeader extends StatelessWidget {
 
           const SizedBox(width: 12),
 
-          // Transport Controls: Play, Stop
+          // Transport Control: Play / Stop Toggle Button
           IconButton(
-            onPressed: dawState.togglePlay,
+            onPressed: dawState.isPlaying ? dawState.stop : dawState.togglePlay,
             icon: Icon(
-              dawState.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill,
-              color: dawState.isPlaying ? DawTheme.accentGreen : DawTheme.primaryCyan,
+              dawState.isPlaying ? Icons.stop_circle : Icons.play_circle_fill,
+              color: dawState.isPlaying ? DawTheme.muteColor : DawTheme.primaryCyan,
               size: 34,
             ),
-            tooltip: dawState.isPlaying ? 'Pause' : 'Play',
-          ),
-          IconButton(
-            onPressed: dawState.stop,
-            icon: Icon(Icons.stop, color: DawTheme.textSecondary, size: 24),
-            tooltip: 'Stop',
+            tooltip: dawState.isPlaying ? 'Stop' : 'Play',
           ),
 
           const SizedBox(width: 8),
 
-          // BPM & Tap Tempo
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(
-              color: DawTheme.controlBackground,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Row(
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('BPM', style: TextStyle(color: DawTheme.textSecondary, fontSize: 8)),
-                    Text(
-                      dawState.bpm.toStringAsFixed(0),
-                      style: const TextStyle(
-                        color: DawTheme.accentGold,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 13,
+          // BPM & Tap Tempo (Tap + Hold to open manual edit dialog)
+          GestureDetector(
+            onLongPress: () => _showBpmEditDialog(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: DawTheme.controlBackground,
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: Row(
+                children: [
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('BPM', style: TextStyle(color: DawTheme.textSecondary, fontSize: 8)),
+                      Text(
+                        dawState.bpm.toStringAsFixed(0),
+                        style: DawTheme.getDisplayFontStyle(
+                          color: DawTheme.accentGold,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 6),
+                  InkWell(
+                    onTap: dawState.tapTempo,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: DawTheme.accentGold.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: DawTheme.accentGold.withOpacity(0.6)),
+                      ),
+                      child: const Text(
+                        'TAP',
+                        style: TextStyle(color: DawTheme.accentGold, fontSize: 9, fontWeight: FontWeight.bold),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(width: 6),
-                InkWell(
-                  onTap: dawState.tapTempo,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: DawTheme.accentGold.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: DawTheme.accentGold.withOpacity(0.6)),
-                    ),
-                    child: const Text(
-                      'TAP',
-                      style: TextStyle(color: DawTheme.accentGold, fontSize: 9, fontWeight: FontWeight.bold),
-                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
@@ -193,10 +193,13 @@ class TransportHeader extends StatelessWidget {
 
                 const SizedBox(height: 16),
 
+
+
                 Text(
                   'AUDIO ENGINE CONFIG',
                   style: TextStyle(color: DawTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0),
                 ),
+
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(10),
@@ -208,7 +211,7 @@ class TransportHeader extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text('• Sample Rate: 44.1 kHz / 48.0 kHz Hardware Native', style: TextStyle(color: DawTheme.textPrimary, fontSize: 10)),
                       const SizedBox(height: 4),
-                      Text('• Script Compiler: Embedded Wren Language VM', style: TextStyle(color: DawTheme.textPrimary, fontSize: 10)),
+                      Text('• Script Compiler: Embedded Lua 5.4 / LuaJIT Live Engine', style: TextStyle(color: DawTheme.textPrimary, fontSize: 10)),
                     ],
                   ),
                 ),
@@ -219,6 +222,85 @@ class TransportHeader extends StatelessWidget {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text('CLOSE', style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showBpmEditDialog(BuildContext context) {
+    final controller = TextEditingController(text: dawState.bpm.toStringAsFixed(0));
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: DawTheme.panelBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: Colors.white10),
+          ),
+          title: Text(
+            'Edit BPM (Tempo)',
+            style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 15),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Min: 40 BPM  |  Max: 240 BPM  |  Default: 120 BPM',
+                style: TextStyle(color: DawTheme.textMuted, fontSize: 11),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: controller,
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                autofocus: true,
+                style: TextStyle(color: DawTheme.accentGold, fontSize: 18, fontWeight: FontWeight.bold),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: DawTheme.controlBackground,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: DawTheme.primaryCyan.withOpacity(0.5)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: BorderSide(color: DawTheme.primaryCyan, width: 2),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            OutlinedButton(
+              onPressed: () {
+                dawState.setBpm(120.0);
+                Navigator.of(context).pop();
+              },
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: DawTheme.accentOrange),
+                foregroundColor: DawTheme.accentOrange,
+              ),
+              child: const Text('DEFAULT (120)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
+            ),
+            const Spacer(),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('CANCEL', style: TextStyle(color: DawTheme.textMuted, fontSize: 11)),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final val = double.tryParse(controller.text);
+                if (val != null) {
+                  dawState.setBpm(val);
+                }
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: DawTheme.primaryCyan, foregroundColor: Colors.black),
+              child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
             ),
           ],
         );

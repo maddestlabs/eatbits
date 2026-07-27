@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
+import 'widgets/eatbits_slider.dart';
 
 class ArrangerView extends StatefulWidget {
   final DawState dawState;
@@ -25,6 +26,11 @@ class _ArrangerViewState extends State<ArrangerView> {
   double _moveDragDxAccumulator = 0.0;
   double _resizeDragDxAccumulator = 0.0;
 
+  DateTime? _lastHeaderTapTime;
+  int? _lastHeaderTapTrackIdx;
+  DateTime? _lastClipTapTime;
+  String? _lastClipTapId;
+
   @override
   void dispose() {
     _horizontalScroll.dispose();
@@ -36,45 +42,12 @@ class _ArrangerViewState extends State<ArrangerView> {
   @override
   Widget build(BuildContext context) {
     final tracks = widget.dawState.activePattern.tracks;
-    final double playheadX = (widget.dawState.currentStep / 4.0) * barWidth;
+    final double playheadX = (widget.dawState.arrangerStep / 16.0) * barWidth;
+    final double loopStartX = widget.dawState.loopStartBar * barWidth;
+    final double loopWidth = (widget.dawState.loopEndBar - widget.dawState.loopStartBar) * barWidth;
 
     return Column(
       children: [
-        // Sub-Header Toolbar
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: DawTheme.panelHeader,
-          child: Row(
-            children: [
-              Icon(Icons.view_timeline, color: DawTheme.primaryCyan, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'MULTITRACK DAW ARRANGER',
-                style: TextStyle(
-                  color: DawTheme.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 13,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const Spacer(),
-              ElevatedButton.icon(
-                onPressed: () {
-                  final activeTrack = widget.dawState.activeTrack;
-                  widget.dawState.addClipToTrack(activeTrack, 0);
-                },
-                icon: Icon(Icons.add, size: 14, color: DawTheme.backgroundDark),
-                label: Text('ADD CLIP', style: TextStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 10)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: DawTheme.primaryCyan,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                ),
-              ),
-            ],
-          ),
-        ),
-
         // Multitrack Grid & Track Panels (Synchronized Scroll)
         Expanded(
           child: Row(
@@ -84,12 +57,41 @@ class _ArrangerViewState extends State<ArrangerView> {
                 width: 140,
                 child: Column(
                   children: [
-                    // Top Left Spacer (matching Bar Ruler height)
+                    // Top Left Track Header & Loop Toggle Button
                     Container(
                       height: 24,
                       color: DawTheme.panelHeader,
-                      alignment: Alignment.center,
-                      child: Text('TRACKS', style: TextStyle(color: DawTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Row(
+                        children: [
+                          Text('TRACKS', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
+                          const Spacer(),
+                          InkWell(
+                            onTap: widget.dawState.toggleLoop,
+                            child: Tooltip(
+                              message: 'Toggle Loop Mode',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.repeat,
+                                    size: 13,
+                                    color: widget.dawState.isLooping ? DawTheme.accentGold : DawTheme.textMuted,
+                                  ),
+                                  const SizedBox(width: 2),
+                                  Text(
+                                    widget.dawState.isLooping ? 'LOOP' : 'OFF',
+                                    style: TextStyle(
+                                      color: widget.dawState.isLooping ? DawTheme.accentGold : DawTheme.textMuted,
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     Expanded(
                       child: NotificationListener<ScrollNotification>(
@@ -112,13 +114,19 @@ class _ArrangerViewState extends State<ArrangerView> {
                             final isSelected = trackIdx == widget.dawState.activeTrackIndex;
 
                             return GestureDetector(
-                              onTap: () {
+                              onTapDown: (_) {
+                                final now = DateTime.now();
+                                final isDoubleTap = _lastHeaderTapTrackIdx == trackIdx &&
+                                    _lastHeaderTapTime != null &&
+                                    now.difference(_lastHeaderTapTime!).inMilliseconds < 300;
+                                _lastHeaderTapTime = now;
+                                _lastHeaderTapTrackIdx = trackIdx;
+
                                 widget.dawState.activeTrackIndex = trackIdx;
-                              },
-                              onDoubleTap: () {
-                                // DOUBLE-TAP TRACK HEADER: Navigate to Track Inspector tab
-                                widget.dawState.activeTrackIndex = trackIdx;
-                                widget.dawState.activeTabIndex = 2; // Track section
+                                if (isDoubleTap) {
+                                  // DOUBLE-TAP TRACK HEADER: Navigate to Track Inspector tab
+                                  widget.dawState.activeTabIndex = 2; // Track section
+                                }
                               },
                               child: Container(
                                 height: trackRowHeight,
@@ -139,7 +147,7 @@ class _ArrangerViewState extends State<ArrangerView> {
                                       track.name,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: TextStyle(
+                                      style: DawTheme.getPrimaryFontStyle(
                                         color: isSelected ? DawTheme.primaryCyan : DawTheme.textPrimary,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 11,
@@ -153,12 +161,14 @@ class _ArrangerViewState extends State<ArrangerView> {
                                         _buildSoloButton(track),
                                         const Spacer(),
                                         SizedBox(
-                                          width: 45,
+                                          width: 50,
                                           height: 20,
-                                          child: Slider(
+                                          child: EatBitsSlider(
                                             value: track.volume,
                                             min: 0.0,
                                             max: 1.5,
+                                            defaultValue: 1.0,
+                                            label: '${track.name} Volume',
                                             activeColor: track.color,
                                             onChanged: (val) => widget.dawState.setTrackVolume(track, val),
                                           ),
@@ -186,45 +196,85 @@ class _ArrangerViewState extends State<ArrangerView> {
                     width: totalBars * barWidth,
                     child: Column(
                       children: [
-                        // Top Timeline Bar Ruler (Bar 1, Bar 2 ... Bar 32)
-                        Container(
-                          height: 24,
-                          color: DawTheme.panelHeader,
-                          child: Stack(
-                            children: [
-                              Row(
-                                children: List.generate(totalBars, (barIdx) {
-                                  return Container(
-                                    width: barWidth,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      border: Border(right: BorderSide(color: Colors.white.withOpacity(0.1), width: 1)),
-                                    ),
-                                    alignment: Alignment.centerLeft,
-                                    padding: const EdgeInsets.only(left: 4),
-                                    child: Text(
-                                      '${barIdx + 1}',
-                                      style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
-                                    ),
-                                  );
-                                }),
-                              ),
-
-                              // Playhead Head Marker Badge
-                              Positioned(
-                                left: playheadX - 6,
-                                top: 2,
-                                child: Container(
-                                  width: 12,
-                                  height: 20,
-                                  decoration: BoxDecoration(
-                                    color: DawTheme.primaryCyan,
-                                    borderRadius: BorderRadius.circular(3),
-                                  ),
-                                  child: const Icon(Icons.arrow_drop_down, size: 12, color: Colors.black),
+                        // Top Timeline Bar Ruler (Bar 1, Bar 2 ... Bar 32 with Tap to Jump & Loop Region)
+                        GestureDetector(
+                          onTapUp: (details) {
+                            final double localX = details.localPosition.dx;
+                            final int tappedBar = (localX / barWidth).floor();
+                            widget.dawState.seekToBar(tappedBar);
+                          },
+                          onLongPressStart: (details) {
+                            final double localX = details.localPosition.dx;
+                            final int tappedBar = (localX / barWidth).floor();
+                            // Set loop start at tapped bar, end at tapped bar + 4
+                            widget.dawState.setLoopPoints(tappedBar, tappedBar + 4);
+                          },
+                          child: Container(
+                            height: 24,
+                            color: DawTheme.panelHeader,
+                            child: Stack(
+                              children: [
+                                Row(
+                                  children: List.generate(totalBars, (barIdx) {
+                                    return Container(
+                                      width: barWidth,
+                                      height: 24,
+                                      decoration: BoxDecoration(
+                                        border: Border(right: BorderSide(color: Colors.white.withOpacity(0.1), width: 1)),
+                                      ),
+                                      alignment: Alignment.centerLeft,
+                                      padding: const EdgeInsets.only(left: 4),
+                                      child: Text(
+                                        '${barIdx + 1}',
+                                        style: DawTheme.getDisplayFontStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
+                                      ),
+                                    );
+                                  }),
                                 ),
-                              ),
-                            ],
+
+                                // Shaded Loop Region Overlay
+                                if (widget.dawState.isLooping)
+                                  Positioned(
+                                    left: loopStartX,
+                                    width: loopWidth,
+                                    top: 0,
+                                    bottom: 0,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        color: DawTheme.accentGold.withOpacity(0.2),
+                                        border: Border(
+                                          left: BorderSide(color: DawTheme.accentGold, width: 2),
+                                          right: BorderSide(color: DawTheme.accentGold, width: 2),
+                                        ),
+                                      ),
+                                      alignment: Alignment.topCenter,
+                                      child: Text(
+                                        'LOOP',
+                                        style: TextStyle(
+                                          color: DawTheme.accentGold,
+                                          fontSize: 8,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+
+                                // Playhead Head Marker Badge
+                                Positioned(
+                                  left: playheadX - 6,
+                                  top: 2,
+                                  child: Container(
+                                    width: 12,
+                                    height: 20,
+                                    decoration: BoxDecoration(
+                                      color: DawTheme.primaryCyan,
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                    child: const Icon(Icons.arrow_drop_down, size: 12, color: Colors.black),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
 
@@ -287,14 +337,20 @@ class _ArrangerViewState extends State<ArrangerView> {
                                               height: trackRowHeight - 12,
                                               child: GestureDetector(
                                                 behavior: HitTestBehavior.opaque,
-                                                onDoubleTap: () {
-                                                  // DOUBLE-TAP CLIP: Open clip in Edit section (Piano Roll / Tracker View)
-                                                  widget.dawState.activeTrackIndex = trackIdx;
-                                                  widget.dawState.openClipInEditor(clip);
-                                                },
-                                                onTap: () {
+                                                onTapDown: (_) {
+                                                  final now = DateTime.now();
+                                                  final isDoubleTap = _lastClipTapId == clip.id &&
+                                                      _lastClipTapTime != null &&
+                                                      now.difference(_lastClipTapTime!).inMilliseconds < 300;
+                                                  _lastClipTapTime = now;
+                                                  _lastClipTapId = clip.id;
+
                                                   widget.dawState.activeTrackIndex = trackIdx;
                                                   widget.dawState.selectClip(clip);
+                                                  if (isDoubleTap) {
+                                                    // DOUBLE-TAP CLIP: Open clip in Edit section (Piano Roll / Tracker View)
+                                                    widget.dawState.openClipInEditor(clip);
+                                                  }
                                                 },
                                                 onHorizontalDragStart: (_) {
                                                   _moveDragDxAccumulator = 0.0;

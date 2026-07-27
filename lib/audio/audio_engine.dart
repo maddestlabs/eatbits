@@ -4,13 +4,17 @@ import 'package:web/web.dart' as web;
 import 'dart:js_interop';
 
 import '../models/track_model.dart';
-import '../wren/wren_engine.dart';
+import '../lua/lua_engine.dart';
 import 'poly_synth.dart';
 
 class AudioEngine {
   web.AudioContext? _audioContext;
   web.GainNode? _masterGainNode;
   web.AnalyserNode? _analyserNode;
+
+  final Map<String, web.AudioNode> _nodeRegistry = {};
+  final Map<String, web.AudioParam> _paramRegistry = {};
+  int _nodeCounter = 0;
 
   bool _initialized = false;
   bool get isInitialized => _initialized;
@@ -56,6 +60,179 @@ class AudioEngine {
     }
   }
 
+  // Double-buffered feedback metering snapshot channel
+  Map<String, double> getMeterSnapshot() {
+    updateMeters();
+    return {
+      'leftPeak': _leftPeak,
+      'rightPeak': _rightPeak,
+      'rms': (_leftPeak + _rightPeak) / 2.0,
+      'currentTime': currentTime,
+    };
+  }
+
+  // Node Registry & Factory Primitive
+  String createNode(String type, Map<String, dynamic> config) {
+    if (!kIsWeb || _audioContext == null) {
+      return 'node_mock_${++_nodeCounter}';
+    }
+
+    final String nodeId = 'node_${type.toLowerCase()}_${++_nodeCounter}';
+
+    try {
+      if (type == 'StereoDelayFX') {
+        final delayNode = _audioContext!.createDelay((config['maxTime'] as num?)?.toDouble() ?? 2.0);
+        delayNode.delayTime.value = ((config['timeMs'] as num?)?.toDouble() ?? 250.0) / 1000.0;
+        _nodeRegistry[nodeId] = delayNode;
+        _paramRegistry['$nodeId:TimeMs'] = delayNode.delayTime;
+      } else if (type == 'LFO') {
+        final osc = _audioContext!.createOscillator();
+        osc.type = (config['shape'] as String?) ?? 'sine';
+        osc.frequency.value = (config['rateHz'] as num?)?.toDouble() ?? 2.0;
+        osc.start();
+        _nodeRegistry[nodeId] = osc;
+        _paramRegistry['$nodeId:Frequency'] = osc.frequency;
+      } else if (type == 'TB303' || type == 'ProceduralKick' || type == 'FMSynth') {
+        final gain = _audioContext!.createGain();
+        final filter = _audioContext!.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.value = (config['cutoff'] as num?)?.toDouble() ?? 1600.0;
+        filter.Q.value = (config['resonance'] as num?)?.toDouble() ?? 6.0;
+
+        filter.connect(gain);
+        _nodeRegistry[nodeId] = gain;
+        _paramRegistry['$nodeId:Cutoff'] = filter.frequency;
+        _paramRegistry['$nodeId:Resonance'] = filter.Q;
+        _paramRegistry['$nodeId:Gain'] = gain.gain;
+      } else {
+        final gain = _audioContext!.createGain();
+        gain.gain.value = 1.0;
+        _nodeRegistry[nodeId] = gain;
+        _paramRegistry['$nodeId:Gain'] = gain.gain;
+      }
+    } catch (e) {
+      debugPrint('Error creating WebAudio node $type: $e');
+    }
+
+    return nodeId;
+  }
+
+  // Audio Graph Routing Primitives
+  void connect(String sourceId, String targetId, [int outputIndex = 0, int inputIndex = 0]) {
+    if (!kIsWeb) return;
+    final source = _nodeRegistry[sourceId];
+    final target = _nodeRegistry[targetId] ?? _masterGainNode;
+
+    if (source != null && target != null) {
+      try {
+        source.connect(target);
+      } catch (e) {
+        debugPrint('Error connecting WebAudio graph nodes ($sourceId -> $targetId): $e');
+      }
+    }
+  }
+
+  void connectToParam(String sourceId, String targetNodeId, String paramName) {
+    if (!kIsWeb) return;
+    final source = _nodeRegistry[sourceId];
+    final paramKey = '$targetNodeId:$paramName';
+    final param = _paramRegistry[paramKey];
+
+    if (source != null && param != null) {
+      try {
+        source.connect(param);
+      } catch (e) {
+        debugPrint('Error connecting source $sourceId to AudioParam $paramKey: $e');
+      }
+    }
+  }
+
+  void disconnect(String nodeId) {
+    if (!kIsWeb) return;
+    final node = _nodeRegistry[nodeId];
+    if (node != null) {
+      try {
+        node.disconnect();
+      } catch (e) {
+        debugPrint('Error disconnecting node $nodeId: $e');
+      }
+    }
+  }
+
+  // Sample-Accurate Parameter Automation Timeline Scheduling
+  void scheduleParamOp({
+    required String nodeId,
+    required String paramName,
+    required String method,
+    required double value,
+    required double scheduledTime,
+    double? timeConstant,
+  }) {
+    if (!kIsWeb || _audioContext == null) return;
+    final paramKey = '$nodeId:$paramName';
+    final param = _paramRegistry[paramKey];
+
+    if (param == null) return;
+
+    final targetTime = scheduledTime > 0 ? scheduledTime : currentTime;
+
+    try {
+      switch (method) {
+        case 'setValue':
+          param.setValueAtTime(value, targetTime);
+          break;
+        case 'linearRamp':
+          param.linearRampToValueAtTime(value, targetTime);
+          break;
+        case 'exponentialRamp':
+          param.exponentialRampToValueAtTime(value.clamp(0.0001, 20000.0), targetTime);
+          break;
+        case 'setTarget':
+          param.setTargetAtTime(value, targetTime, timeConstant ?? 0.1);
+          break;
+        default:
+          param.setValueAtTime(value, targetTime);
+          break;
+      }
+    } catch (e) {
+      debugPrint('Error scheduling AudioParam op ($method on $paramKey): $e');
+    }
+  }
+
+  // Command Queue Dispatcher for Wren Script Command Messages
+  void processCommandQueue(List<Map<String, dynamic>> commands) {
+    for (final cmd in commands) {
+      final type = cmd['type'] as String?;
+      if (type == 'CREATE_NODE') {
+        createNode(cmd['nodeType'] as String, cmd['config'] as Map<String, dynamic>? ?? {});
+      } else if (type == 'CONNECT') {
+        connect(cmd['sourceId'] as String, cmd['targetId'] as String);
+      } else if (type == 'CONNECT_PARAM') {
+        connectToParam(cmd['sourceId'] as String, cmd['targetNodeId'] as String, cmd['paramName'] as String);
+      } else if (type == 'PARAM_AUTOMATE') {
+        scheduleParamOp(
+          nodeId: cmd['nodeId'] as String,
+          paramName: cmd['paramName'] as String,
+          method: cmd['method'] as String,
+          value: (cmd['value'] as num).toDouble(),
+          scheduledTime: (cmd['scheduledTime'] as num).toDouble(),
+          timeConstant: (cmd['timeConstant'] as num?)?.toDouble(),
+        );
+      } else if (type == 'NOTE_ON') {
+        final note = (cmd['pitch'] as num).toInt();
+        final vel = (cmd['velocity'] as num).toDouble();
+        final time = (cmd['time'] as num).toDouble();
+        final dur = (cmd['duration'] as num).toDouble();
+        _playPcmBuffer(
+          PolySynth.generateSynthToneBuffer(midiNote: note, waveform: 'sawtooth', lengthSec: dur),
+          vel,
+          0.0,
+          time,
+        );
+      }
+    }
+  }
+
   // Update peak meters for visualizers
   void updateMeters() {
     if (_analyserNode == null) return;
@@ -83,7 +260,7 @@ class AudioEngine {
     }
   }
 
-  double get currentTime => _audioContext?.currentTime ?? 0.0;
+  double get currentTime => (_audioContext?.currentTime ?? 0.0).toDouble();
 
   // Trigger Sound Sample / Note Playback with Hardware Sample-Exact Timing
   void playNoteOrSample({
@@ -120,19 +297,19 @@ class AudioEngine {
           pcmBuffer = PolySynth.generateKickBuffer();
           break;
       }
-    } else if (track.type == TrackType.wrenScript) {
-      // Render custom Wren DSP synth sound sample
+    } else if (track.type == TrackType.luaScript) {
+      // Render custom Lua DSP synth sound sample
       pcmBuffer = List<double>.filled((44100 * durationSec).toInt(), 0.0);
       final double freq = PolySynth.midiToFreq(midiNote);
 
       for (int i = 0; i < pcmBuffer.length; i++) {
         final double t = i / 44100.0;
-        pcmBuffer[i] = WrenEngine.evaluateSynth(
-          code: track.wrenScriptCode,
+        pcmBuffer[i] = LuaEngine.evaluateSynth(
+          code: track.luaScriptCode,
           time: t,
           freq: freq,
           note: midiNote,
-          params: track.wrenParams,
+          params: track.luaParams,
         );
       }
     } else {
@@ -152,7 +329,7 @@ class AudioEngine {
       if (!fx.enabled) continue;
       for (int i = 0; i < pcmBuffer.length; i++) {
         final t = i / 44100.0;
-        final processed = WrenEngine.evaluateEffect(
+        final processed = LuaEngine.evaluateEffect(
           code: fx.name,
           inputSample: pcmBuffer[i],
           time: t,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 enum DawThemePreset {
   cyberpunkCyan,  // EatBits Default Neon Cyan & Dark Obsidian
@@ -9,6 +10,35 @@ enum DawThemePreset {
 
 class DawTheme {
   static DawThemePreset currentPreset = DawThemePreset.cyberpunkCyan;
+
+  // --- Dual-Context Font Settings ---
+  // Context 1: Primary UI Font (App Headers, Navigation, Track Titles, Buttons, Menus)
+  static String primaryFontName = 'Exo 2';
+
+  // Context 2: Display & Technical Font (BPM, Timecode, Meters, Parameters, Lua Code Workbench)
+  static String displayFontName = 'Share Tech Mono';
+
+
+
+  /// Get TextStyle dynamically for Context 1 (Primary UI) with safety fallback
+  static TextStyle getPrimaryFontStyle({double? fontSize, FontWeight? fontWeight, Color? color, TextDecoration? decoration}) {
+    final baseStyle = TextStyle(fontSize: fontSize, fontWeight: fontWeight, color: color, decoration: decoration);
+    try {
+      return GoogleFonts.getFont(primaryFontName, textStyle: baseStyle);
+    } catch (_) {
+      return baseStyle.copyWith(fontFamily: 'sans-serif');
+    }
+  }
+
+  /// Get TextStyle dynamically for Context 2 (Display, Meters & Monospace Code) with safety fallback
+  static TextStyle getDisplayFontStyle({double? fontSize, FontWeight? fontWeight, Color? color, TextDecoration? decoration}) {
+    final baseStyle = TextStyle(fontSize: fontSize, fontWeight: fontWeight, color: color, decoration: decoration);
+    try {
+      return GoogleFonts.getFont(displayFontName, textStyle: baseStyle);
+    } catch (_) {
+      return baseStyle.copyWith(fontFamily: 'monospace');
+    }
+  }
 
   static Color get backgroundDark {
     switch (currentPreset) {
@@ -104,6 +134,15 @@ class DawTheme {
     final isLight = currentPreset == DawThemePreset.studioLight;
     final baseTheme = isLight ? ThemeData.light() : ThemeData.dark();
 
+    TextTheme textTheme;
+    try {
+      textTheme = GoogleFonts.getTextTheme(primaryFontName, baseTheme.textTheme);
+    } catch (_) {
+      textTheme = baseTheme.textTheme;
+    }
+
+    final primaryFamily = getPrimaryFontStyle().fontFamily;
+
     return baseTheme.copyWith(
       scaffoldBackgroundColor: backgroundDark,
       primaryColor: primaryCyan,
@@ -113,9 +152,20 @@ class DawTheme {
         secondary: secondaryMagenta,
         surface: panelBackground,
       ),
-      textTheme: baseTheme.textTheme.apply(fontFamily: 'monospace').copyWith(
-        bodyMedium: TextStyle(color: textPrimary, fontSize: 13),
-        bodySmall: TextStyle(color: textSecondary, fontSize: 11),
+      textTheme: textTheme.apply(
+        fontFamily: primaryFamily,
+        bodyColor: textPrimary,
+        displayColor: textPrimary,
+      ).copyWith(
+        bodyLarge: getPrimaryFontStyle(color: textPrimary, fontSize: 14),
+        bodyMedium: getPrimaryFontStyle(color: textPrimary, fontSize: 13),
+        bodySmall: getPrimaryFontStyle(color: textSecondary, fontSize: 11),
+        titleLarge: getPrimaryFontStyle(color: textPrimary, fontSize: 16, fontWeight: FontWeight.bold),
+        titleMedium: getPrimaryFontStyle(color: textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
+        titleSmall: getPrimaryFontStyle(color: textSecondary, fontSize: 12, fontWeight: FontWeight.bold),
+        labelLarge: getPrimaryFontStyle(color: textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
+        labelMedium: getPrimaryFontStyle(color: textSecondary, fontSize: 10),
+        labelSmall: getPrimaryFontStyle(color: textMuted, fontSize: 9),
       ),
       sliderTheme: SliderThemeData(
         activeTrackColor: primaryCyan,
@@ -128,3 +178,6 @@ class DawTheme {
     );
   }
 }
+
+
+

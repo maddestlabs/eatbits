@@ -30,12 +30,12 @@ class EditView extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'EDITING: ${track.name.toUpperCase()}',
-                style: TextStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
+                style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
               ),
               const Spacer(),
-              Text('MODE: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
+              Text('MODE: ', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textMuted, fontSize: 10)),
               ChoiceChip(
-                label: const Text('PIANO ROLL', style: TextStyle(fontSize: 10)),
+                label: Text('PIANO ROLL', style: DawTheme.getPrimaryFontStyle(fontSize: 10)),
                 selected: track.activeView == MusicViewType.pianoRoll,
                 selectedColor: DawTheme.primaryCyan,
                 onSelected: (_) {
@@ -44,13 +44,14 @@ class EditView extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               ChoiceChip(
-                label: const Text('TRACKER', style: TextStyle(fontSize: 10)),
+                label: Text('TRACKER', style: DawTheme.getPrimaryFontStyle(fontSize: 10)),
                 selected: track.activeView == MusicViewType.tracker,
                 selectedColor: DawTheme.secondaryMagenta,
                 onSelected: (_) {
                   dawState.setTrackActiveView(track, MusicViewType.tracker);
                 },
               ),
+
             ],
           ),
         ),
