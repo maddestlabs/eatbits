@@ -33,11 +33,18 @@ jobs:
       - name: Set up Flutter SDK
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
+          flutter-version: '3.44.8'
           cache: true
 
       - name: Install Dependencies
         run: flutter pub get
+
+      - name: Guard Pages-Incompatible Web Font Packages
+        run: |
+          if grep -RInE 'google_fonts|GoogleFonts' pubspec.yaml lib; then
+            echo 'google_fonts is blocked for GitHub Pages web builds in this repo. Prefer bundled assets or generic sans-serif/monospace families.'
+            exit 1
+          fi
 
       - name: Build Web Production App
         run: flutter build web --release --base-href "/eatbits/"

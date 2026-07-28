@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 enum DawThemePreset {
   cyberpunkCyan,  // EatBits Default Neon Cyan & Dark Obsidian
@@ -13,31 +12,24 @@ class DawTheme {
 
   // --- Dual-Context Font Settings ---
   // Context 1: Primary UI Font (App Headers, Navigation, Track Titles, Buttons, Menus)
-  static String primaryFontName = 'Exo 2';
+  static String primaryFontName = 'Sans Serif';
 
   // Context 2: Display & Technical Font (BPM, Timecode, Meters, Parameters, Lua Code Workbench)
-  static String displayFontName = 'Share Tech Mono';
+  static String displayFontName = 'Monospace';
 
-
+  static const String _primaryFontFamily = 'sans-serif';
+  static const String _displayFontFamily = 'monospace';
 
   /// Get TextStyle dynamically for Context 1 (Primary UI) with safety fallback
   static TextStyle getPrimaryFontStyle({double? fontSize, FontWeight? fontWeight, Color? color, TextDecoration? decoration}) {
     final baseStyle = TextStyle(fontSize: fontSize, fontWeight: fontWeight, color: color, decoration: decoration);
-    try {
-      return GoogleFonts.getFont(primaryFontName, textStyle: baseStyle);
-    } catch (_) {
-      return baseStyle.copyWith(fontFamily: 'sans-serif');
-    }
+    return baseStyle.copyWith(fontFamily: _primaryFontFamily);
   }
 
   /// Get TextStyle dynamically for Context 2 (Display, Meters & Monospace Code) with safety fallback
   static TextStyle getDisplayFontStyle({double? fontSize, FontWeight? fontWeight, Color? color, TextDecoration? decoration}) {
     final baseStyle = TextStyle(fontSize: fontSize, fontWeight: fontWeight, color: color, decoration: decoration);
-    try {
-      return GoogleFonts.getFont(displayFontName, textStyle: baseStyle);
-    } catch (_) {
-      return baseStyle.copyWith(fontFamily: 'monospace');
-    }
+    return baseStyle.copyWith(fontFamily: _displayFontFamily);
   }
 
   static Color get backgroundDark {
@@ -134,15 +126,6 @@ class DawTheme {
     final isLight = currentPreset == DawThemePreset.studioLight;
     final baseTheme = isLight ? ThemeData.light() : ThemeData.dark();
 
-    TextTheme textTheme;
-    try {
-      textTheme = GoogleFonts.getTextTheme(primaryFontName, baseTheme.textTheme);
-    } catch (_) {
-      textTheme = baseTheme.textTheme;
-    }
-
-    final primaryFamily = getPrimaryFontStyle().fontFamily;
-
     return baseTheme.copyWith(
       scaffoldBackgroundColor: backgroundDark,
       primaryColor: primaryCyan,
@@ -152,8 +135,8 @@ class DawTheme {
         secondary: secondaryMagenta,
         surface: panelBackground,
       ),
-      textTheme: textTheme.apply(
-        fontFamily: primaryFamily,
+      textTheme: baseTheme.textTheme.apply(
+        fontFamily: _primaryFontFamily,
         bodyColor: textPrimary,
         displayColor: textPrimary,
       ).copyWith(
