@@ -4,6 +4,7 @@ import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
 import '../lua/lua_preset_library.dart';
 import 'widgets/eatbits_slider.dart';
+import 'widgets/skeuomorphic_hardware_button.dart';
 
 class LuaWorkbenchView extends StatefulWidget {
   final DawState dawState;
@@ -160,20 +161,18 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
 
                     const SizedBox(width: 8),
 
-                    // Compile & Run Button
-                    ElevatedButton.icon(
-                      onPressed: () {
+                    // Compile & Run Mechanical Hardware Button
+                    SkeuomorphicHardwareButton(
+                      label: 'COMPILE LUA DSP',
+                      icon: Icons.play_arrow,
+                      isActive: true,
+                      activeColor: DawTheme.accentGreen,
+                      onTap: () {
                         activeTrack.luaScriptCode = _codeController.text;
                         activeTrack.type = TrackType.luaScript;
                         widget.dawState.compileLuaCode(_codeController.text);
                       },
-                      icon: Icon(Icons.play_arrow, size: 16, color: DawTheme.backgroundDark),
-                      label: Text('COMPILE LUA DSP', style: DawTheme.getPrimaryFontStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 11)),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: DawTheme.accentGreen,
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                      ),
+                      height: 38,
                     ),
 
                   ],

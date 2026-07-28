@@ -14,7 +14,7 @@ class DawState extends ChangeNotifier {
   final AudioEngine audioEngine = AudioEngine();
 
   // Navigation & View Mode
-  int _activeTabIndex = 0; // 0: Sequencer, 1: Piano Roll, 2: Mixer, 3: Wren Workbench, 4: Arranger
+  int _activeTabIndex = 0; // 0: Arranger, 1: Edit, 2: Track, 3: Mixer, 4: Scripts
   int get activeTabIndex => _activeTabIndex;
   set activeTabIndex(int index) {
     _activeTabIndex = index;
@@ -73,6 +73,14 @@ class DawState extends ChangeNotifier {
       if (activeTrack.luaScriptCode.isNotEmpty) {
         luaCode = activeTrack.luaScriptCode;
         compilationResult = LuaEngine.compile(luaCode);
+      } else {
+        luaCode = '';
+        compilationResult = LuaCompilationResult(
+          isSuccess: true,
+          errorMessage: 'No active Lua script on channel',
+          params: [],
+          scriptType: 'synth',
+        );
       }
     }
     notifyListeners();
@@ -108,11 +116,11 @@ class DawState extends ChangeNotifier {
   void _initDemoTracks() {
     final trackKick = TrackChannel(
       id: 't_kick',
-      name: 'Kick Drum (Lua DSP)',
+      name: 'Kick Drum',
       color: DawTheme.secondaryMagenta,
       type: TrackType.luaScript,
-      luaScriptCode: LuaPresetLibrary.presets[1].code, // Procedural Kick
-      luaParams: {'StartFreq': 160.0, 'EndFreq': 42.0, 'PitchDecay': 0.035, 'AmpDecay': 0.35, 'Click': 0.5},
+      luaScriptCode: LuaPresetLibrary.presets.firstWhere((p) => p.id == 'procedural_kick').code,
+      luaParams: {'StartFreq': 160.0, 'EndFreq': 42.0, 'PitchDecay': 0.035, 'AmpDecay': 0.35, 'Click': 0.0},
       volume: 0.95,
       steps: List.generate(32, (i) => StepEvent(active: i % 4 == 0, velocity: 0.95, pitch: 36)),
       notes: List.generate(32, (i) => i % 4 == 0 ? Note(id: 'k_$i', pitch: 36, startStep: i.toDouble(), durationSteps: 1.0, velocity: 0.95) : null)
@@ -122,11 +130,11 @@ class DawState extends ChangeNotifier {
 
     final trackSnare = TrackChannel(
       id: 't_snare',
-      name: 'Snare (Lua DSP)',
+      name: 'Snare',
       color: DawTheme.primaryCyan,
       type: TrackType.luaScript,
-      luaScriptCode: LuaPresetLibrary.presets[2].code, // Procedural Snare
-      luaParams: {'ToneFreq': 185.0, 'Snappy': 0.65, 'Decay': 0.22},
+      luaScriptCode: LuaPresetLibrary.presets.firstWhere((p) => p.id == 'procedural_snare').code,
+      luaParams: {'ToneFreq': 185.0, 'Snappy': 0.65, 'Decay': 0.1},
       volume: 0.85,
       steps: List.generate(32, (i) => StepEvent(active: i % 8 == 4, velocity: 0.9, pitch: 38)),
       notes: List.generate(32, (i) => i % 8 == 4 ? Note(id: 's_$i', pitch: 38, startStep: i.toDouble(), durationSteps: 1.0, velocity: 0.9) : null)
@@ -136,28 +144,14 @@ class DawState extends ChangeNotifier {
 
     final trackHat = TrackChannel(
       id: 't_hihat',
-      name: 'Hi-Hat (Lua DSP)',
+      name: 'Hi-Hat',
       color: DawTheme.accentGold,
       type: TrackType.luaScript,
-      luaScriptCode: LuaPresetLibrary.presets[3].code, // Procedural Hi-Hat
-      luaParams: {'Cutoff': 8500.0, 'Decay': 0.09, 'Metallic': 0.4},
+      luaScriptCode: LuaPresetLibrary.presets.firstWhere((p) => p.id == 'procedural_hihat').code,
+      luaParams: {'Cutoff': 8500.0, 'Decay': 0.0, 'Metallic': 0.4},
       volume: 0.75,
       steps: List.generate(32, (i) => StepEvent(active: i % 2 == 0, velocity: i % 4 == 2 ? 0.9 : 0.6, pitch: 42)),
       notes: List.generate(32, (i) => i % 2 == 0 ? Note(id: 'h_$i', pitch: 42, startStep: i.toDouble(), durationSteps: 1.0, velocity: i % 4 == 2 ? 0.9 : 0.6) : null)
-          .whereType<Note>()
-          .toList(),
-    );
-
-    final trackClap = TrackChannel(
-      id: 't_clap',
-      name: 'Clap (Lua DSP)',
-      color: DawTheme.accentOrange,
-      type: TrackType.luaScript,
-      luaScriptCode: LuaPresetLibrary.presets[4].code, // Procedural Clap
-      luaParams: {'RoomDecay': 0.18, 'Tone': 2200.0},
-      volume: 0.8,
-      steps: List.generate(32, (i) => StepEvent(active: i == 12 || i == 28, velocity: 0.85, pitch: 39)),
-      notes: List.generate(32, (i) => (i == 12 || i == 28) ? Note(id: 'c_$i', pitch: 39, startStep: i.toDouble(), durationSteps: 1.0, velocity: 0.85) : null)
           .whereType<Note>()
           .toList(),
     );
@@ -169,7 +163,7 @@ class DawState extends ChangeNotifier {
       color: DawTheme.accentGreen,
       type: TrackType.luaScript,
       volume: 0.9,
-      luaScriptCode: LuaPresetLibrary.presets[0].code, // JC-303 Acid Bass
+      luaScriptCode: LuaPresetLibrary.presets.firstWhere((p) => p.id == 'acid_303').code,
       luaParams: {
         'Waveform': 0.0,
         'Cutoff': 1800.0,
@@ -194,38 +188,17 @@ class DawState extends ChangeNotifier {
       steps: List.generate(32, (i) => StepEvent(active: i % 2 == 0, velocity: 0.85, pitch: 36 + (i * 3) % 12)),
     );
 
-    // Poly Lead Synth Track (Lua DSP)
-    final trackPolySynth = TrackChannel(
-      id: 't_polysynth',
-      name: 'Poly Lead (Lua DSP)',
-      color: DawTheme.accentPurple,
-      type: TrackType.luaScript,
-      luaScriptCode: LuaPresetLibrary.presets[5].code, // Poly Lead Synth
-      luaParams: {'Cutoff': 4500.0, 'Resonance': 3.0, 'Detune': 3.0, 'Attack': 0.01, 'Release': 0.35},
-      synthWaveform: 'sawtooth',
-      cutoff: 4000.0,
-      volume: 0.8,
-      notes: [
-        Note(id: 'pn1', pitch: 60, startStep: 0, durationSteps: 4, velocity: 0.9), // C4
-        Note(id: 'pn2', pitch: 64, startStep: 4, durationSteps: 4, velocity: 0.85), // E4
-        Note(id: 'pn3', pitch: 67, startStep: 8, durationSteps: 4, velocity: 0.9), // G4
-        Note(id: 'pn4', pitch: 72, startStep: 12, durationSteps: 4, velocity: 0.95), // C5
-      ],
-    );
-
     trackKick.clips.add(TrackClip(id: 'c_k1', name: 'Kick Beat A', trackId: trackKick.id, startBar: 0, barLength: 4, notes: trackKick.notes));
     trackSnare.clips.add(TrackClip(id: 'c_s1', name: 'Snare Pattern', trackId: trackSnare.id, startBar: 0, barLength: 4, notes: trackSnare.notes));
     trackHat.clips.add(TrackClip(id: 'c_h1', name: 'Hi-Hat Groove', trackId: trackHat.id, startBar: 0, barLength: 4, notes: trackHat.notes));
-    trackClap.clips.add(TrackClip(id: 'c_c1', name: 'Clap Fill', trackId: trackClap.id, startBar: 2, barLength: 2, notes: trackClap.notes));
     trackLua303.clips.add(TrackClip(id: 'c_w1', name: 'Acid 303 Riff', trackId: trackLua303.id, startBar: 0, barLength: 4, notes: trackLua303.notes));
-    trackPolySynth.clips.add(TrackClip(id: 'c_p1', name: 'Lead Chord', trackId: trackPolySynth.id, startBar: 0, barLength: 4, notes: trackPolySynth.notes));
 
     patterns = [
       Pattern(
         id: 'p0',
         name: 'Pattern A',
         lengthSteps: 16,
-        tracks: [trackKick, trackSnare, trackHat, trackClap, trackLua303, trackPolySynth],
+        tracks: [trackKick, trackSnare, trackHat, trackLua303],
       ),
       Pattern(
         id: 'p1',
@@ -235,12 +208,29 @@ class DawState extends ChangeNotifier {
           trackKick.copyWith(id: 'p1_k'),
           trackSnare.copyWith(id: 'p1_s'),
           trackHat.copyWith(id: 'p1_h'),
-          trackClap.copyWith(id: 'p1_c'),
           trackLua303.copyWith(id: 'p1_w'),
-          trackPolySynth.copyWith(id: 'p1_p'),
         ],
       ),
     ];
+  }
+
+  // Lua Engine Compilation & Hot Swap
+  void compileLuaCode(String code) {
+    luaCode = code;
+    compilationResult = LuaEngine.compile(code);
+
+    if (compilationResult.isSuccess) {
+      // Synchronize Lua parameters to active track
+      activeTrack.luaScriptCode = code;
+      activeTrack.type = TrackType.luaScript;
+      
+      final newParams = <String, double>{};
+      for (final p in compilationResult.params) {
+        newParams[p.name] = activeTrack.luaParams[p.name] ?? p.defaultValue;
+      }
+      activeTrack.luaParams = newParams;
+    }
+    notifyListeners();
   }
 
   TrackClip? activeClip;
@@ -404,7 +394,7 @@ class DawState extends ChangeNotifier {
   void _scheduleStep(int stepIdx, double hardwareTime, double stepDurationSec) {
     final currentPattern = activePattern;
     final hasSolo = currentPattern.tracks.any((t) => t.isSoloed);
-    final bool isArrangerPlayback = (_activeTabIndex == 4 || _isSongMode);
+    final bool isArrangerPlayback = (_activeTabIndex == 0 || _isSongMode);
 
     for (final track in currentPattern.tracks) {
       if (track.isMuted) continue;
@@ -420,16 +410,30 @@ class DawState extends ChangeNotifier {
             final int localStep = stepIdx - clipStartStep;
             
             if (clip.notes.isNotEmpty) {
-              for (final note in clip.notes) {
-                if (note.startStep.toInt() == localStep) {
-                  audioEngine.playNoteOrSample(
-                    track: track,
-                    midiNote: note.pitch,
-                    velocity: note.velocity,
-                    durationSec: note.durationSteps * stepDurationSec,
-                    scheduledTime: hardwareTime,
-                  );
-                }
+              final matchingNotes = clip.notes.where((n) => n.startStep.toInt() == localStep).toList();
+              if (matchingNotes.length > 1) {
+                // Polyphony / Simultaneous Notes -> Auto-Slide / Pitch Glide
+                matchingNotes.sort((a, b) => a.pitch.compareTo(b.pitch));
+                final first = matchingNotes.first;
+                final second = matchingNotes.last;
+                audioEngine.playNoteOrSample(
+                  track: track,
+                  midiNote: first.pitch,
+                  targetMidiNote: second.pitch,
+                  isSlide: true,
+                  velocity: first.velocity,
+                  durationSec: first.durationSteps * stepDurationSec,
+                  scheduledTime: hardwareTime,
+                );
+              } else if (matchingNotes.length == 1) {
+                final note = matchingNotes.first;
+                audioEngine.playNoteOrSample(
+                  track: track,
+                  midiNote: note.pitch,
+                  velocity: note.velocity,
+                  durationSec: note.durationSteps * stepDurationSec,
+                  scheduledTime: hardwareTime,
+                );
               }
             } else if (localStep < track.steps.length) {
               final step = track.steps[localStep % track.steps.length];
@@ -447,25 +451,38 @@ class DawState extends ChangeNotifier {
       } else {
         // Sequencer / Pattern Playback Logic
         final int patternStep = stepIdx % currentPattern.lengthSteps;
-        if (patternStep < track.steps.length) {
+        final matchingNotes = track.notes.where((n) => n.startStep.toInt() == patternStep).toList();
+
+        if (matchingNotes.length > 1) {
+          // Polyphony / Simultaneous Notes -> Auto-Slide / Pitch Glide
+          matchingNotes.sort((a, b) => a.pitch.compareTo(b.pitch));
+          final first = matchingNotes.first;
+          final second = matchingNotes.last;
+          audioEngine.playNoteOrSample(
+            track: track,
+            midiNote: first.pitch,
+            targetMidiNote: second.pitch,
+            isSlide: true,
+            velocity: first.velocity,
+            durationSec: (first.durationSteps * stepDurationSec),
+            scheduledTime: hardwareTime,
+          );
+        } else if (matchingNotes.length == 1) {
+          final note = matchingNotes.first;
+          audioEngine.playNoteOrSample(
+            track: track,
+            midiNote: note.pitch,
+            velocity: note.velocity,
+            durationSec: (note.durationSteps * stepDurationSec),
+            scheduledTime: hardwareTime,
+          );
+        } else if (patternStep < track.steps.length) {
           final step = track.steps[patternStep];
           if (step.active) {
             audioEngine.playNoteOrSample(
               track: track,
               midiNote: step.pitch,
               velocity: step.velocity,
-              scheduledTime: hardwareTime,
-            );
-          }
-        }
-
-        for (final note in track.notes) {
-          if (note.startStep.toInt() == patternStep) {
-            audioEngine.playNoteOrSample(
-              track: track,
-              midiNote: note.pitch,
-              velocity: note.velocity,
-              durationSec: (note.durationSteps * stepDurationSec),
               scheduledTime: hardwareTime,
             );
           }
@@ -510,6 +527,14 @@ class DawState extends ChangeNotifier {
     }
   }
 
+  // Quantization Snap Setting (0.0 = No Snap, 0.5 = 1/32, 1.0 = 1/16, 2.0 = 1/8, 4.0 = 1/4)
+  double _quantizeSnap = 1.0;
+  double get quantizeSnap => _quantizeSnap;
+  void setQuantizeSnap(double val) {
+    _quantizeSnap = val;
+    notifyListeners();
+  }
+
   // Piano Roll Note Editing
   void addNote(TrackChannel track, Note note) {
     track.notes.add(note);
@@ -519,6 +544,14 @@ class DawState extends ChangeNotifier {
       velocity: note.velocity,
     );
     notifyListeners();
+  }
+
+  void updateNote(TrackChannel track, Note updatedNote) {
+    final idx = track.notes.indexWhere((n) => n.id == updatedNote.id);
+    if (idx != -1) {
+      track.notes[idx] = updatedNote;
+      notifyListeners();
+    }
   }
 
   void removeNote(TrackChannel track, String noteId) {
@@ -547,20 +580,7 @@ class DawState extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Lua Engine Compilation & Hot Swap
-  void compileLuaCode(String code) {
-    luaCode = code;
-    compilationResult = LuaEngine.compile(code);
 
-    if (compilationResult.isSuccess) {
-      // Synchronize Lua parameters to active track
-      activeTrack.luaScriptCode = code;
-      for (final p in compilationResult.params) {
-        activeTrack.luaParams[p.name] ??= p.defaultValue;
-      }
-    }
-    notifyListeners();
-  }
 
   void compileWrenCode(String code) => compileLuaCode(code);
 

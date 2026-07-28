@@ -4,6 +4,7 @@ import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
 import 'piano_roll_view.dart';
 import 'tracker_view.dart';
+import 'widgets/skeuomorphic_hardware_button.dart';
 
 class EditView extends StatelessWidget {
   final DawState dawState;
@@ -33,25 +34,64 @@ class EditView extends StatelessWidget {
                 style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
               ),
               const Spacer(),
-              Text('MODE: ', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textMuted, fontSize: 10)),
-              ChoiceChip(
-                label: Text('PIANO ROLL', style: DawTheme.getPrimaryFontStyle(fontSize: 10)),
-                selected: track.activeView == MusicViewType.pianoRoll,
-                selectedColor: DawTheme.primaryCyan,
-                onSelected: (_) {
-                  dawState.setTrackActiveView(track, MusicViewType.pianoRoll);
-                },
+              if (track.activeView == MusicViewType.pianoRoll) ...[
+                Text('SNAP: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 11)),
+                DropdownButton<double>(
+                  value: dawState.quantizeSnap,
+                  dropdownColor: DawTheme.panelBackground,
+                  underline: const SizedBox(),
+                  items: const [
+                    DropdownMenuItem(value: 0.5, child: Text('1/32', style: TextStyle(fontSize: 11))),
+                    DropdownMenuItem(value: 1.0, child: Text('1/16', style: TextStyle(fontSize: 11))),
+                    DropdownMenuItem(value: 2.0, child: Text('1/8', style: TextStyle(fontSize: 11))),
+                    DropdownMenuItem(value: 4.0, child: Text('1/4', style: TextStyle(fontSize: 11))),
+                    DropdownMenuItem(value: 0.0, child: Text('No Snap', style: TextStyle(fontSize: 11))),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) dawState.setQuantizeSnap(val);
+                  },
+                ),
+                const SizedBox(width: 12),
+              ] else if (track.activeView == MusicViewType.tracker) ...[
+                IconButton(
+                  icon: Icon(Icons.remove_circle_outline, color: DawTheme.textSecondary, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: 'Remove Tracker Column',
+                  onPressed: () => dawState.setTrackerColumns(track, track.trackerColumns - 1),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'COLS: ${track.trackerColumns}',
+                  style: DawTheme.getDisplayFontStyle(color: DawTheme.accentGold, fontWeight: FontWeight.bold, fontSize: 11),
+                ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: Icon(Icons.add_circle_outline, color: DawTheme.primaryCyan, size: 18),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  tooltip: 'Add Tracker Column',
+                  onPressed: () => dawState.setTrackerColumns(track, track.trackerColumns + 1),
+                ),
+                const SizedBox(width: 12),
+              ],
+              SkeuomorphicHardwareButton(
+                label: 'PIANO ROLL',
+                icon: Icons.piano,
+                isActive: track.activeView == MusicViewType.pianoRoll,
+                activeColor: DawTheme.primaryCyan,
+                onTap: () => dawState.setTrackActiveView(track, MusicViewType.pianoRoll),
+                height: 32,
               ),
               const SizedBox(width: 6),
-              ChoiceChip(
-                label: Text('TRACKER', style: DawTheme.getPrimaryFontStyle(fontSize: 10)),
-                selected: track.activeView == MusicViewType.tracker,
-                selectedColor: DawTheme.secondaryMagenta,
-                onSelected: (_) {
-                  dawState.setTrackActiveView(track, MusicViewType.tracker);
-                },
+              SkeuomorphicHardwareButton(
+                label: 'TRACKER',
+                icon: Icons.grid_on,
+                isActive: track.activeView == MusicViewType.tracker,
+                activeColor: DawTheme.secondaryMagenta,
+                onTap: () => dawState.setTrackActiveView(track, MusicViewType.tracker),
+                height: 32,
               ),
-
             ],
           ),
         ),

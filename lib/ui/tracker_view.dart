@@ -29,48 +29,6 @@ class _TrackerViewState extends State<TrackerView> {
 
     return Column(
       children: [
-        // Tracker Header Bar
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: DawTheme.panelHeader,
-          child: Row(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(color: track.color, shape: BoxShape.circle),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'TRACKER VIEW: ${track.name.toUpperCase()}',
-                style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-              const Spacer(),
-
-              // Column Add/Remove
-              IconButton(
-                icon: Icon(Icons.remove_circle_outline, color: DawTheme.textSecondary, size: 20),
-                tooltip: 'Remove Tracker Column',
-                onPressed: () {
-                  widget.dawState.setTrackerColumns(track, track.trackerColumns - 1);
-                },
-              ),
-              Text(
-                'COLS: $totalColumns',
-                style: DawTheme.getDisplayFontStyle(color: DawTheme.accentGold, fontWeight: FontWeight.bold, fontSize: 11),
-              ),
-              IconButton(
-                icon: Icon(Icons.add_circle_outline, color: DawTheme.primaryCyan, size: 20),
-                tooltip: 'Add Tracker Column',
-                onPressed: () {
-                  widget.dawState.setTrackerColumns(track, track.trackerColumns + 1);
-                },
-              ),
-            ],
-          ),
-        ),
-
-
         // Sub-channel Column Titles Header
         Container(
           color: DawTheme.controlBackground,

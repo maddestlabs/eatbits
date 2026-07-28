@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
-import 'widgets/eatbits_slider.dart';
+import 'widgets/skeuomorphic_hardware_button.dart';
+import 'widgets/skeuomorphic_hardware_knob.dart';
+import 'widgets/skeuomorphic_hardware_slider.dart';
 
 class MixerView extends StatefulWidget {
   final DawState dawState;
@@ -88,19 +90,18 @@ class _MixerViewState extends State<MixerView> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                RotatedBox(
-                  quarterTurns: 3,
-                  child: EatBitsSlider(
-                    value: dawState.masterVolume,
-                    min: 0.0,
-                    max: 1.5,
-                    defaultValue: 0.85,
-                    label: 'Master Volume',
-                    activeColor: DawTheme.primaryCyan,
-                    onChanged: (val) => dawState.setMasterVolume(val),
-                  ),
+                SkeuomorphicHardwareSlider(
+                  value: dawState.masterVolume,
+                  min: 0.0,
+                  max: 1.5,
+                  defaultValue: 0.85,
+                  label: 'Master Volume',
+                  activeColor: DawTheme.primaryCyan,
+                  orientation: Axis.vertical,
+                  length: 160.0,
+                  onChanged: (val) => dawState.setMasterVolume(val),
                 ),
-
+                const SizedBox(width: 6),
                 // Peak Meter
                 SizedBox(
                   width: 8,
@@ -168,74 +169,58 @@ class _MixerViewState extends State<MixerView> {
             ),
             const SizedBox(height: 6),
 
-            // Mute & Solo
+            // Mechanical Mute & Solo Push Buttons
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                GestureDetector(
+                SkeuomorphicHardwareButton(
+                  label: 'M',
+                  isActive: track.isMuted,
+                  activeColor: DawTheme.muteColor,
                   onTap: () => dawState.toggleMute(track),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: track.isMuted ? DawTheme.muteColor : DawTheme.panelHeader,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Text(
-                      'M',
-                      style: DawTheme.getPrimaryFontStyle(color: track.isMuted ? Colors.white : DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                  height: 28,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 ),
                 const SizedBox(width: 4),
-                GestureDetector(
+                SkeuomorphicHardwareButton(
+                  label: 'S',
+                  isActive: track.isSoloed,
+                  activeColor: DawTheme.soloColor,
                   onTap: () => dawState.toggleSolo(track),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: track.isSoloed ? DawTheme.soloColor : DawTheme.panelHeader,
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Text(
-                      'S',
-                      style: DawTheme.getPrimaryFontStyle(color: track.isSoloed ? Colors.black : DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
-                    ),
-                  ),
+                  height: 28,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 ),
               ],
             ),
 
             const SizedBox(height: 8),
 
-            // Pan Knob
-            Text('PAN', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textMuted, fontSize: 8)),
-            SizedBox(
-              height: 24,
-              child: EatBitsSlider(
-                value: track.pan,
-                min: -1.0,
-                max: 1.0,
-                defaultValue: 0.0,
-                label: '${track.name} Pan',
-                activeColor: track.color,
-                onChanged: (val) => dawState.setTrackPan(track, val),
-              ),
+            // Hardware Pan Rotary Knob
+            SkeuomorphicHardwareKnob(
+              value: track.pan,
+              min: -1.0,
+              max: 1.0,
+              defaultValue: 0.0,
+              size: 40.0,
+              accentColor: track.color,
+              onChanged: (val) => dawState.setTrackPan(track, val),
+              formatValue: (v) => v == 0 ? 'C' : (v < 0 ? 'L${(v.abs() * 100).toInt()}' : 'R${(v * 100).toInt()}'),
             ),
 
             const SizedBox(height: 8),
 
-            // Vertical Volume Fader
+            // Vertical Hardware Console Fader
             Expanded(
-              child: RotatedBox(
-                quarterTurns: 3,
-                child: EatBitsSlider(
-                  value: track.volume,
-                  min: 0.0,
-                  max: 1.5,
-                  defaultValue: 1.0,
-                  label: '${track.name} Volume',
-                  activeColor: track.color,
-                  onChanged: (val) => dawState.setTrackVolume(track, val),
-                ),
+              child: SkeuomorphicHardwareSlider(
+                value: track.volume,
+                min: 0.0,
+                max: 1.5,
+                defaultValue: 1.0,
+                label: '${track.name} Volume',
+                activeColor: track.color,
+                orientation: Axis.vertical,
+                length: 150.0,
+                onChanged: (val) => dawState.setTrackVolume(track, val),
               ),
             ),
 

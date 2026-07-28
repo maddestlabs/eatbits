@@ -31,6 +31,14 @@ class LuaCompilationResult {
 }
 
 class LuaEngine {
+  static double _tanh(double x) {
+    if (x > 20.0) return 1.0;
+    if (x < -20.0) return -1.0;
+    final ex = math.exp(x);
+    final enx = math.exp(-x);
+    return (ex - enx) / (ex + enx);
+  }
+
   static final RegExp _paramRegExp = RegExp(
     "Param\\.add\\(\\s*[\"']([^\"']+)[\"']\\s*,\\s*([\\d\\.-]+)\\s*,\\s*([\\d\\.-]+)\\s*,\\s*([\\d\\.-]+)\\s*\\)",
   );
@@ -121,6 +129,8 @@ class LuaEngine {
     required double freq,
     required int note,
     required Map<String, double> params,
+    int? targetMidiNote,
+    bool isSlide = false,
   }) {
     // 0. Procedural Kick Drum
     if (code.contains('ProceduralKick') || code.contains('StartFreq')) {
@@ -128,7 +138,7 @@ class LuaEngine {
       final endF = params['EndFreq'] ?? 42.0;
       final pDecay = params['PitchDecay'] ?? 0.035;
       final aDecay = params['AmpDecay'] ?? 0.35;
-      final click = params['Click'] ?? 0.5;
+      final click = params['Click'] ?? 0.0;
 
       final curFreq = endF + (startF - endF) * math.exp(-time / pDecay.clamp(0.005, 0.5));
       final subSine = math.sin(2.0 * math.pi * curFreq * time);
@@ -136,7 +146,19 @@ class LuaEngine {
       final clickTransient = (rnd.nextDouble() * 2.0 - 1.0) * math.exp(-time * 150.0) * click;
       final env = math.exp(-time / aDecay.clamp(0.01, 1.5));
 
-      final output = (subSine * 0.85 + clickTransient * 0.15) * env;
+      final rawOutput = (subSine * 0.85 + clickTransient * 0.15) * env;
+
+      // Smooth fade toward edge of kick duration so it doesn't clip/click at the end
+      final maxDuration = aDecay.clamp(0.1, 1.5) * 1.25;
+      final fadeStart = maxDuration - 0.08;
+      double edgeFade = 1.0;
+      if (time > fadeStart) {
+        final norm = ((maxDuration - time) / 0.08).clamp(0.0, 1.0);
+        edgeFade = 0.5 * (1.0 + math.cos(math.pi * (1.0 - norm)));
+      }
+      if (time >= maxDuration) edgeFade = 0.0;
+
+      final output = rawOutput * edgeFade;
       return (math.exp(output * 1.3) - math.exp(-output * 1.3)) / (math.exp(output * 1.3) + math.exp(-output * 1.3));
     }
 
@@ -149,44 +171,63 @@ class LuaEngine {
       final decay = params['Decay'] ?? 0.28;
       final accent = params['Accent'] ?? 0.6;
       final drive = params['Overdrive'] ?? 0.3;
+      final slideParam = params['Slide'] ?? 0.0;
 
       if (freq <= 0) return 0.0;
 
-      // Oscillators: 303 Sawtooth & Square
-      final phase = time * freq;
-      final normPhase = phase - phase.floorToDouble();
-      final saw = 2.0 * normPhase - 1.0;
-      final sqr = normPhase < 0.5 ? 0.75 : -0.75;
-      final osc = waveType < 0.5 ? saw : sqr;
+      // Pitch glide / Portamento logic for simultaneous / polyphonic notes
+      double currentFreq = freq;
+      if (targetMidiNote != null && targetMidiNote > 0) {
+        final targetFreq = 440.0 * math.pow(2.0, (targetMidiNote - 69) / 12.0);
+        currentFreq = targetFreq + (freq - targetFreq) * math.exp(-time / 0.065);
+      } else if (isSlide || slideParam > 0.5) {
+        final targetFreq = freq * 1.5; // Default half-octave slide if target not specified
+        currentFreq = targetFreq + (freq - targetFreq) * math.exp(-time / 0.065);
+      }
 
-      // Accent boost logic
+      // Authentic 303 Oscillators: Leaky Integrator Sawtooth & Differentiated Square
+      final phase = time * currentFreq;
+      final normPhase = phase - phase.floorToDouble();
+      final sawRaw = 2.0 * normPhase - 1.0;
+      final sawHP = sawRaw - 0.85 * math.exp(-time * 15.0);
+      final sqrRaw = normPhase < 0.48 ? 0.75 : -0.75;
+      final osc = waveType < 0.5 ? sawHP : sqrRaw;
+
+      // Accent boost logic & decay dynamics
       final envBoost = 1.0 + (accent * 0.8);
       final envDecay = (decay / envBoost).clamp(0.02, 2.0);
       final env = math.exp(-time / envDecay);
 
-      // 24dB Diode Ladder Filter cutoff calculation
+      // 4-Pole 24dB Diode Ladder Filter cutoff & non-linear saturation
       final modCutoff = (cutoff + (envMod * env * 5500.0 * envBoost)).clamp(40.0, 16000.0);
+      final fNorm = (modCutoff / 44100.0 * math.pi * 2.0).clamp(0.005, 0.85);
+      final kRes = (res / 16.0 * 3.8).clamp(0.0, 3.95);
 
-      // Filter simulation
-      final f = (modCutoff / 44100.0 * 2.0 * math.pi).clamp(0.01, 0.99);
-      final q = (res / 16.0 * 6.0).clamp(0.5, 12.0);
-      double filtered = osc / (1.0 + f * q);
+      final feedback = kRes * _tanh(osc * 0.5);
+      final inputWithRes = _tanh(osc - feedback);
 
-      // Non-linear overdrive stage
+      final stage1 = inputWithRes * fNorm / (1.0 + fNorm);
+      final stage2 = stage1 * fNorm / (1.0 + fNorm);
+      final stage3 = stage2 * fNorm / (1.0 + fNorm);
+      final stage4 = stage3 * fNorm / (1.0 + fNorm);
+      final filtered = stage4 * 4.0;
+
+      // Post-VCF 150Hz High-Pass filter & overdrive saturation
+      final highpassed = filtered - (filtered * math.exp(-time * 40.0));
+      double saturated = highpassed;
       if (drive > 0.05) {
-        final gain = 1.0 + (drive * 4.0);
-        final x = filtered * gain;
-        filtered = (math.exp(x) - math.exp(-x)) / (math.exp(x) + math.exp(-x)); // tanh saturation
+        final gain = 1.0 + (drive * 3.5);
+        saturated = _tanh(highpassed * gain);
       }
 
-      return (filtered * env * 0.85).clamp(-1.0, 1.0);
+      return (saturated * env * (1.0 + accent * 0.3)).clamp(-1.0, 1.0);
     }
 
     // 2. Procedural Snare Drum
     else if (code.contains('ProceduralSnare') || code.contains('Snappy')) {
       final toneFreq = params['ToneFreq'] ?? 185.0;
       final snappy = params['Snappy'] ?? 0.65;
-      final decay = params['Decay'] ?? 0.22;
+      final decay = params['Decay'] ?? 0.1;
 
       final sweepFreq = toneFreq * math.exp(-time * 40.0);
       final body = math.sin(2.0 * math.pi * sweepFreq * time) * math.exp(-time * 25.0);
@@ -201,10 +242,12 @@ class LuaEngine {
     // 3. Procedural Hi-Hat
     else if (code.contains('ProceduralHiHat') || code.contains('Metallic')) {
       final cutoff = params['Cutoff'] ?? 8500.0;
-      final decay = params['Decay'] ?? 0.09;
+      final decay = params['Decay'] ?? 0.0;
       final metallic = params['Metallic'] ?? 0.4;
 
-      final env = math.exp(-time / decay.clamp(0.01, 1.0));
+      final env = decay <= 0.001
+          ? (time < 0.015 ? math.exp(-time / 0.015) : 0.0)
+          : math.exp(-time / decay.clamp(0.001, 1.0));
 
       final ring = math.sin(2.0 * math.pi * 800.0 * time) *
                    math.sin(2.0 * math.pi * 1340.0 * time) *

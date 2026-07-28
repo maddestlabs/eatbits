@@ -77,7 +77,7 @@ return EatbitsAcidPreset
       id: 'acid_303',
       name: 'TB-303 Acid Synth (JC-303)',
       category: 'synth',
-      description: 'Roland TB-303 emulation modelled after midilab/jc303 with 24dB Diode Ladder filter, Accent, Slide, EnvMod, and Overdrive.',
+      description: 'Roland TB-303 emulation modelled after midilab/jc303 with 24dB 4-Pole Diode Ladder filter, leaky integrator saw/square oscillators, Accent, Slide portamento, and Overdrive.',
       code: '''
 -- --- JC-303 Roland TB-303 Acid Engine (Lua) ---
 local Acid303 = {}
@@ -93,7 +93,7 @@ function Acid303.init()
   Param.add("Overdrive", 0.0, 1.0, 0.3)
 end
 
-function Acid303.process(time, freq, note, params)
+function Acid303.process(time, freq, note, params, targetNote, isSlide)
   local waveType = params["Waveform"] or 0.0
   local cutoff = params["Cutoff"] or 1600.0
   local res = params["Resonance"] or 8.0
@@ -101,29 +101,43 @@ function Acid303.process(time, freq, note, params)
   local decay = params["Decay"] or 0.28
   local accent = params["Accent"] or 0.6
   local drive = params["Overdrive"] or 0.3
+  local slideParam = params["Slide"] or 0.4
 
-  -- JC-303 Dual Waveform: Sawtooth & Square with 303 Highpass
-  local phase = time * freq
+  -- Pitch glide / Portamento logic for simultaneous / polyphonic notes
+  local currentFreq = freq
+  if targetNote and targetNote > 0 then
+    local targetFreq = 440.0 * (2.0 ^ ((targetNote - 69) / 12.0))
+    currentFreq = targetFreq + (freq - targetFreq) * math.exp(-time / 0.065)
+  elseif isSlide or slideParam > 0.5 then
+    local targetFreq = freq * 1.5
+    currentFreq = targetFreq + (freq - targetFreq) * math.exp(-time / 0.065)
+  end
+
+  -- JC-303 Oscillators: Leaky Integrator Sawtooth & Differentiated Square
+  local phase = time * currentFreq
   local normPhase = phase - math.floor(phase)
-  local saw = 2.0 * normPhase - 1.0
-  local sqr = normPhase < 0.5 and 0.75 or -0.75
-  local osc = waveType < 0.5 and saw or sqr
+  local sawRaw = 2.0 * normPhase - 1.0
+  local sawHP = sawRaw - 0.85 * math.exp(-time * 15.0)
+  local sqrRaw = normPhase < 0.48 and 0.75 or -0.75
+  local osc = waveType < 0.5 and sawHP or sqrRaw
 
-  -- Accent envelope boost
+  -- Accent envelope dynamics
   local envBoost = 1.0 + (accent * 0.8)
   local envDecay = decay / envBoost
   local env = math.exp(-time / envDecay)
 
-  -- 24dB 4-Pole Diode Ladder Filter simulation
+  -- 24dB 4-Pole Diode Ladder Filter simulation with feedback saturation
   local modCutoff = cutoff + (envMod * env * 5500.0 * envBoost)
   local filtered = DSP.lowpass(osc, modCutoff, res)
 
-  -- Overdrive saturation
+  -- Post-VCF 150Hz Highpass filter & overdrive saturation
+  local highpassed = filtered - (filtered * math.exp(-time * 40.0))
+  local output = highpassed
   if drive > 0.05 then
-    filtered = math.tanh(filtered * (1.0 + drive * 4.0))
+    output = math.tanh(highpassed * (1.0 + drive * 3.5))
   end
 
-  return filtered * env * 0.85
+  return output * env * (1.0 + accent * 0.3)
 end
 
 return Acid303
@@ -135,7 +149,7 @@ return Acid303
       id: 'procedural_kick',
       name: 'Procedural Kick Drum',
       category: 'drum',
-      description: 'Synthesized punchy sub kick drum with exponential pitch sweep and transient click.',
+      description: 'Synthesized punchy sub kick drum with exponential pitch sweep and smooth edge fade.',
       code: '''
 -- --- Procedural Sub Kick Drum Script (Lua) ---
 local ProceduralKick = {}
@@ -145,7 +159,7 @@ function ProceduralKick.init()
   Param.add("EndFreq", 30.0, 60.0, 42.0)
   Param.add("PitchDecay", 0.01, 0.1, 0.035)
   Param.add("AmpDecay", 0.1, 0.6, 0.35)
-  Param.add("Click", 0.0, 1.0, 0.5)
+  Param.add("Click", 0.0, 1.0, 0.0)
 end
 
 function ProceduralKick.process(time, freq, note, params)
@@ -153,7 +167,7 @@ function ProceduralKick.process(time, freq, note, params)
   local endF = params["EndFreq"] or 42.0
   local pDecay = params["PitchDecay"] or 0.035
   local aDecay = params["AmpDecay"] or 0.35
-  local click = params["Click"] or 0.5
+  local click = params["Click"] or 0.0
 
   -- Pitch sweep envelope
   local curFreq = endF + (startF - endF) * math.exp(-time / pDecay)
@@ -164,8 +178,11 @@ function ProceduralKick.process(time, freq, note, params)
   local clickTransient = (math.random() * 2.0 - 1.0) * math.exp(-time * 150.0) * click
 
   local env = math.exp(-time / aDecay)
-  local output = (subSine * 0.8 + clickTransient * 0.2) * env
-  return math.tanh(output * 1.3)
+  local rawOutput = (subSine * 0.85 + clickTransient * 0.15) * env
+
+  -- Smooth fade toward edge of kick duration to prevent clipping/pops at boundary
+  local edgeFade = DSP.fadeEdge(rawOutput, time, aDecay * 1.25, 0.08)
+  return math.tanh(edgeFade * 1.3)
 end
 
 return ProceduralKick
@@ -185,13 +202,13 @@ local ProceduralSnare = {}
 function ProceduralSnare.init()
   Param.add("ToneFreq", 100.0, 300.0, 185.0)
   Param.add("Snappy", 0.0, 1.0, 0.65)
-  Param.add("Decay", 0.05, 0.5, 0.22)
+  Param.add("Decay", 0.05, 0.5, 0.1)
 end
 
 function ProceduralSnare.process(time, freq, note, params)
   local toneFreq = params["ToneFreq"] or 185.0
   local snappy = params["Snappy"] or 0.65
-  local decay = params["Decay"] or 0.22
+  local decay = params["Decay"] or 0.1
 
   -- Body tone (pitch sweep)
   local sweepFreq = toneFreq * math.exp(-time * 40.0)
@@ -221,16 +238,21 @@ local ProceduralHiHat = {}
 
 function ProceduralHiHat.init()
   Param.add("Cutoff", 4000.0, 14000.0, 8500.0)
-  Param.add("Decay", 0.02, 0.4, 0.09)
+  Param.add("Decay", 0.0, 0.4, 0.0)
   Param.add("Metallic", 0.0, 1.0, 0.4)
 end
 
 function ProceduralHiHat.process(time, freq, note, params)
   local cutoff = params["Cutoff"] or 8500.0
-  local decay = params["Decay"] or 0.09
+  local decay = params["Decay"] or 0.0
   local metallic = params["Metallic"] or 0.4
 
-  local env = math.exp(-time / decay)
+  local env = 0.0
+  if decay <= 0.001 then
+    env = time < 0.015 and math.exp(-time / 0.015) or 0.0
+  else
+    env = math.exp(-time / decay)
+  end
 
   -- Metallic ring oscillator cluster (6 square waves)
   local ring = math.sin(2.0 * math.pi * 800.0 * time) *

@@ -3,6 +3,9 @@ import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
 import 'widgets/eatbits_slider.dart';
+import 'widgets/skeuomorphic_hardware_knob.dart';
+import 'widgets/grungy_rack_panel.dart';
+import 'widgets/glowing_nixie_display.dart';
 
 class TrackInspectorView extends StatelessWidget {
   final DawState dawState;
@@ -150,7 +153,7 @@ class TrackInspectorView extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Dynamic Lua Script Parameters (Exposed by Code)
-          if (track.type == TrackType.luaScript || track.luaParams.isNotEmpty) ...[
+          if ((track.type == TrackType.luaScript || track.luaParams.isNotEmpty) && dawState.compilationResult.params.isNotEmpty) ...[
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -172,26 +175,28 @@ class TrackInspectorView extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  ...track.luaParams.entries.map((entry) {
+                  ...dawState.compilationResult.params.map((paramDef) {
+                    final currentVal = (track.luaParams[paramDef.name] ?? paramDef.defaultValue).clamp(paramDef.min, paramDef.max);
+
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8.0),
                       child: Row(
                         children: [
-                          SizedBox(width: 100, child: Text(entry.key, style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
+                          SizedBox(width: 100, child: Text(paramDef.name, style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
                           Expanded(
                             child: EatBitsSlider(
-                              value: entry.value,
-                              min: 0.0,
-                              max: 10000.0,
-                              defaultValue: entry.value,
-                              label: entry.key,
+                              value: currentVal,
+                              min: paramDef.min,
+                              max: paramDef.max,
+                              defaultValue: paramDef.defaultValue,
+                              label: paramDef.name,
                               activeColor: DawTheme.accentGreen,
                               onChanged: (val) {
-                                dawState.updateLuaParam(entry.key, val);
+                                dawState.updateLuaParam(paramDef.name, val);
                               },
                             ),
                           ),
-                          SizedBox(width: 55, child: Text(entry.value.toStringAsFixed(1), style: DawTheme.getDisplayFontStyle(color: DawTheme.accentGreen, fontWeight: FontWeight.bold, fontSize: 11))),
+                          SizedBox(width: 55, child: Text(currentVal.toStringAsFixed(1), style: DawTheme.getDisplayFontStyle(color: DawTheme.accentGreen, fontWeight: FontWeight.bold, fontSize: 11))),
                         ],
                       ),
                     );
@@ -228,6 +233,91 @@ class TrackInspectorView extends StatelessWidget {
                   value: track.fxRack.any((f) => f.name == 'TubeDistortion'),
                   activeColor: DawTheme.secondaryMagenta,
                   onChanged: (val) => dawState.toggleDistortion(track, val),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Vintage Skeuomorphic Hardware Rack Unit (SILT / PunchBOX Style)
+          GrungyRackPanel(
+            title: 'Analog Hardware DSP Unit - SILT 808',
+            subtitle: 'Real-Time Skeuomorphic Rotary Controls & Nixie Segment Readouts',
+            accentColor: DawTheme.currentPreset == DawThemePreset.grungyHardware
+                ? const Color(0xFFFF8C00)
+                : track.color,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    GlowingNixieDisplay(
+                      label: 'GAIN OUTPUT',
+                      valueText: '${(track.volume * 100).toInt()}',
+                      unit: '%',
+                      glowColor: DawTheme.currentPreset == DawThemePreset.grungyHardware
+                          ? const Color(0xFFFF8C00)
+                          : track.color,
+                    ),
+                    GlowingNixieDisplay(
+                      label: 'STEREO POSITION',
+                      valueText: track.pan == 0
+                          ? 'CENTER'
+                          : (track.pan < 0 ? 'L${(track.pan.abs() * 100).toInt()}' : 'R${(track.pan * 100).toInt()}'),
+                      glowColor: DawTheme.currentPreset == DawThemePreset.grungyHardware
+                          ? const Color(0xFFFF8C00)
+                          : track.color,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    SkeuomorphicHardwareKnob(
+                      label: 'VOL GAIN',
+                      value: track.volume,
+                      min: 0.0,
+                      max: 1.5,
+                      defaultValue: 1.0,
+                      accentColor: DawTheme.currentPreset == DawThemePreset.grungyHardware
+                          ? const Color(0xFFFF8C00)
+                          : track.color,
+                      onChanged: (val) => dawState.setTrackVolume(track, val),
+                      formatValue: (v) => '${(v * 100).toInt()}%',
+                    ),
+                    SkeuomorphicHardwareKnob(
+                      label: 'PAN BALANCE',
+                      value: track.pan,
+                      min: -1.0,
+                      max: 1.0,
+                      defaultValue: 0.0,
+                      accentColor: DawTheme.currentPreset == DawThemePreset.grungyHardware
+                          ? const Color(0xFFFF8C00)
+                          : track.color,
+                      onChanged: (val) => dawState.setTrackPan(track, val),
+                      formatValue: (v) => v == 0 ? 'CTR' : (v < 0 ? 'L${(v.abs() * 100).toInt()}' : 'R${(v * 100).toInt()}'),
+                    ),
+                    if (dawState.compilationResult.params.isNotEmpty) ...[
+                      SkeuomorphicHardwareKnob(
+                        label: dawState.compilationResult.params.first.name.toUpperCase(),
+                        value: (track.luaParams[dawState.compilationResult.params.first.name] ??
+                                dawState.compilationResult.params.first.defaultValue)
+                            .clamp(
+                              dawState.compilationResult.params.first.min,
+                              dawState.compilationResult.params.first.max,
+                            ),
+                        min: dawState.compilationResult.params.first.min,
+                        max: dawState.compilationResult.params.first.max,
+                        defaultValue: dawState.compilationResult.params.first.defaultValue,
+                        accentColor: DawTheme.accentGreen,
+                        onChanged: (val) {
+                          dawState.updateLuaParam(dawState.compilationResult.params.first.name, val);
+                        },
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),

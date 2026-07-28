@@ -269,6 +269,8 @@ class AudioEngine {
     required double velocity,
     double durationSec = 0.4,
     double? scheduledTime,
+    int? targetMidiNote,
+    bool isSlide = false,
   }) {
     if (!kIsWeb || _audioContext == null) return;
     ensureContextRunning();
@@ -310,6 +312,8 @@ class AudioEngine {
           freq: freq,
           note: midiNote,
           params: track.luaParams,
+          targetMidiNote: targetMidiNote,
+          isSlide: isSlide,
         );
       }
     } else {

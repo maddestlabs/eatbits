@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/daw_theme.dart';
+import 'skeuomorphic_hardware_slider.dart';
 
 class EatBitsSlider extends StatelessWidget {
   final double value;
@@ -29,24 +30,15 @@ class EatBitsSlider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onLongPress: () => _showManualEditDialog(context),
-      child: SliderTheme(
-        data: SliderTheme.of(context).copyWith(
-          trackHeight: 3.0,
-          thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0),
-          overlayShape: const RoundSliderOverlayShape(overlayRadius: 12.0),
-        ),
-        child: Slider(
-          value: value.clamp(min, max),
-          min: min,
-          max: max,
-          divisions: divisions,
-          activeColor: activeColor ?? DawTheme.primaryCyan,
-          inactiveColor: inactiveColor ?? Colors.white10,
-          onChanged: onChanged,
-        ),
-      ),
+    return SkeuomorphicHardwareSlider(
+      value: value,
+      min: min,
+      max: max,
+      defaultValue: defaultValue,
+      label: label,
+      onChanged: onChanged,
+      activeColor: activeColor ?? DawTheme.primaryCyan,
+      formatValue: formatValue,
     );
   }
 

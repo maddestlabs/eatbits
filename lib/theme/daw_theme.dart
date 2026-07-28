@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 enum DawThemePreset {
-  cyberpunkCyan,  // EatBits Default Neon Cyan & Dark Obsidian
-  midnightOled,   // Pitch Black OLED & Electric Cyan
+  cyberpunkCyan,   // EatBits Default Neon Cyan & Dark Obsidian
+  midnightOled,    // Pitch Black OLED & Electric Cyan
   synthwavePurple, // Deep Purple & Neon Pink
-  studioLight     // Professional Studio Light Mode
+  studioLight,     // Professional Studio Light Mode
+  grungyHardware   // Grungy Vintage Realistic Hardware (SILT / PunchBOX2 Style)
 }
 
 class DawTheme {
@@ -40,6 +41,8 @@ class DawTheme {
         return const Color(0xFF130024);
       case DawThemePreset.studioLight:
         return const Color(0xFFF4F6F9); // Crisp clean light background
+      case DawThemePreset.grungyHardware:
+        return const Color(0xFF141210); // Weathered vintage rack dark background
       case DawThemePreset.cyberpunkCyan:
       default:
         return const Color(0xFF0B0E14);
@@ -54,6 +57,8 @@ class DawTheme {
         return const Color(0xFF22003B);
       case DawThemePreset.studioLight:
         return const Color(0xFFFFFFFF); // Pure white panel
+      case DawThemePreset.grungyHardware:
+        return const Color(0xFF24211D); // Aged metal chassis surface
       case DawThemePreset.cyberpunkCyan:
       default:
         return const Color(0xFF131822);
@@ -68,6 +73,8 @@ class DawTheme {
         return const Color(0xFF320056);
       case DawThemePreset.studioLight:
         return const Color(0xFFE2E8F0); // Light grey header
+      case DawThemePreset.grungyHardware:
+        return const Color(0xFF332F2A); // Dark brushed metallic header
       case DawThemePreset.cyberpunkCyan:
       default:
         return const Color(0xFF1A212F);
@@ -82,6 +89,8 @@ class DawTheme {
         return const Color(0xFF430072);
       case DawThemePreset.studioLight:
         return const Color(0xFFCBD5E1); // Soft control fill
+      case DawThemePreset.grungyHardware:
+        return const Color(0xFF181614); // Recessed control well background
       case DawThemePreset.cyberpunkCyan:
       default:
         return const Color(0xFF242E42);
@@ -94,6 +103,8 @@ class DawTheme {
         return const Color(0xFFFF007F); // Neon Pink highlight
       case DawThemePreset.studioLight:
         return const Color(0xFF007799); // Deep Teal for high contrast
+      case DawThemePreset.grungyHardware:
+        return const Color(0xFFFF8C00); // Warm Amber / Vintage Nixie Glow
       case DawThemePreset.midnightOled:
       case DawThemePreset.cyberpunkCyan:
       default:

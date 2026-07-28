@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../theme/daw_theme.dart';
-
+import 'widgets/skeuomorphic_hardware_button.dart';
+import 'widgets/glowing_nixie_display.dart';
 
 class TransportHeader extends StatelessWidget {
   final DawState dawState;
@@ -10,93 +11,78 @@ class TransportHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 64,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: DawTheme.panelHeader,
-        border: const Border(bottom: BorderSide(color: Color(0xFF2B3245), width: 1)),
-      ),
-      child: Row(
-        children: [
-          // EatBits Top-Left App Icon with Settings Menu Trigger
-          GestureDetector(
-            onTap: () => _showSettingsDialog(context),
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: DawTheme.primaryCyan.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: DawTheme.primaryCyan, width: 1.5),
-                boxShadow: [
-                  BoxShadow(color: DawTheme.primaryCyan.withOpacity(0.3), blurRadius: 6),
-                ],
-              ),
-              child: const EatBitsMonsterIcon(size: 24),
+    final isGrungy = DawTheme.currentPreset == DawThemePreset.grungyHardware;
+
+    return CustomPaint(
+      painter: _HardwareNoisePainter(isGrungy: isGrungy),
+      child: Container(
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: isGrungy ? const Color(0xFF2B2621).withOpacity(0.9) : DawTheme.panelHeader,
+          border: Border(
+            bottom: BorderSide(
+              color: isGrungy ? const Color(0xFF4A423A) : const Color(0xFF2B3245),
+              width: 1.5,
             ),
           ),
-
-          const SizedBox(width: 12),
-
-          // Transport Control: Play / Stop Toggle Button
-          IconButton(
-            onPressed: dawState.isPlaying ? dawState.stop : dawState.togglePlay,
-            icon: Icon(
-              dawState.isPlaying ? Icons.stop_circle : Icons.play_circle_fill,
-              color: dawState.isPlaying ? DawTheme.muteColor : DawTheme.primaryCyan,
-              size: 34,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.4),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
             ),
-            tooltip: dawState.isPlaying ? 'Stop' : 'Play',
-          ),
+          ],
+        ),
+        child: Row(
+          children: [
+            // Mechanical App Settings & Logo Button with EatBits Monster Icon
+            SkeuomorphicHardwareButton(
+              customChild: const EatBitsMonsterIcon(size: 22),
+              isActive: false,
+              activeColor: DawTheme.primaryCyan,
+              onTap: () => _showSettingsDialog(context),
+              height: 38,
+            ),
 
-          const SizedBox(width: 8),
+            const SizedBox(width: 10),
 
-          // BPM & Tap Tempo (Tap + Hold to open manual edit dialog)
-          GestureDetector(
-            onLongPress: () => _showBpmEditDialog(context),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: DawTheme.controlBackground,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: Colors.white10),
-              ),
+            // Transport Play / Stop Mechanical Button
+            SkeuomorphicHardwareButton(
+              label: dawState.isPlaying ? 'STOP' : 'PLAY',
+              icon: dawState.isPlaying ? Icons.stop : Icons.play_arrow,
+              isActive: dawState.isPlaying,
+              activeColor: dawState.isPlaying ? DawTheme.muteColor : const Color(0xFF00FF66),
+              onTap: dawState.isPlaying ? dawState.stop : dawState.togglePlay,
+              height: 38,
+            ),
+
+            const SizedBox(width: 10),
+
+            // BPM Glowing Nixie Display & Tap Tempo Button
+            GestureDetector(
+              onLongPress: () => _showBpmEditDialog(context),
               child: Row(
                 children: [
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text('BPM', style: TextStyle(color: DawTheme.textSecondary, fontSize: 8)),
-                      Text(
-                        dawState.bpm.toStringAsFixed(0),
-                        style: DawTheme.getDisplayFontStyle(
-                          color: DawTheme.accentGold,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ],
+                  GlowingNixieDisplay(
+                    label: '',
+                    valueText: dawState.bpm.toStringAsFixed(0),
+                    unit: 'BPM',
+                    fontSize: 14,
+                    glowColor: DawTheme.accentGold,
                   ),
                   const SizedBox(width: 6),
-                  InkWell(
+                  SkeuomorphicHardwareButton(
+                    label: 'TAP',
+                    isActive: false,
+                    activeColor: DawTheme.accentGold,
                     onTap: dawState.tapTempo,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: DawTheme.accentGold.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(4),
-                        border: Border.all(color: DawTheme.accentGold.withOpacity(0.6)),
-                      ),
-                      child: const Text(
-                        'TAP',
-                        style: TextStyle(color: DawTheme.accentGold, fontSize: 9, fontWeight: FontWeight.bold),
-                      ),
-                    ),
+                    height: 32,
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   ),
                 ],
               ),
             ),
-          ),
 
           const Spacer(),
 
@@ -123,8 +109,9 @@ class TransportHeader extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   void _showSettingsDialog(BuildContext context) {
     showDialog(
@@ -162,6 +149,7 @@ class TransportHeader extends StatelessWidget {
                   if (preset == DawThemePreset.midnightOled) title = 'Midnight OLED (Pitch Black)';
                   if (preset == DawThemePreset.synthwavePurple) title = 'Synthwave Neon (Pink & Purple)';
                   if (preset == DawThemePreset.studioLight) title = 'Studio Light Mode';
+                  if (preset == DawThemePreset.grungyHardware) title = 'Grungy Vintage Hardware (SILT / Analog Rack)';
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 6),
@@ -385,4 +373,38 @@ class _EatBitsMonsterPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _HardwareNoisePainter extends CustomPainter {
+  final bool isGrungy;
+
+  _HardwareNoisePainter({required this.isGrungy});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (!isGrungy) return;
+
+    final grainPaint = Paint()
+      ..color = const Color(0xFF5A5044).withOpacity(0.08)
+      ..strokeWidth = 1.0;
+
+    // Horizontal Brushed Steel Grain Lines
+    for (double y = 2.0; y < size.height; y += 3.5) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), grainPaint);
+    }
+
+    // Subtle Noise Speckles
+    final dotPaint = Paint()..color = const Color(0xFF8C7E6C).withOpacity(0.12);
+    final darkDotPaint = Paint()..color = Colors.black.withOpacity(0.2);
+
+    for (double x = 4.0; x < size.width; x += 14.0) {
+      final y1 = (x * 7.3) % size.height;
+      final y2 = (x * 13.1) % size.height;
+      canvas.drawCircle(Offset(x, y1), 0.8, dotPaint);
+      canvas.drawCircle(Offset(x + 5, y2), 1.0, darkDotPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _HardwareNoisePainter oldDelegate) => oldDelegate.isGrungy != isGrungy;
 }

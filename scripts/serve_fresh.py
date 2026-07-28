@@ -68,6 +68,7 @@ def build_flutter_web(wasm=False, profile=False):
 
 def main():
     parser = argparse.ArgumentParser(description="Rebuild Flutter Web and serve on a fresh random port with no-cache headers.")
+    parser.add_argument("--port", type=int, default=0, help="Port number to listen on (0 for random)")
     parser.add_argument("--no-build", action="store_true", help="Skip rebuilding Flutter web and only start server")
     parser.add_argument("--wasm", action="store_true", help="Build with --wasm flag")
     parser.add_argument("--profile", action="store_true", help="Build with --profile flag")
@@ -93,7 +94,7 @@ def main():
         '.css': 'text/css',
     })
 
-    port = find_random_port()
+    port = args.port if args.port > 0 else find_random_port()
     url = f"http://localhost:{port}"
 
     # Save PID
