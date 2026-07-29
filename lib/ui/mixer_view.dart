@@ -23,48 +23,22 @@ class _MixerViewState extends State<MixerView> {
   Widget build(BuildContext context) {
     final pattern = widget.dawState.activePattern;
 
-    return Column(
-      children: [
-        // Sub-header bar
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          color: DawTheme.panelHeader,
-          child: Row(
-            children: [
-              Text(
-                'MULTI-CHANNEL AUDIO MIXER & FX RACK',
-                style: TextStyle(
-                  color: DawTheme.textSecondary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ],
-          ),
-        ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Master Channel Strip
+          _buildMasterChannelStrip(widget.dawState),
+          VerticalDivider(color: DawTheme.panelHeader, width: 24, thickness: 1.5),
 
-        // Mixer Channel Fader Strips
-        Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.all(12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Master Channel Strip
-                _buildMasterChannelStrip(widget.dawState),
-                const VerticalDivider(color: Color(0xFF2B3245), width: 24, thickness: 1.5),
-
-                // Individual Track Strips
-                ...List.generate(pattern.tracks.length, (tIdx) {
-                  return _buildTrackStrip(context, widget.dawState, pattern.tracks[tIdx], tIdx);
-                }),
-              ],
-            ),
-          ),
-        ),
-      ],
+          // Individual Track Strips
+          ...List.generate(pattern.tracks.length, (tIdx) {
+            return _buildTrackStrip(context, widget.dawState, pattern.tracks[tIdx], tIdx);
+          }),
+        ],
+      ),
     );
   }
 

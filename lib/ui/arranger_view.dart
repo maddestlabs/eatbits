@@ -136,7 +136,7 @@ class _ArrangerViewState extends State<ArrangerView> {
                                   color: isSelected ? DawTheme.controlBackground : DawTheme.panelBackground,
                                   border: Border(
                                     left: BorderSide(color: track.color, width: 4),
-                                    bottom: const BorderSide(color: Color(0xFF1B202D), width: 1),
+                                    bottom: BorderSide(color: DawTheme.panelHeader, width: 1),
                                   ),
                                 ),
                                 child: Column(
@@ -305,7 +305,7 @@ class _ArrangerViewState extends State<ArrangerView> {
                                       margin: const EdgeInsets.only(bottom: 2),
                                       decoration: BoxDecoration(
                                         color: DawTheme.backgroundDark,
-                                        border: const Border(bottom: BorderSide(color: Color(0xFF1B202D), width: 1)),
+                                        border: Border(bottom: BorderSide(color: DawTheme.panelHeader, width: 1)),
                                       ),
                                       child: Stack(
                                         children: [

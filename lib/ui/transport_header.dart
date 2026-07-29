@@ -3,6 +3,7 @@ import '../models/daw_state.dart';
 import '../theme/daw_theme.dart';
 import 'widgets/skeuomorphic_hardware_button.dart';
 import 'widgets/glowing_nixie_display.dart';
+import 'widgets/compact_value_dialog.dart';
 
 class TransportHeader extends StatelessWidget {
   final DawState dawState;
@@ -13,41 +14,43 @@ class TransportHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final isGrungy = DawTheme.currentPreset == DawThemePreset.grungyHardware;
 
-    return CustomPaint(
-      painter: _HardwareNoisePainter(isGrungy: isGrungy),
-      child: Container(
-        height: 64,
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: isGrungy ? const Color(0xFF2B2621).withOpacity(0.9) : DawTheme.panelHeader,
-          border: Border(
-            bottom: BorderSide(
-              color: isGrungy ? const Color(0xFF4A423A) : const Color(0xFF2B3245),
-              width: 1.5,
-            ),
+    return Container(
+      height: 64,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isGrungy ? const Color(0xFF24201C) : DawTheme.panelHeader,
+        border: Border(
+          bottom: BorderSide(
+            color: isGrungy ? const Color(0xFF4A423A) : const Color(0xFF2B3245),
+            width: 1.5,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
         child: Row(
           children: [
-            // Mechanical App Settings & Logo Button with EatBits Monster Icon
-            SkeuomorphicHardwareButton(
-              customChild: const EatBitsMonsterIcon(size: 22),
-              isActive: false,
-              activeColor: DawTheme.primaryCyan,
-              onTap: () => _showSettingsDialog(context),
-              height: 38,
+            // EatBits Monster Icon drawn directly on background
+            Tooltip(
+              message: 'Eatbits Settings',
+              child: InkWell(
+                onTap: () => _showSettingsDialog(context),
+                borderRadius: BorderRadius.circular(6),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                  child: EatBitsMonsterIcon(size: 28),
+                ),
+              ),
             ),
 
             const SizedBox(width: 10),
 
-            // Transport Play / Stop Mechanical Button
+            // Transport Play / Stop Mechanical Button (no LED dot)
             SkeuomorphicHardwareButton(
               label: dawState.isPlaying ? 'STOP' : 'PLAY',
               icon: dawState.isPlaying ? Icons.stop : Icons.play_arrow,
@@ -55,11 +58,12 @@ class TransportHeader extends StatelessWidget {
               activeColor: dawState.isPlaying ? DawTheme.muteColor : const Color(0xFF00FF66),
               onTap: dawState.isPlaying ? dawState.stop : dawState.togglePlay,
               height: 38,
+              showLed: false,
             ),
 
             const SizedBox(width: 10),
 
-            // BPM Glowing Nixie Display & Tap Tempo Button
+            // BPM Glowing Nixie Display & Tap Tempo Button (no LED dot)
             GestureDetector(
               onLongPress: () => _showBpmEditDialog(context),
               child: Row(
@@ -79,6 +83,7 @@ class TransportHeader extends StatelessWidget {
                     onTap: dawState.tapTempo,
                     height: 32,
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    showLed: false,
                   ),
                 ],
               ),
@@ -109,9 +114,8 @@ class TransportHeader extends StatelessWidget {
           ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
 
   void _showSettingsDialog(BuildContext context) {
     showDialog(
@@ -218,80 +222,18 @@ class TransportHeader extends StatelessWidget {
   }
 
   void _showBpmEditDialog(BuildContext context) {
-    final controller = TextEditingController(text: dawState.bpm.toStringAsFixed(0));
-    showDialog(
+    showCompactValueEditDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: DawTheme.panelBackground,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Colors.white10),
-          ),
-          title: Text(
-            'Edit BPM (Tempo)',
-            style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 15),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Min: 40 BPM  |  Max: 240 BPM  |  Default: 120 BPM',
-                style: TextStyle(color: DawTheme.textMuted, fontSize: 11),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                autofocus: true,
-                style: TextStyle(color: DawTheme.accentGold, fontSize: 18, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: DawTheme.controlBackground,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: DawTheme.primaryCyan.withOpacity(0.5)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: DawTheme.primaryCyan, width: 2),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            OutlinedButton(
-              onPressed: () {
-                dawState.setBpm(120.0);
-                Navigator.of(context).pop();
-              },
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: DawTheme.accentOrange),
-                foregroundColor: DawTheme.accentOrange,
-              ),
-              child: const Text('DEFAULT (120)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-            ),
-            const Spacer(),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('CANCEL', style: TextStyle(color: DawTheme.textMuted, fontSize: 11)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final val = double.tryParse(controller.text);
-                if (val != null) {
-                  dawState.setBpm(val);
-                }
-                Navigator.of(context).pop();
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: DawTheme.primaryCyan, foregroundColor: Colors.black),
-              child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-            ),
-          ],
-        );
+      title: 'Tempo (BPM)',
+      initialValue: dawState.bpm.toStringAsFixed(0),
+      minMaxHint: 'Range: 40 - 240 BPM',
+      accentColor: DawTheme.accentGold,
+      onResetDefault: () => dawState.setBpm(120.0),
+      onSubmit: (text) {
+        final val = double.tryParse(text);
+        if (val != null) {
+          dawState.setBpm(val);
+        }
       },
     );
   }
@@ -373,38 +315,4 @@ class _EatBitsMonsterPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class _HardwareNoisePainter extends CustomPainter {
-  final bool isGrungy;
-
-  _HardwareNoisePainter({required this.isGrungy});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (!isGrungy) return;
-
-    final grainPaint = Paint()
-      ..color = const Color(0xFF5A5044).withOpacity(0.08)
-      ..strokeWidth = 1.0;
-
-    // Horizontal Brushed Steel Grain Lines
-    for (double y = 2.0; y < size.height; y += 3.5) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), grainPaint);
-    }
-
-    // Subtle Noise Speckles
-    final dotPaint = Paint()..color = const Color(0xFF8C7E6C).withOpacity(0.12);
-    final darkDotPaint = Paint()..color = Colors.black.withOpacity(0.2);
-
-    for (double x = 4.0; x < size.width; x += 14.0) {
-      final y1 = (x * 7.3) % size.height;
-      final y2 = (x * 13.1) % size.height;
-      canvas.drawCircle(Offset(x, y1), 0.8, dotPaint);
-      canvas.drawCircle(Offset(x + 5, y2), 1.0, darkDotPaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _HardwareNoisePainter oldDelegate) => oldDelegate.isGrungy != isGrungy;
 }

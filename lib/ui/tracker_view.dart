@@ -85,7 +85,7 @@ class _TrackerViewState extends State<TrackerView> {
                       : (isBeatFour ? DawTheme.panelBackground : DawTheme.backgroundDark),
                   border: Border(
                     bottom: BorderSide(
-                      color: isBeatFour ? DawTheme.panelHeader : const Color(0xFF1B202D),
+                      color: isBeatFour ? DawTheme.panelHeader : DawTheme.controlBackground.withOpacity(0.4),
                       width: isBeatFour ? 1.5 : 0.5,
                     ),
                   ),

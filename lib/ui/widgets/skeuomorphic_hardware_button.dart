@@ -13,6 +13,7 @@ class SkeuomorphicHardwareButton extends StatefulWidget {
   final double height;
   final double? width;
   final EdgeInsetsGeometry padding;
+  final bool showLed;
 
   const SkeuomorphicHardwareButton({
     super.key,
@@ -25,6 +26,7 @@ class SkeuomorphicHardwareButton extends StatefulWidget {
     this.height = 36.0,
     this.width,
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+    this.showLed = true,
   });
 
   @override
@@ -38,6 +40,9 @@ class _SkeuomorphicHardwareButtonState extends State<SkeuomorphicHardwareButton>
   Widget build(BuildContext context) {
     final isGrungy = DawTheme.currentPreset == DawThemePreset.grungyHardware;
     final ledColor = widget.activeColor ?? (isGrungy ? const Color(0xFFFF8C00) : DawTheme.primaryCyan);
+    final btnColor = isGrungy
+        ? (_isPressed ? const Color(0xFF1E1B18) : const Color(0xFF38322B))
+        : (_isPressed ? DawTheme.controlBackground : DawTheme.panelHeader);
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -54,9 +59,7 @@ class _SkeuomorphicHardwareButtonState extends State<SkeuomorphicHardwareButton>
         transform: Matrix4.translationValues(0, _isPressed ? 2.0 : 0.0, 0),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(4),
-          color: isGrungy
-              ? (_isPressed ? const Color(0xFF1E1B18) : const Color(0xFF38322B))
-              : (_isPressed ? DawTheme.controlBackground : DawTheme.panelHeader),
+          color: btnColor,
           border: Border.all(
             color: widget.isActive
                 ? ledColor
@@ -91,38 +94,40 @@ class _SkeuomorphicHardwareButtonState extends State<SkeuomorphicHardwareButton>
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Illuminated LED Indicator Dot
-            Container(
-              width: 5,
-              height: 5,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: widget.isActive ? ledColor : Colors.black45,
-                boxShadow: widget.isActive
-                    ? [
-                        BoxShadow(
-                          color: ledColor,
-                          blurRadius: 4,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
+            if (widget.showLed) ...[
+              Container(
+                width: 5,
+                height: 5,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: widget.isActive ? ledColor : Colors.black45,
+                  boxShadow: widget.isActive
+                      ? [
+                          BoxShadow(
+                            color: ledColor,
+                            blurRadius: 4,
+                            spreadRadius: 1,
+                          ),
+                        ]
+                      : null,
+                ),
               ),
-            ),
-            const SizedBox(width: 6),
+              const SizedBox(width: 6),
+            ],
             if (widget.customChild != null)
               widget.customChild!
             else ...[
               if (widget.icon != null) ...[
                 Icon(
                   widget.icon,
-                  size: 16,
+                  size: (widget.label != null && widget.label!.isNotEmpty) ? 16 : 18,
                   color: widget.isActive
                       ? (isGrungy ? const Color(0xFFFFF5E0) : Colors.white)
                       : (isGrungy ? const Color(0xFFA89C8C) : DawTheme.textSecondary),
                 ),
-                if (widget.label != null) const SizedBox(width: 6),
+                if (widget.label != null && widget.label!.isNotEmpty) const SizedBox(width: 6),
               ],
-              if (widget.label != null)
+              if (widget.label != null && widget.label!.isNotEmpty)
                 Text(
                   widget.label!.toUpperCase(),
                   style: DawTheme.getDisplayFontStyle(

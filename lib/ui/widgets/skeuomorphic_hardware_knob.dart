@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/daw_theme.dart';
+import 'compact_value_dialog.dart';
 
 /// A realistic skeuomorphic metallic hardware knob control.
 /// Supports vertical drag interaction, tap-hold/double-tap dialogs,
@@ -112,84 +113,20 @@ class _SkeuomorphicHardwareKnobState extends State<SkeuomorphicHardwareKnob> {
 
   void _showManualEditDialog(BuildContext context) {
     final displayVal = widget.formatValue != null ? widget.formatValue!(widget.value) : widget.value.toStringAsFixed(2);
-    final controller = TextEditingController(text: displayVal);
+    final accent = widget.accentColor ?? DawTheme.primaryCyan;
 
-    showDialog(
+    showCompactValueEditDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: DawTheme.panelBackground,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: widget.accentColor ?? DawTheme.primaryCyan),
-          ),
-          title: Text(
-            widget.label != null ? 'Set ${widget.label}' : 'Set Knob Value',
-            style: TextStyle(
-              color: widget.accentColor ?? DawTheme.primaryCyan,
-              fontWeight: FontWeight.bold,
-              fontSize: 15,
-            ),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Min: ${widget.min} | Max: ${widget.max} | Default: ${widget.defaultValue.toStringAsFixed(2)}',
-                style: TextStyle(color: DawTheme.textMuted, fontSize: 11),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
-                autofocus: true,
-                style: TextStyle(color: DawTheme.accentGold, fontSize: 16, fontWeight: FontWeight.bold),
-                decoration: InputDecoration(
-                  filled: true,
-                  fillColor: DawTheme.controlBackground,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: (widget.accentColor ?? DawTheme.primaryCyan).withOpacity(0.5)),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            OutlinedButton(
-              onPressed: () {
-                widget.onChanged(widget.defaultValue);
-                Navigator.of(context).pop();
-              },
-              style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: DawTheme.accentOrange),
-                foregroundColor: DawTheme.accentOrange,
-              ),
-              child: const Text('DEFAULT', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-            ),
-            const Spacer(),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('CANCEL', style: TextStyle(color: DawTheme.textMuted, fontSize: 11)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final double? parsed = double.tryParse(controller.text);
-                if (parsed != null) {
-                  widget.onChanged(parsed.clamp(widget.min, widget.max));
-                }
-                Navigator.of(context).pop();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: widget.accentColor ?? DawTheme.primaryCyan,
-                foregroundColor: Colors.black,
-              ),
-              child: const Text('OK', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-            ),
-          ],
-        );
+      title: widget.label != null ? 'Set ${widget.label}' : 'Set Knob Value',
+      initialValue: displayVal,
+      minMaxHint: 'Range: ${widget.min} - ${widget.max}',
+      accentColor: accent,
+      onResetDefault: () => widget.onChanged(widget.defaultValue),
+      onSubmit: (text) {
+        final double? parsed = double.tryParse(text);
+        if (parsed != null) {
+          widget.onChanged(parsed.clamp(widget.min, widget.max));
+        }
       },
     );
   }
