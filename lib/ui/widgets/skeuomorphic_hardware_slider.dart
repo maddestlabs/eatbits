@@ -17,12 +17,13 @@ class SkeuomorphicHardwareSlider extends StatefulWidget {
   final Axis orientation;
   final double length;
   final String Function(double)? formatValue;
+  final bool showLevelMarkings;
 
   const SkeuomorphicHardwareSlider({
     super.key,
     required this.value,
     this.min = 0.0,
-    this.max = 1.0,
+    this.max = 1.5,
     required this.defaultValue,
     this.label,
     required this.onChanged,
@@ -30,6 +31,7 @@ class SkeuomorphicHardwareSlider extends StatefulWidget {
     this.orientation = Axis.horizontal,
     this.length = 160.0,
     this.formatValue,
+    this.showLevelMarkings = true,
   });
 
   @override
@@ -82,6 +84,7 @@ class _SkeuomorphicHardwareSliderState extends State<SkeuomorphicHardwareSlider>
                   accentColor: activeColor,
                   isGrungyTheme: isGrungy,
                   orientation: widget.orientation,
+                  showLevelMarkings: widget.showLevelMarkings,
                 ),
               ),
             ),
@@ -117,12 +120,14 @@ class _FaderPainter extends CustomPainter {
   final Color accentColor;
   final bool isGrungyTheme;
   final Axis orientation;
+  final bool showLevelMarkings;
 
   _FaderPainter({
     required this.normalizedValue,
     required this.accentColor,
     required this.isGrungyTheme,
     required this.orientation,
+    required this.showLevelMarkings,
   });
 
   @override
@@ -152,6 +157,41 @@ class _FaderPainter extends CustomPainter {
       canvas.drawRRect(RRect.fromRectAndRadius(slotRect, const Radius.circular(2)), slotBorderPaint);
     }
 
+    // Level Scale Tick Marks (when showLevelMarkings is true)
+    if (!isHoriz && showLevelMarkings) {
+      final tickPaintMajor = Paint()..color = const Color(0xFF687285)..strokeWidth = 1.0;
+      final tickPaintMinor = Paint()..color = const Color(0xFF3A4252)..strokeWidth = 0.8;
+      const miny = 14.0;
+      final maxy = trackLength - 14.0;
+      final travel = maxy - miny;
+
+      const numTicks = 16;
+      for (int i = 0; i <= numTicks; i++) {
+        final frac = i / numTicks;
+        final yPos = maxy - (frac * travel);
+
+        final isMajor = (i % 4 == 0);
+        final tickLen = isMajor ? 5.0 : 3.0;
+        final paint = isMajor ? tickPaintMajor : tickPaintMinor;
+
+        // Left Ticks
+        canvas.drawLine(Offset(centerCross - 4.0 - tickLen, yPos), Offset(centerCross - 4.0, yPos), paint);
+        // Right Ticks
+        canvas.drawLine(Offset(centerCross + 4.0, yPos), Offset(centerCross + 4.0 + tickLen, yPos), paint);
+      }
+
+      // Draw bottom "0.00" label
+      final textPainter = TextPainter(
+        text: const TextSpan(
+          text: '0.00',
+          style: TextStyle(fontFamily: 'monospace', color: Color(0xFF687285), fontSize: 7, fontWeight: FontWeight.bold),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(centerCross - (textPainter.width / 2), trackLength - 9));
+    }
+
     // Outer Recessed Channel Boundary Frame
     final channelBoundary = isHoriz
         ? Rect.fromLTRB(6, centerCross - 14, trackLength - 6, centerCross + 14)
@@ -164,13 +204,6 @@ class _FaderPainter extends CustomPainter {
         ..color = isGrungyTheme ? const Color(0xFF2B2621) : const Color(0xFF161C26),
     );
 
-    // Bottom / Min Position Green Arrow Ticks (like real mixer faders)
-    final greenTickPaint = Paint()..color = const Color(0xFF00FF66);
-    if (!isHoriz) {
-      final miny = trackLength - 10;
-      canvas.drawLine(Offset(centerCross - 8, miny), Offset(centerCross - 3, miny - 4), greenTickPaint..strokeWidth = 1.5);
-      canvas.drawLine(Offset(centerCross + 8, miny), Offset(centerCross + 3, miny - 4), greenTickPaint..strokeWidth = 1.5);
-    }
 
     // 2. Fader Cap Position Calculation
     final capTravel = trackLength - 28.0;

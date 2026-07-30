@@ -1,6 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/daw_state.dart';
 import '../theme/daw_theme.dart';
+import '../utils/eats_file_helper.dart';
 import 'widgets/skeuomorphic_hardware_button.dart';
 import 'widgets/glowing_nixie_display.dart';
 import 'widgets/compact_value_dialog.dart';
@@ -33,61 +36,61 @@ class TransportHeader extends StatelessWidget {
           ),
         ],
       ),
-        child: Row(
-          children: [
-            // EatsBits Monster Icon drawn directly on background
-            Tooltip(
-              message: 'Eatsbits Settings',
-              child: InkWell(
-                onTap: () => _showSettingsDialog(context),
-                borderRadius: BorderRadius.circular(6),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-                  child: EatsBitsMonsterIcon(size: 28),
+      child: Row(
+        children: [
+          // EatsBits Monster Icon drawn directly on background
+          Tooltip(
+            message: 'Eatsbits Settings',
+            child: InkWell(
+              onTap: () => _showSettingsDialog(context),
+              borderRadius: BorderRadius.circular(6),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                child: EatsBitsMonsterIcon(size: 28),
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 10),
+
+          // Transport Play / Stop Mechanical Button (no LED dot)
+          SkeuomorphicHardwareButton(
+            label: dawState.isPlaying ? 'STOP' : 'PLAY',
+            icon: dawState.isPlaying ? Icons.stop : Icons.play_arrow,
+            isActive: dawState.isPlaying,
+            activeColor: dawState.isPlaying ? DawTheme.muteColor : const Color(0xFF00FF66),
+            onTap: dawState.isPlaying ? dawState.stop : dawState.togglePlay,
+            height: 38,
+            showLed: false,
+          ),
+
+          const SizedBox(width: 10),
+
+          // BPM Glowing Nixie Display & Tap Tempo Button (no LED dot)
+          GestureDetector(
+            onLongPress: () => _showBpmEditDialog(context),
+            child: Row(
+              children: [
+                GlowingNixieDisplay(
+                  label: '',
+                  valueText: dawState.bpm.toStringAsFixed(0),
+                  unit: 'BPM',
+                  fontSize: 14,
+                  glowColor: DawTheme.accentGold,
                 ),
-              ),
+                const SizedBox(width: 6),
+                SkeuomorphicHardwareButton(
+                  label: 'TAP',
+                  isActive: false,
+                  activeColor: DawTheme.accentGold,
+                  onTap: dawState.tapTempo,
+                  height: 32,
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  showLed: false,
+                ),
+              ],
             ),
-
-            const SizedBox(width: 10),
-
-            // Transport Play / Stop Mechanical Button (no LED dot)
-            SkeuomorphicHardwareButton(
-              label: dawState.isPlaying ? 'STOP' : 'PLAY',
-              icon: dawState.isPlaying ? Icons.stop : Icons.play_arrow,
-              isActive: dawState.isPlaying,
-              activeColor: dawState.isPlaying ? DawTheme.muteColor : const Color(0xFF00FF66),
-              onTap: dawState.isPlaying ? dawState.stop : dawState.togglePlay,
-              height: 38,
-              showLed: false,
-            ),
-
-            const SizedBox(width: 10),
-
-            // BPM Glowing Nixie Display & Tap Tempo Button (no LED dot)
-            GestureDetector(
-              onLongPress: () => _showBpmEditDialog(context),
-              child: Row(
-                children: [
-                  GlowingNixieDisplay(
-                    label: '',
-                    valueText: dawState.bpm.toStringAsFixed(0),
-                    unit: 'BPM',
-                    fontSize: 14,
-                    glowColor: DawTheme.accentGold,
-                  ),
-                  const SizedBox(width: 6),
-                  SkeuomorphicHardwareButton(
-                    label: 'TAP',
-                    isActive: false,
-                    activeColor: DawTheme.accentGold,
-                    onTap: dawState.tapTempo,
-                    height: 32,
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    showLed: false,
-                  ),
-                ],
-              ),
-            ),
+          ),
 
           const Spacer(),
 
@@ -106,14 +109,131 @@ class TransportHeader extends StatelessWidget {
 
           const SizedBox(width: 8),
 
+          // Save .eats.lua Button
+          IconButton(
+            onPressed: () => _handleSave(context),
+            icon: Icon(Icons.save, color: DawTheme.accentGold, size: 20),
+            tooltip: 'Save Project (.eats.lua)',
+          ),
+
+          // Load .eats.lua Button
+          IconButton(
+            onPressed: () => _handleLoad(context),
+            icon: Icon(Icons.folder_open, color: DawTheme.primaryCyan, size: 20),
+            tooltip: 'Load Project (.eats.lua)',
+          ),
+
+          // Code View / Share Button
+          IconButton(
+            onPressed: () => _showCodeViewDialog(context),
+            icon: Icon(Icons.code, color: DawTheme.textSecondary, size: 20),
+            tooltip: 'View / Paste .eats.lua Script',
+          ),
+
           // Export WAV Icon Button
           IconButton(
             onPressed: dawState.exportWavSong,
-            icon: Icon(Icons.download, color: DawTheme.primaryCyan, size: 22),
+            icon: Icon(Icons.download, color: DawTheme.primaryCyan, size: 20),
             tooltip: 'Export Song WAV',
           ),
         ],
       ),
+    );
+  }
+
+  void _handleSave(BuildContext context) {
+    final code = dawState.exportToEatsLua();
+    final fileName = '${dawState.projectName.toLowerCase().replaceAll(' ', '_')}.eats.lua';
+    EatsFileHelper.saveEatsLuaFile(code, fileName);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Saved project as "$fileName"'),
+        backgroundColor: DawTheme.panelBackground,
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  void _handleLoad(BuildContext context) {
+    if (kIsWeb) {
+      EatsFileHelper.pickEatsLuaFileWeb((content, fileName) {
+        dawState.loadFromEatsLua(content);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Loaded project "$fileName"'),
+            backgroundColor: DawTheme.panelBackground,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      });
+    } else {
+      _showCodeViewDialog(context);
+    }
+  }
+
+  void _showCodeViewDialog(BuildContext context) {
+    final controller = TextEditingController(text: dawState.exportToEatsLua());
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: DawTheme.panelBackground,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: Row(
+            children: [
+              Icon(Icons.code, color: DawTheme.primaryCyan),
+              const SizedBox(width: 8),
+              Text(
+                'EATS.LUA SCRIPT',
+                style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ],
+          ),
+          content: SizedBox(
+            width: 600,
+            height: 400,
+            child: TextField(
+              controller: controller,
+              maxLines: null,
+              expands: true,
+              style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.white70),
+              decoration: InputDecoration(
+                fillColor: Colors.black45,
+                filled: true,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Clipboard.setData(ClipboardData(text: controller.text));
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Copied .eats.lua to clipboard!')),
+                );
+              },
+              child: Text('COPY CODE', style: TextStyle(color: DawTheme.accentGold)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: DawTheme.primaryCyan),
+              onPressed: () {
+                if (controller.text.isNotEmpty) {
+                  dawState.loadFromEatsLua(controller.text);
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Loaded project from .eats.lua script!')),
+                  );
+                }
+              },
+              child: const Text('LOAD SCRIPT', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('CLOSE', style: TextStyle(color: Colors.white54)),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -183,9 +303,49 @@ class TransportHeader extends StatelessWidget {
                   );
                 }).toList(),
 
+                Text(
+                  'PROJECT MANAGEMENT (.EATS.LUA)',
+                  style: TextStyle(color: DawTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: DawTheme.accentGold,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _handleSave(context);
+                        },
+                        icon: const Icon(Icons.save, size: 16),
+                        label: const Text('SAVE (.EATS.LUA)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: DawTheme.primaryCyan,
+                          foregroundColor: Colors.black,
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _handleLoad(context);
+                        },
+                        icon: const Icon(Icons.folder_open, size: 16),
+                        label: const Text('LOAD (.EATS.LUA)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 16),
-
-
 
                 Text(
                   'AUDIO ENGINE CONFIG',

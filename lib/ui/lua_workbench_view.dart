@@ -143,17 +143,52 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Real-time Audio Waveform Display
+                // Real-time Audio Oscilloscope LCD Display
                 Container(
-                  height: 60,
-                  padding: const EdgeInsets.all(6),
+                  height: 72,
                   decoration: BoxDecoration(
-                    color: DawTheme.backgroundDark,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: DawTheme.accentGreen.withOpacity(0.4)),
+                    color: const Color(0xFF0D130E), // Vintage retro olive/black LCD screen
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: const Color(0xFF2A3628), width: 1.5),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0xB3000000), offset: Offset(0, 2), blurRadius: 4),
+                    ],
                   ),
-                  child: CustomPaint(
-                    painter: WaveformPainter(timeData: widget.dawState.audioEngine.waveformTimeData),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(5),
+                    child: Stack(
+                      children: [
+                        // CRT Oscilloscope & Waveform Painter
+                        Positioned.fill(
+                          child: CustomPaint(
+                            painter: WaveformPainter(timeData: widget.dawState.audioEngine.waveformTimeData),
+                          ),
+                        ),
+
+                        // Header Badge Overlay
+                        Positioned(
+                          top: 4,
+                          left: 8,
+                          child: Text(
+                            'OSCILLOSCOPE [AUDIO OUT]',
+                            style: TextStyle(
+                              fontFamily: 'monospace',
+                              color: const Color(0xFF98B890).withOpacity(0.85),
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ),
+
+                        // Glass Glare Reflection Overlay
+                        const Positioned.fill(
+                          child: CustomPaint(
+                            painter: _LcdOscilloscopeGlassReflectionPainter(),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
 
@@ -306,13 +341,37 @@ class WaveformPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // 1. Draw CRT Grid Division Lines
+    final gridPaint = Paint()
+      ..color = const Color(0xFF1B2A1C)
+      ..strokeWidth = 1.0;
+
+    final centerPaint = Paint()
+      ..color = const Color(0xFF28402A)
+      ..strokeWidth = 1.2;
+
+    // Horizontal Divisions & Center Zero Baseline
+    final midY = size.height / 2;
+    canvas.drawLine(Offset(0, midY), Offset(size.width, midY), centerPaint);
+
+    for (double y = midY - 18; y > 0; y -= 18) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+    for (double y = midY + 18; y < size.height; y += 18) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+    }
+
+    // Vertical Division Lines
+    const numVertDivisions = 8;
+    final vertStep = size.width / numVertDivisions;
+    for (int i = 1; i < numVertDivisions; i++) {
+      final vx = i * vertStep;
+      canvas.drawLine(Offset(vx, 0), Offset(vx, size.height), gridPaint);
+    }
+
     if (timeData.isEmpty) return;
 
-    final paint = Paint()
-      ..color = DawTheme.accentGreen
-      ..strokeWidth = 1.5
-      ..style = PaintingStyle.stroke;
-
+    // Build Waveform Trace Path
     final path = Path();
     final sliceWidth = size.width / timeData.length;
 
@@ -328,9 +387,51 @@ class WaveformPainter extends CustomPainter {
       }
       x += sliceWidth;
     }
-    canvas.drawPath(path, paint);
+
+    // Pass 1: Neon Green Outer CRT Glow
+    final glowPaint = Paint()
+      ..color = const Color(0xFF00FF66)
+      ..strokeWidth = 3.5
+      ..style = PaintingStyle.stroke
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0);
+    canvas.drawPath(path, glowPaint);
+
+    // Pass 2: Bright Neon Core Trace Line
+    final tracePaint = Paint()
+      ..color = const Color(0xFFE5FFEC)
+      ..strokeWidth = 1.8
+      ..style = PaintingStyle.stroke;
+    canvas.drawPath(path, tracePaint);
   }
 
   @override
   bool shouldRepaint(covariant WaveformPainter oldDelegate) => true;
+}
+
+class _LcdOscilloscopeGlassReflectionPainter extends CustomPainter {
+  const _LcdOscilloscopeGlassReflectionPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final glarePath = Path();
+    glarePath.moveTo(0, 0);
+    glarePath.lineTo(size.width, 0);
+    glarePath.lineTo(size.width, size.height * 0.45);
+    glarePath.close();
+
+    final glarePaint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          Colors.white.withOpacity(0.12),
+          Colors.white.withOpacity(0.0),
+        ],
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft,
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height * 0.45));
+
+    canvas.drawPath(glarePath, glarePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

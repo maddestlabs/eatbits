@@ -7,6 +7,8 @@ import '../audio/audio_engine.dart';
 import '../audio/wav_exporter.dart';
 import '../theme/daw_theme.dart';
 import '../lua/lua_engine.dart';
+import '../lua/eats_lua_serializer.dart';
+import '../lua/eats_lua_parser.dart';
 import '../audio/time_context.dart';
 import '../lua/lua_preset_library.dart';
 import 'track_model.dart';
@@ -14,6 +16,8 @@ import 'track_model.dart';
 class DawState extends ChangeNotifier {
   final AudioEngine audioEngine = AudioEngine();
   final LuaEngine luaEngine = LuaEngine();
+
+  String projectName = 'Untitled Song';
 
   void notifyState() => notifyListeners();
 
@@ -75,6 +79,25 @@ class DawState extends ChangeNotifier {
   double _masterVolume = 0.85;
   double get masterVolume => _masterVolume;
 
+  void resetActiveIndices() {
+    _activePatternIndex = 0;
+    _activeTrackIndex = 0;
+    if (activeTrack.luaScriptCode.isNotEmpty) {
+      luaCode = activeTrack.luaScriptCode;
+      compilationResult = LuaEngine.compile(luaCode);
+    }
+    notifyListeners();
+  }
+
+  String exportToEatsLua() {
+    return EatsLuaSerializer.serialize(this, projectName: projectName);
+  }
+
+  void loadFromEatsLua(String eatsLuaCode) {
+    projectName = EatsLuaParser.populateDawState(this, eatsLuaCode);
+    resetActiveIndices();
+  }
+
   Timer? _playbackTimer;
 
   // Tap Tempo state
@@ -131,9 +154,10 @@ class DawState extends ChangeNotifier {
   }
 
   void _startMeterTimer() {
-    Timer.periodic(const Duration(milliseconds: 100), (_) {
-      if (_isPlaying) {
+    Timer.periodic(const Duration(milliseconds: 50), (_) {
+      if (_isPlaying || audioEngine.hasActiveMeterActivity) {
         audioEngine.updateMeters();
+        notifyListeners();
       }
     });
   }

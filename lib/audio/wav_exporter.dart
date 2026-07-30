@@ -1,7 +1,8 @@
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
-import 'package:web/web.dart' as web;
-import 'dart:js_interop';
+
+import 'wav_exporter_stub.dart'
+    if (dart.library.html) 'wav_exporter_web.dart';
 
 class WavExporter {
   // Encodes stereo 16-bit PCM WAV audio file from Float32 sample lists
@@ -68,17 +69,7 @@ class WavExporter {
   // Trigger web browser download of WAV file
   static void saveWavFile(Uint8List wavBytes, String filename) {
     if (kIsWeb) {
-      try {
-        final blob = web.Blob([wavBytes.toJS].toJS, web.BlobPropertyBag(type: 'audio/wav'));
-        final url = web.URL.createObjectURL(blob);
-        final anchor = web.HTMLAnchorElement()
-          ..href = url
-          ..download = filename;
-        anchor.click();
-        web.URL.revokeObjectURL(url);
-      } catch (e) {
-        debugPrint('Web download error: $e');
-      }
+      saveWavFileImpl(wavBytes, filename);
     }
   }
 }

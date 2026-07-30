@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
+import 'widgets/lcd_display_widget.dart';
 import 'widgets/skeuomorphic_hardware_button.dart';
 import 'widgets/skeuomorphic_hardware_knob.dart';
 import 'widgets/skeuomorphic_hardware_slider.dart';
+import 'widgets/stereo_meter_widget.dart';
 
 class MixerView extends StatefulWidget {
   final DawState dawState;
@@ -44,58 +46,95 @@ class _MixerViewState extends State<MixerView> {
 
   Widget _buildMasterChannelStrip(DawState dawState) {
     return Container(
-      width: 100,
+      width: 140,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         color: DawTheme.panelBackground,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: DawTheme.primaryCyan.withOpacity(0.5), width: 1.5),
+        border: Border.all(color: DawTheme.primaryCyan.withOpacity(0.6), width: 1.5),
+        boxShadow: const [
+          BoxShadow(color: Colors.black45, offset: Offset(0, 2), blurRadius: 4),
+        ],
       ),
       child: Column(
         children: [
-          Text(
-            'MASTER',
-            style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 13),
+          // Top Backlit LCD Screen
+          LcdDisplayWidget(
+            title: 'MASTER',
+            leftText: 'st-out',
+            rightText: '${(dawState.masterVolume * 100).toInt()}%',
+            width: 124,
+            height: 38,
           ),
           const SizedBox(height: 8),
 
-          // Master Fader
-          Expanded(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                SkeuomorphicHardwareSlider(
+          // Dual Master Controls
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              Tooltip(
+                message: 'Master Balance',
+                child: SkeuomorphicHardwareKnob(
+                  value: 0.0,
+                  min: -1.0,
+                  max: 1.0,
+                  defaultValue: 0.0,
+                  size: 36.0,
+                  accentColor: DawTheme.primaryCyan,
+                  onChanged: (_) {},
+                  formatValue: (v) => 'C',
+                ),
+              ),
+              Tooltip(
+                message: 'Master Gain',
+                child: SkeuomorphicHardwareKnob(
                   value: dawState.masterVolume,
                   min: 0.0,
                   max: 1.5,
                   defaultValue: 0.85,
-                  label: 'Master Volume',
-                  activeColor: DawTheme.primaryCyan,
-                  orientation: Axis.vertical,
-                  length: 160.0,
+                  size: 36.0,
+                  accentColor: DawTheme.primaryCyan,
                   onChanged: (val) => dawState.setMasterVolume(val),
+                  formatValue: (v) => '${(v * 100).toInt()}%',
                 ),
-                const SizedBox(width: 6),
-                // Peak Meter
-                SizedBox(
-                  width: 8,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
-                    child: LinearProgressIndicator(
-                      value: dawState.audioEngine.leftPeak,
-                      backgroundColor: DawTheme.controlBackground,
-                      color: DawTheme.primaryCyan,
-                    ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 10),
+
+          // Fader + Inset Glass Meter on Right
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Fader Slider on Left (with level scale markings)
+                Expanded(
+                  child: SkeuomorphicHardwareSlider(
+                    value: dawState.masterVolume,
+                    min: 0.0,
+                    max: 1.5,
+                    defaultValue: 0.85,
+                    label: 'Master Volume',
+                    activeColor: DawTheme.primaryCyan,
+                    orientation: Axis.vertical,
+                    length: 160.0,
+                    showLevelMarkings: true,
+                    onChanged: (val) => dawState.setMasterVolume(val),
                   ),
+                ),
+                const SizedBox(width: 4),
+
+                // Glass Meter Readout on Right
+                StereoMeterWidget(
+                  leftLevel: dawState.audioEngine.leftPeak,
+                  rightLevel: dawState.audioEngine.rightPeak,
+                  accentColor: DawTheme.primaryCyan,
+                  width: 38.0,
+                  height: double.infinity,
                 ),
               ],
             ),
-          ),
-
-          const SizedBox(height: 8),
-          Text(
-            '${(dawState.masterVolume * 100).toInt()}%',
-            style: DawTheme.getDisplayFontStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -104,6 +143,8 @@ class _MixerViewState extends State<MixerView> {
 
   Widget _buildTrackStrip(BuildContext context, DawState dawState, TrackChannel track, int trackIdx) {
     final isSelected = trackIdx == dawState.activeTrackIndex;
+    final leftPeak = dawState.audioEngine.getTrackLeftPeak(track.id);
+    final rightPeak = dawState.audioEngine.getTrackRightPeak(track.id);
 
     return GestureDetector(
       onTapDown: (_) {
@@ -120,105 +161,138 @@ class _MixerViewState extends State<MixerView> {
         }
       },
       child: Container(
-        width: 110,
+        width: 140,
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isSelected ? DawTheme.controlBackground : DawTheme.panelBackground,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: isSelected ? track.color : Colors.transparent, width: 1.5),
+          boxShadow: const [
+            BoxShadow(color: Colors.black45, offset: Offset(0, 2), blurRadius: 4),
+          ],
         ),
         child: Column(
           children: [
-            // Track Name & Color badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-              decoration: BoxDecoration(color: track.color, borderRadius: BorderRadius.circular(4)),
-              child: Text(
-                track.name,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: DawTheme.getPrimaryFontStyle(color: DawTheme.backgroundDark, fontWeight: FontWeight.bold, fontSize: 10),
-              ),
+            // Top Backlit LCD Screen
+            LcdDisplayWidget(
+              title: '${trackIdx + 1}  ${track.name.toUpperCase()}',
+              leftText: track.pan == 0 ? 'center' : (track.pan < 0 ? 'L${(track.pan.abs() * 100).toInt()}' : 'R${(track.pan * 100).toInt()}'),
+              rightText: '${(track.volume * 100).toInt()}%',
+              width: 124,
+              height: 38,
             ),
-            const SizedBox(height: 6),
 
-            // Mechanical Mute & Solo Push Buttons
+            const SizedBox(height: 8),
+
+            // Hardware Knobs Row (Pan knob + Cutoff knob)
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                SkeuomorphicHardwareButton(
-                  label: 'M',
-                  isActive: track.isMuted,
-                  activeColor: DawTheme.muteColor,
-                  onTap: () => dawState.toggleMute(track),
-                  height: 28,
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                Tooltip(
+                  message: 'Pan (${track.pan})',
+                  child: SkeuomorphicHardwareKnob(
+                    value: track.pan,
+                    min: -1.0,
+                    max: 1.0,
+                    defaultValue: 0.0,
+                    size: 34.0,
+                    accentColor: track.color,
+                    onChanged: (val) => dawState.setTrackPan(track, val),
+                    formatValue: (v) => v == 0 ? 'C' : (v < 0 ? 'L${(v.abs() * 100).toInt()}' : 'R${(v * 100).toInt()}'),
+                  ),
                 ),
-                const SizedBox(width: 4),
-                SkeuomorphicHardwareButton(
-                  label: 'S',
-                  isActive: track.isSoloed,
-                  activeColor: DawTheme.soloColor,
-                  onTap: () => dawState.toggleSolo(track),
-                  height: 28,
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                Tooltip(
+                  message: 'Cutoff (${track.cutoff.toInt()} Hz)',
+                  child: SkeuomorphicHardwareKnob(
+                    value: track.cutoff,
+                    min: 200.0,
+                    max: 10000.0,
+                    defaultValue: 3000.0,
+                    size: 34.0,
+                    accentColor: DawTheme.accentGold,
+                    onChanged: (val) {
+                      track.cutoff = val;
+                      dawState.notifyState();
+                    },
+                    formatValue: (v) => '${(v / 1000).toStringAsFixed(1)}k',
+                  ),
                 ),
               ],
             ),
 
-            const SizedBox(height: 8),
+            const SizedBox(height: 10),
 
-            // Hardware Pan Rotary Knob
-            SkeuomorphicHardwareKnob(
-              value: track.pan,
-              min: -1.0,
-              max: 1.0,
-              defaultValue: 0.0,
-              size: 40.0,
-              accentColor: track.color,
-              onChanged: (val) => dawState.setTrackPan(track, val),
-              formatValue: (v) => v == 0 ? 'C' : (v < 0 ? 'L${(v.abs() * 100).toInt()}' : 'R${(v * 100).toInt()}'),
-            ),
-
-            const SizedBox(height: 8),
-
-            // Vertical Hardware Console Fader
+            // Fader (Left) + Glass Meter (Right) + Mechanical Buttons Column (Far Right)
             Expanded(
-              child: SkeuomorphicHardwareSlider(
-                value: track.volume,
-                min: 0.0,
-                max: 1.5,
-                defaultValue: 1.0,
-                label: '${track.name} Volume',
-                activeColor: track.color,
-                orientation: Axis.vertical,
-                length: 150.0,
-                onChanged: (val) => dawState.setTrackVolume(track, val),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Vertical Console Fader with level scale markings
+                  Expanded(
+                    child: SkeuomorphicHardwareSlider(
+                      value: track.volume,
+                      min: 0.0,
+                      max: 1.5,
+                      defaultValue: 1.0,
+                      label: '${track.name} Volume',
+                      activeColor: track.color,
+                      orientation: Axis.vertical,
+                      length: 160.0,
+                      showLevelMarkings: true,
+                      onChanged: (val) => dawState.setTrackVolume(track, val),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+
+                  // Inset Glass-Encased Stereo Meter on RIGHT side of fader
+                  StereoMeterWidget(
+                    leftLevel: leftPeak,
+                    rightLevel: rightPeak,
+                    accentColor: track.color,
+                    width: 38.0,
+                    height: double.infinity,
+                  ),
+                  const SizedBox(width: 5),
+
+                  // Compact Vertical Hardware Button Column
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      SkeuomorphicHardwareButton(
+                        label: 'm',
+                        isActive: track.isMuted,
+                        activeColor: DawTheme.muteColor,
+                        onTap: () => dawState.toggleMute(track),
+                        height: 26,
+                        width: 26,
+                        padding: EdgeInsets.zero,
+                      ),
+                      const SizedBox(height: 4),
+                      SkeuomorphicHardwareButton(
+                        label: 's',
+                        isActive: track.isSoloed,
+                        activeColor: DawTheme.soloColor,
+                        onTap: () => dawState.toggleSolo(track),
+                        height: 26,
+                        width: 26,
+                        padding: EdgeInsets.zero,
+                      ),
+                      const SizedBox(height: 6),
+                      SkeuomorphicHardwareButton(
+                        label: 'FX',
+                        isActive: track.fxRack.any((f) => f.enabled),
+                        activeColor: DawTheme.primaryCyan,
+                        onTap: () => _showFXRackDialog(context, dawState, track),
+                        height: 26,
+                        width: 26,
+                        padding: EdgeInsets.zero,
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-
-            const SizedBox(height: 6),
-            Text(
-              '${(track.volume * 100).toInt()}%',
-              style: DawTheme.getDisplayFontStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
-            ),
-
-            const SizedBox(height: 8),
-
-            // FX Insert Rack Trigger Button
-            ElevatedButton(
-              onPressed: () {
-                _showFXRackDialog(context, dawState, track);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: DawTheme.panelHeader,
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
-                minimumSize: const Size(double.infinity, 24),
-              ),
-              child: Text('FX RACK', style: DawTheme.getPrimaryFontStyle(color: DawTheme.primaryCyan, fontSize: 9, fontWeight: FontWeight.bold)),
-            ),
-
           ],
         ),
       ),
