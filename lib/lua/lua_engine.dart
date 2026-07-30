@@ -143,8 +143,9 @@ class LuaEngine {
     }
   }
 
-  // Voice state map for stateful 303 monophonic synthesis
+  // Voice state map for stateful synthesis
   static final Map<String, _AcidVoiceState> _acidVoiceStates = {};
+  static final Map<String, _HiHatVoiceState> _hihatVoiceStates = {};
 
   // DSP Math & Synthesis Evaluator for Lua custom synths and drum engines
   static double evaluateSynth({
@@ -170,28 +171,29 @@ class LuaEngine {
 
       final curFreq = endF + (startF - endF) * math.exp(-time / pDecay.clamp(0.005, 0.5));
       final subSine = math.sin(2.0 * math.pi * curFreq * time);
-      final rnd = math.Random((time * 10000).toInt() % 100000 + 77);
+      final rnd = math.Random(sampleIndex * 1664525 + 1013904223);
       final clickTransient = (rnd.nextDouble() * 2.0 - 1.0) * math.exp(-time * 150.0) * click;
-      final env = math.exp(-time / aDecay.clamp(0.01, 1.5));
+
+      // Exponential amplitude envelope decaying to < 1% by time = aDecay
+      final env = math.exp(-time * 5.0 / aDecay.clamp(0.01, 1.5));
 
       final rawOutput = (subSine * 0.85 + clickTransient * 0.15) * env;
 
-      // Smooth fade toward edge of kick duration so it doesn't clip/click at the end
-      final maxDuration = aDecay.clamp(0.1, 1.5) * 1.25;
-      final fadeStart = maxDuration - 0.08;
-      double edgeFade = 1.0;
-      if (time > fadeStart) {
-        final norm = ((maxDuration - time) / 0.08).clamp(0.0, 1.0);
-        edgeFade = 0.5 * (1.0 + math.cos(math.pi * (1.0 - norm)));
+      // Smooth raised-cosine boundary fade-out over final 40ms of playback buffer
+      final fadeSamples = (44100 * 0.04).toInt().clamp(64, math.max(1, totalSamples ~/ 4));
+      final samplesRemaining = totalSamples - 1 - sampleIndex;
+      double boundaryFade = 1.0;
+      if (samplesRemaining < fadeSamples) {
+        final norm = (samplesRemaining / fadeSamples).clamp(0.0, 1.0);
+        boundaryFade = 0.5 * (1.0 - math.cos(math.pi * norm));
       }
-      if (time >= maxDuration) edgeFade = 0.0;
 
-      final output = rawOutput * edgeFade;
+      final output = rawOutput * boundaryFade;
       return (math.exp(output * 1.3) - math.exp(-output * 1.3)) / (math.exp(output * 1.3) + math.exp(-output * 1.3));
     }
 
     // 1. JC-303 Acid Bass Engine (Modelled after midilab/jc303)
-    if (code.contains('Acid303') || code.contains('Cutoff') || code.contains('TB303')) {
+    if (code.contains('Acid303') || code.contains('TB303') || code.contains('Waveform') || code.contains('Overdrive')) {
       final waveType = params['Waveform'] ?? 0.0;
       final cutoff = params['Cutoff'] ?? 1600.0;
       final res = params['Resonance'] ?? 8.0;
@@ -292,25 +294,45 @@ class LuaEngine {
     // 3. Procedural Hi-Hat
     else if (code.contains('ProceduralHiHat') || code.contains('Metallic')) {
       final cutoff = params['Cutoff'] ?? 8500.0;
-      final decay = params['Decay'] ?? 0.0;
-      final metallic = params['Metallic'] ?? 0.4;
+      final decay = params['Decay'] ?? 0.05;
+      final metallic = params['Metallic'] ?? 0.15;
 
-      final env = decay <= 0.001
-          ? (time < 0.015 ? math.exp(-time / 0.015) : 0.0)
-          : math.exp(-time / decay.clamp(0.001, 1.0));
+      final env = math.exp(-time / decay.clamp(0.005, 0.5));
 
-      final ring = math.sin(2.0 * math.pi * 800.0 * time) *
-                   math.sin(2.0 * math.pi * 1340.0 * time) *
-                   math.sin(2.0 * math.pi * 2100.0 * time);
+      final voiceKey = '${trackId ?? "default"}_hihat';
+      final vState = _hihatVoiceStates.putIfAbsent(voiceKey, () => _HiHatVoiceState());
 
-      final rnd = math.Random((time * 10000).toInt() % 100000 + 123);
-      final noise = (rnd.nextDouble() * 2.0 - 1.0);
-      final rawSignal = noise * 0.7 + ring * metallic * 0.3;
+      if (sampleIndex == 0) {
+        vState.x1 = 0.0;
+        vState.y1 = 0.0;
+        vState.x2 = 0.0;
+        vState.y2 = 0.0;
+      }
 
-      // Highpass filtering
-      final f = (cutoff / 44100.0 * 2.0 * math.pi).clamp(0.1, 0.9);
-      final output = rawSignal * f * env * 0.7;
+      // True white noise calculated per sample
+      final rnd = math.Random(sampleIndex * 1664525 + 1013904223);
+      final noise = rnd.nextDouble() * 2.0 - 1.0;
 
+      // TR-808 inspired metallic square ring cluster
+      final ring1 = math.sin(2.0 * math.pi * 205.0 * time) > 0 ? 1.0 : -1.0;
+      final ring2 = math.sin(2.0 * math.pi * 305.0 * time) > 0 ? 1.0 : -1.0;
+      final ring3 = math.sin(2.0 * math.pi * 365.0 * time) > 0 ? 1.0 : -1.0;
+      final ring4 = math.sin(2.0 * math.pi * 396.0 * time) > 0 ? 1.0 : -1.0;
+      final ring5 = math.sin(2.0 * math.pi * 434.0 * time) > 0 ? 1.0 : -1.0;
+      final ring6 = math.sin(2.0 * math.pi * 700.0 * time) > 0 ? 1.0 : -1.0;
+      final metallicRing = (ring1 + ring2 + ring3 + ring4 + ring5 + ring6) / 6.0;
+
+      final rawSignal = noise * (1.0 - metallic * 0.4) + metallicRing * (metallic * 0.4);
+
+      // Cascaded 2-Pole High-Pass Filter
+      final alpha = 1.0 / (1.0 + (2.0 * math.pi * cutoff.clamp(1000.0, 18000.0) / 44100.0));
+      vState.y1 = alpha * (vState.y1 + rawSignal - vState.x1);
+      vState.x1 = rawSignal;
+
+      vState.y2 = alpha * (vState.y2 + vState.y1 - vState.x2);
+      vState.x2 = vState.y1;
+
+      final output = vState.y2 * env * 0.75;
       return output.clamp(-1.0, 1.0);
     }
 
@@ -398,7 +420,7 @@ class LuaEngine {
       final wet = inputSample * (0.8 + lfo * 0.2);
 
       return (inputSample * (1.0 - mix)) + (wet * mix);
-    } else if (code.contains('Bitcrusher') || code.contains('Bits')) {
+    } else if (code.contains('Bitcrusher') || code.contains('Downsample')) {
       final bits = params['Bits'] ?? 6.0;
       final downsample = params['Downsample'] ?? 4.0;
       final mix = params['Mix'] ?? 0.8;
@@ -408,7 +430,7 @@ class LuaEngine {
 
       final holdSample = (time * 44100 % downsample < 1.0) ? quantized : quantized * 0.9;
       return (inputSample * (1.0 - mix)) + (holdSample * mix);
-    } else if (code.contains('TubeDistortion') || code.contains('Drive')) {
+    } else if (code.contains('TubeDistortion') || code.contains('OutGain')) {
       final drive = params['Drive'] ?? 6.0;
       final outGain = params['OutGain'] ?? 0.7;
 
@@ -433,5 +455,12 @@ class _AcidVoiceState {
   double stage4 = 0.0;
   double hpfX1 = 0.0;
   double hpfY1 = 0.0;
+}
+
+class _HiHatVoiceState {
+  double x1 = 0.0;
+  double y1 = 0.0;
+  double x2 = 0.0;
+  double y2 = 0.0;
 }
 

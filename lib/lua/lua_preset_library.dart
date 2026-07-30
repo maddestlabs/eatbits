@@ -172,19 +172,27 @@ function ProceduralKick.process(time, freq, note, params)
   local click = params["Click"] or 0.0
 
   -- Pitch sweep envelope
-  local curFreq = endF + (startF - endF) * math.exp(-time / pDecay)
+  local curFreq = endF + (startF - endF) * math.exp(-time / math.max(0.005, pDecay))
   local phase = 2.0 * math.pi * curFreq * time
   local subSine = math.sin(phase)
 
   -- Transient click
   local clickTransient = (math.random() * 2.0 - 1.0) * math.exp(-time * 150.0) * click
 
-  local env = math.exp(-time / aDecay)
+  -- Amplitude envelope decaying to near zero by time = aDecay
+  local env = math.exp(-time * 5.0 / math.max(0.01, aDecay))
   local rawOutput = (subSine * 0.85 + clickTransient * 0.15) * env
 
-  -- Smooth fade toward edge of kick duration to prevent clipping/pops at boundary
-  local edgeFade = DSP.fadeEdge(rawOutput, time, aDecay * 1.25, 0.08)
-  return math.tanh(edgeFade * 1.3)
+  -- Smooth fade toward edge of kick duration to guarantee clean drop to silence
+  local maxDur = math.max(0.1, aDecay)
+  local fadeStart = maxDur - 0.04
+  local edgeFade = 1.0
+  if time > fadeStart then
+    local norm = math.max(0.0, math.min(1.0, (maxDur - time) / 0.04))
+    edgeFade = 0.5 * (1.0 - math.cos(math.pi * norm))
+  end
+  if time >= maxDur then edgeFade = 0.0 end
+  return math.tanh(rawOutput * edgeFade * 1.3)
 end
 
 return ProceduralKick
@@ -233,39 +241,41 @@ return ProceduralSnare
       id: 'procedural_hihat',
       name: 'Eats Hats',
       category: 'drum',
-      description: 'Synthesis hi-hat using a metallic square ring cluster and high-pass filtered white noise.',
+      description: 'Synthesized hi-hat dominated by high-pass filtered white noise with adjustable metallic sheen and decay.',
       code: '''
 -- --- Procedural Hi-Hat Synth Script (Lua) ---
 local ProceduralHiHat = {}
 
 function ProceduralHiHat.init()
   Param.add("Cutoff", 4000.0, 14000.0, 8500.0)
-  Param.add("Decay", 0.0, 0.4, 0.0)
-  Param.add("Metallic", 0.0, 1.0, 0.4)
+  Param.add("Decay", 0.01, 0.4, 0.05)
+  Param.add("Metallic", 0.0, 1.0, 0.15)
 end
 
 function ProceduralHiHat.process(time, freq, note, params)
   local cutoff = params["Cutoff"] or 8500.0
-  local decay = params["Decay"] or 0.0
-  local metallic = params["Metallic"] or 0.4
+  local decay = params["Decay"] or 0.05
+  local metallic = params["Metallic"] or 0.15
 
-  local env = 0.0
-  if decay <= 0.001 then
-    env = time < 0.015 and math.exp(-time / 0.015) or 0.0
-  else
-    env = math.exp(-time / decay)
-  end
+  local env = math.exp(-time / math.max(0.005, decay))
 
-  -- Metallic ring oscillator cluster (6 square waves)
-  local ring = math.sin(2.0 * math.pi * 800.0 * time) *
-               math.sin(2.0 * math.pi * 1340.0 * time) *
-               math.sin(2.0 * math.pi * 2100.0 * time)
+  -- Metallic ring harmonics (6 detuned square waves for TR-style metallic sheen)
+  local ring1 = math.sin(2.0 * math.pi * 205.0 * time) > 0 and 1.0 or -1.0
+  local ring2 = math.sin(2.0 * math.pi * 305.0 * time) > 0 and 1.0 or -1.0
+  local ring3 = math.sin(2.0 * math.pi * 365.0 * time) > 0 and 1.0 or -1.0
+  local ring4 = math.sin(2.0 * math.pi * 396.0 * time) > 0 and 1.0 or -1.0
+  local ring5 = math.sin(2.0 * math.pi * 434.0 * time) > 0 and 1.0 or -1.0
+  local ring6 = math.sin(2.0 * math.pi * 700.0 * time) > 0 and 1.0 or -1.0
+  local metallicRing = (ring1 + ring2 + ring3 + ring4 + ring5 + ring6) / 6.0
 
-  -- White noise generator
+  -- White noise generator (primary hi-hat sound source)
   local noise = (math.random() * 2.0 - 1.0)
-  local filteredNoise = DSP.highpass(noise * 0.7 + ring * metallic * 0.3, cutoff, 1.2)
+  local rawSignal = noise * (1.0 - metallic * 0.4) + metallicRing * (metallic * 0.4)
 
-  return filteredNoise * env * 0.7
+  -- High-pass filtered noise sibilance
+  local filtered = DSP.highpass(rawSignal, cutoff, 1.2)
+
+  return filtered * env * 0.75
 end
 
 return ProceduralHiHat

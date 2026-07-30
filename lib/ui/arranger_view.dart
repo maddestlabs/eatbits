@@ -30,6 +30,7 @@ class _ArrangerViewState extends State<ArrangerView> {
   int? _lastHeaderTapTrackIdx;
   DateTime? _lastClipTapTime;
   String? _lastClipTapId;
+  int? _dragLoopStartBar;
 
   @override
   void dispose() {
@@ -200,14 +201,28 @@ class _ArrangerViewState extends State<ArrangerView> {
                         GestureDetector(
                           onTapUp: (details) {
                             final double localX = details.localPosition.dx;
-                            final int tappedBar = (localX / barWidth).floor();
+                            final int tappedBar = (localX / barWidth).floor().clamp(0, totalBars - 1);
                             widget.dawState.seekToBar(tappedBar);
                           },
                           onLongPressStart: (details) {
                             final double localX = details.localPosition.dx;
-                            final int tappedBar = (localX / barWidth).floor();
-                            // Set loop start at tapped bar, end at tapped bar + 4
+                            final int tappedBar = (localX / barWidth).floor().clamp(0, totalBars - 1);
+                            _dragLoopStartBar = tappedBar;
+                            // Set loop start at tapped bar, end at tapped bar + 4 by default
                             widget.dawState.setLoopPoints(tappedBar, tappedBar + 4);
+                          },
+                          onLongPressMoveUpdate: (details) {
+                            if (_dragLoopStartBar == null) return;
+                            final double localX = details.localPosition.dx;
+                            final int currentBar = (localX / barWidth).floor().clamp(0, totalBars - 1);
+                            if (currentBar >= _dragLoopStartBar!) {
+                              widget.dawState.setLoopPoints(_dragLoopStartBar!, currentBar + 1);
+                            } else {
+                              widget.dawState.setLoopPoints(currentBar, _dragLoopStartBar! + 1);
+                            }
+                          },
+                          onLongPressEnd: (_) {
+                            _dragLoopStartBar = null;
                           },
                           child: Container(
                             height: 24,

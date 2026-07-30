@@ -173,7 +173,7 @@ class DawState extends ChangeNotifier {
       color: DawTheme.accentGold,
       type: TrackType.luaScript,
       luaScriptCode: LuaPresetLibrary.presets.firstWhere((p) => p.id == 'procedural_hihat').code,
-      luaParams: {'Cutoff': 8500.0, 'Decay': 0.0, 'Metallic': 0.4},
+      luaParams: {'Cutoff': 8500.0, 'Decay': 0.05, 'Metallic': 0.15},
       volume: 0.75,
       steps: List.generate(32, (i) => StepEvent(active: i % 2 == 0, velocity: i % 4 == 2 ? 0.9 : 0.6, pitch: 42)),
       notes: List.generate(32, (i) => i % 2 == 0 ? Note(id: 'h_$i', pitch: 42, startStep: i.toDouble(), durationSteps: 1.0, velocity: i % 4 == 2 ? 0.9 : 0.6) : null)
@@ -346,6 +346,7 @@ class DawState extends ChangeNotifier {
   void setLoopPoints(int startBar, int endBar) {
     _loopStartBar = math.max(0, math.min(startBar, endBar - 1));
     _loopEndBar = math.max(_loopStartBar + 1, endBar);
+    _isLooping = true;
     notifyListeners();
   }
 
@@ -402,18 +403,17 @@ class DawState extends ChangeNotifier {
     if (!_isPlaying) return;
 
     final double stepDurationSec = 60.0 / _bpm / 4.0; // 16th note step length in seconds
-    final bool inArranger = (_activeTabIndex == 4 || _isSongMode);
-    final int maxSteps = inArranger ? 32 * 16 : activePattern.lengthSteps;
+    const int maxSteps = 32 * 16;
 
     while (_nextNoteTime < audioEngine.currentTime + _scheduleAheadTime) {
       _scheduleStep(_currentStep, _nextNoteTime, stepDurationSec);
       _nextNoteTime += stepDurationSec;
 
       _currentStep++;
-      if (inArranger && _isLooping && _currentStep >= _loopEndBar * 16) {
+      if (_isLooping && _currentStep >= _loopEndBar * 16) {
         _currentStep = _loopStartBar * 16;
       } else if (_currentStep >= maxSteps) {
-        _currentStep = inArranger && _isLooping ? _loopStartBar * 16 : 0;
+        _currentStep = _isLooping ? _loopStartBar * 16 : 0;
       }
 
       _arrangerStep = _currentStep;
@@ -425,103 +425,58 @@ class DawState extends ChangeNotifier {
   void _scheduleStep(int stepIdx, double hardwareTime, double stepDurationSec) {
     final currentPattern = activePattern;
     final hasSolo = currentPattern.tracks.any((t) => t.isSoloed);
-    final bool isArrangerPlayback = (_activeTabIndex == 0 || _isSongMode);
 
     for (final track in currentPattern.tracks) {
       if (track.isMuted) continue;
       if (hasSolo && !track.isSoloed) continue;
 
-      if (isArrangerPlayback) {
-        // Arranger Clip Position Playback Logic
-        for (final clip in track.clips) {
-          final int clipStartStep = clip.startBar * 16;
-          final int clipEndStep = (clip.startBar + clip.barLength) * 16;
+      // Arranger Clip Position Playback Logic
+      for (final clip in track.clips) {
+        final int clipStartStep = clip.startBar * 16;
+        final int clipEndStep = (clip.startBar + clip.barLength) * 16;
 
-          if (stepIdx >= clipStartStep && stepIdx < clipEndStep) {
-            final int localStep = stepIdx - clipStartStep;
-            
-            if (clip.notes.isNotEmpty) {
-              final matchingNotes = clip.notes.where((n) => n.startStep.toInt() == localStep).toList();
-              if (matchingNotes.isNotEmpty) {
-                final note = matchingNotes.first;
-                final nextLocalStep = localStep + 1;
-                final nextNotes = clip.notes.where((n) => n.startStep.toInt() == nextLocalStep).toList();
-                final int? targetPitch = nextNotes.isNotEmpty ? nextNotes.first.pitch : (matchingNotes.length > 1 ? matchingNotes.last.pitch : null);
-                final bool isSlideNote = note.isSlide || (note.durationSteps > 1.0) || (nextNotes.isNotEmpty && (note.isSlide || note.durationSteps >= 1.0));
-                final bool isAccentNote = note.isAccent || note.velocity > 0.75;
+        if (stepIdx >= clipStartStep && stepIdx < clipEndStep) {
+          final int localStep = stepIdx - clipStartStep;
+          
+          if (clip.notes.isNotEmpty) {
+            final matchingNotes = clip.notes.where((n) => n.startStep.toInt() == localStep).toList();
+            if (matchingNotes.isNotEmpty) {
+              final note = matchingNotes.first;
+              final nextLocalStep = localStep + 1;
+              final nextNotes = clip.notes.where((n) => n.startStep.toInt() == nextLocalStep).toList();
+              final int? targetPitch = nextNotes.isNotEmpty ? nextNotes.first.pitch : (matchingNotes.length > 1 ? matchingNotes.last.pitch : null);
+              final bool isSlideNote = note.isSlide || (note.durationSteps > 1.0) || (nextNotes.isNotEmpty && (note.isSlide || note.durationSteps >= 1.0));
+              final bool isAccentNote = note.isAccent || note.velocity > 0.75;
 
-                audioEngine.playNoteOrSample(
-                  track: track,
-                  midiNote: note.pitch,
-                  targetMidiNote: targetPitch,
-                  isSlide: isSlideNote,
-                  isAccent: isAccentNote,
-                  velocity: note.velocity,
-                  durationSec: note.durationSteps * stepDurationSec,
-                  scheduledTime: hardwareTime,
-                );
-              }
-            } else if (localStep < track.steps.length) {
-              final step = track.steps[localStep % track.steps.length];
-              if (step.active) {
-                final nextStep = track.steps[(localStep + 1) % track.steps.length];
-                final bool isSlideStep = step.isSlide || (nextStep.active && step.isSlide);
-                final int? targetPitch = nextStep.active ? nextStep.pitch : null;
-                final bool isAccentStep = step.isAccent || step.velocity > 0.75;
-
-                audioEngine.playNoteOrSample(
-                  track: track,
-                  midiNote: step.pitch,
-                  targetMidiNote: targetPitch,
-                  isSlide: isSlideStep,
-                  isAccent: isAccentStep,
-                  velocity: step.velocity,
-                  scheduledTime: hardwareTime,
-                );
-              }
+              audioEngine.playNoteOrSample(
+                track: track,
+                midiNote: note.pitch,
+                targetMidiNote: targetPitch,
+                isSlide: isSlideNote,
+                isAccent: isAccentNote,
+                velocity: note.velocity,
+                durationSec: note.durationSteps * stepDurationSec,
+                scheduledTime: hardwareTime,
+              );
             }
-          }
-        }
-      } else {
-        // Sequencer / Pattern Playback Logic
-        final int patternStep = stepIdx % currentPattern.lengthSteps;
-        final matchingNotes = track.notes.where((n) => n.startStep.toInt() == patternStep).toList();
+          } else if (localStep < track.steps.length) {
+            final step = track.steps[localStep % track.steps.length];
+            if (step.active) {
+              final nextStep = track.steps[(localStep + 1) % track.steps.length];
+              final bool isSlideStep = step.isSlide || (nextStep.active && step.isSlide);
+              final int? targetPitch = nextStep.active ? nextStep.pitch : null;
+              final bool isAccentStep = step.isAccent || step.velocity > 0.75;
 
-        if (matchingNotes.isNotEmpty) {
-          final note = matchingNotes.first;
-          final nextPatternStep = (patternStep + 1) % currentPattern.lengthSteps;
-          final nextNotes = track.notes.where((n) => n.startStep.toInt() == nextPatternStep).toList();
-          final int? targetPitch = nextNotes.isNotEmpty ? nextNotes.first.pitch : (matchingNotes.length > 1 ? matchingNotes.last.pitch : null);
-          final bool isSlideNote = note.isSlide || (note.durationSteps > 1.0) || (nextNotes.isNotEmpty && (note.isSlide || note.durationSteps >= 1.0));
-          final bool isAccentNote = note.isAccent || note.velocity > 0.75;
-
-          audioEngine.playNoteOrSample(
-            track: track,
-            midiNote: note.pitch,
-            targetMidiNote: targetPitch,
-            isSlide: isSlideNote,
-            isAccent: isAccentNote,
-            velocity: note.velocity,
-            durationSec: (note.durationSteps * stepDurationSec),
-            scheduledTime: hardwareTime,
-          );
-        } else if (patternStep < track.steps.length) {
-          final step = track.steps[patternStep];
-          if (step.active) {
-            final nextStep = track.steps[(patternStep + 1) % track.steps.length];
-            final bool isSlideStep = step.isSlide || (nextStep.active && step.isSlide);
-            final int? targetPitch = nextStep.active ? nextStep.pitch : null;
-            final bool isAccentStep = step.isAccent || step.velocity > 0.75;
-
-            audioEngine.playNoteOrSample(
-              track: track,
-              midiNote: step.pitch,
-              targetMidiNote: targetPitch,
-              isSlide: isSlideStep,
-              isAccent: isAccentStep,
-              velocity: step.velocity,
-              scheduledTime: hardwareTime,
-            );
+              audioEngine.playNoteOrSample(
+                track: track,
+                midiNote: step.pitch,
+                targetMidiNote: targetPitch,
+                isSlide: isSlideStep,
+                isAccent: isAccentStep,
+                velocity: step.velocity,
+                scheduledTime: hardwareTime,
+              );
+            }
           }
         }
       }

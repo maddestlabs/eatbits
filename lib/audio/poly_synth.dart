@@ -12,6 +12,7 @@ class PolySynth {
   static List<double> generateKickBuffer({double lengthSec = 0.3}) {
     final int numSamples = (sampleRate * lengthSec).toInt();
     final buffer = List<double>.filled(numSamples, 0.0);
+    final fadeSamples = (sampleRate * 0.04).toInt().clamp(64, numSamples ~/ 4);
 
     for (int i = 0; i < numSamples; i++) {
       final t = i / sampleRate;
@@ -19,8 +20,17 @@ class PolySynth {
       final freq = 40.0 + 110.0 * math.exp(-t * 35.0);
       final phase = 2.0 * math.pi * freq * t;
       final env = math.exp(-t * 12.0);
+
+      // Boundary raised-cosine fade to 0.0 at edge of buffer
+      final samplesRemaining = numSamples - 1 - i;
+      double fade = 1.0;
+      if (samplesRemaining < fadeSamples) {
+        final norm = (samplesRemaining / fadeSamples).clamp(0.0, 1.0);
+        fade = 0.5 * (1.0 - math.cos(math.pi * norm));
+      }
+
       // Soft clip saturation
-      final sample = math.sin(phase) * env;
+      final sample = math.sin(phase) * env * fade;
       buffer[i] = (sample * 1.2).clamp(-1.0, 1.0);
     }
     return buffer;
@@ -48,12 +58,22 @@ class PolySynth {
     final buffer = List<double>.filled(numSamples, 0.0);
     final random = math.Random(1234);
 
+    double x1 = 0.0, y1 = 0.0, x2 = 0.0, y2 = 0.0;
+    const cutoff = 8500.0;
+    final alpha = 1.0 / (1.0 + (2.0 * math.pi * cutoff / sampleRate));
+
     for (int i = 0; i < numSamples; i++) {
       final t = i / sampleRate;
-      // High-pass filtered noise
       final noise = (random.nextDouble() * 2.0 - 1.0);
+
+      // Cascaded 2-pole Highpass Filter
+      y1 = alpha * (y1 + noise - x1);
+      x1 = noise;
+      y2 = alpha * (y2 + y1 - x2);
+      x2 = y1;
+
       final env = math.exp(-t * (open ? 12.0 : 45.0));
-      buffer[i] = (noise * env * 0.6).clamp(-1.0, 1.0);
+      buffer[i] = (y2 * env * 0.75).clamp(-1.0, 1.0);
     }
     return buffer;
   }

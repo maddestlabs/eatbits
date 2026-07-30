@@ -3,18 +3,17 @@ Mobile-first and web-first, totally unprofessional digital audio workstation (DA
 
 ---
 
-## Live Web App
+## See it live
 
-👉 **[https://maddestlabs.github.io/eatsbits/](https://maddestlabs.github.io/eatsbits/)**
+▶︎ [https://maddestlabs.github.io/eatsbits/](https://maddestlabs.github.io/eatsbits/)
 
 ---
 
 ## Features
 
-- Built for easy access on the web
-- Built with Flutter for easy portability on native mobile and desktop
-- Unified Edit Section (Piano Roll & Tracker)
-- Lua Live Scripting of audio API
+- Web-first: Built for easy access on the web
+- Made with Flutter: Easy portability for native mobile and desktop
+- Lua scripting: Everything is Lua scripts, built on a WebAudio based API
 
 ---
 
