@@ -47,7 +47,7 @@ jobs:
           fi
 
       - name: Build Web Production App
-        run: flutter build web --release --base-href "/eatbits/"
+        run: flutter build web --release --base-href "/eatsbits/"
 
       - name: Upload Pages Artifact
         uses: actions/upload-pages-artifact@v3

@@ -14,6 +14,8 @@ class Note {
   double velocity; // 0.0 to 1.0
   int column; // Tracker sub-channel column index (0..N)
   String effectCommand; // Hex effect command (e.g., "00", "V90", "P12")
+  bool isSlide;
+  bool isAccent;
 
   Note({
     required this.id,
@@ -23,7 +25,9 @@ class Note {
     this.velocity = 0.9,
     this.column = 0,
     this.effectCommand = '00',
-  });
+    this.isSlide = false,
+    bool? isAccent,
+  }) : isAccent = isAccent ?? (velocity > 0.75);
 
   Note copyWith({
     String? id,
@@ -33,6 +37,8 @@ class Note {
     double? velocity,
     int? column,
     String? effectCommand,
+    bool? isSlide,
+    bool? isAccent,
   }) {
     return Note(
       id: id ?? this.id,
@@ -42,6 +48,8 @@ class Note {
       velocity: velocity ?? this.velocity,
       column: column ?? this.column,
       effectCommand: effectCommand ?? this.effectCommand,
+      isSlide: isSlide ?? this.isSlide,
+      isAccent: isAccent ?? this.isAccent,
     );
   }
 
@@ -53,35 +61,48 @@ class Note {
     'velocity': velocity,
     'column': column,
     'effectCommand': effectCommand,
+    'isSlide': isSlide,
+    'isAccent': isAccent,
   };
 
-  factory Note.fromJson(Map<String, dynamic> json) => Note(
-    id: json['id'] ?? '',
-    pitch: json['pitch'] ?? 60,
-    startStep: (json['startStep'] as num?)?.toDouble() ?? 0.0,
-    durationSteps: (json['durationSteps'] as num?)?.toDouble() ?? 1.0,
-    velocity: (json['velocity'] as num?)?.toDouble() ?? 0.9,
-    column: json['column'] ?? 0,
-    effectCommand: json['effectCommand'] ?? '00',
-  );
+  factory Note.fromJson(Map<String, dynamic> json) {
+    final vel = (json['velocity'] as num?)?.toDouble() ?? 0.9;
+    return Note(
+      id: json['id'] ?? '',
+      pitch: json['pitch'] ?? 60,
+      startStep: (json['startStep'] as num?)?.toDouble() ?? 0.0,
+      durationSteps: (json['durationSteps'] as num?)?.toDouble() ?? 1.0,
+      velocity: vel,
+      column: json['column'] ?? 0,
+      effectCommand: json['effectCommand'] ?? '00',
+      isSlide: json['isSlide'] ?? false,
+      isAccent: json['isAccent'] ?? (vel > 0.75),
+    );
+  }
 }
 
 class StepEvent {
   bool active;
   double velocity;
   int pitch; // Default pitch for drum or note trigger
+  bool isSlide;
+  bool isAccent;
 
   StepEvent({
     this.active = false,
     this.velocity = 0.8,
     this.pitch = 60,
-  });
+    this.isSlide = false,
+    bool? isAccent,
+  }) : isAccent = isAccent ?? (velocity > 0.75);
 
-  StepEvent copyWith({bool? active, double? velocity, int? pitch}) {
+  StepEvent copyWith({bool? active, double? velocity, int? pitch, bool? isSlide, bool? isAccent}) {
     return StepEvent(
       active: active ?? this.active,
       velocity: velocity ?? this.velocity,
       pitch: pitch ?? this.pitch,
+      isSlide: isSlide ?? this.isSlide,
+      isAccent: isAccent ?? this.isAccent,
     );
   }
 
@@ -89,13 +110,20 @@ class StepEvent {
     'active': active,
     'velocity': velocity,
     'pitch': pitch,
+    'isSlide': isSlide,
+    'isAccent': isAccent,
   };
 
-  factory StepEvent.fromJson(Map<String, dynamic> json) => StepEvent(
-    active: json['active'] ?? false,
-    velocity: (json['velocity'] as num?)?.toDouble() ?? 0.8,
-    pitch: json['pitch'] ?? 60,
-  );
+  factory StepEvent.fromJson(Map<String, dynamic> json) {
+    final vel = (json['velocity'] as num?)?.toDouble() ?? 0.8;
+    return StepEvent(
+      active: json['active'] ?? false,
+      velocity: vel,
+      pitch: json['pitch'] ?? 60,
+      isSlide: json['isSlide'] ?? false,
+      isAccent: json['isAccent'] ?? (vel > 0.75),
+    );
+  }
 }
 
 enum FXType { biquadFilter, delay, distortion, bitcrusher, luaFX }

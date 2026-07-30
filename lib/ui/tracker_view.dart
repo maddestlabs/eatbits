@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
-import 'widgets/eatbits_slider.dart';
+import 'widgets/eatsbits_slider.dart';
 
 class TrackerView extends StatefulWidget {
   final DawState dawState;
@@ -477,7 +477,7 @@ class _TrackerViewState extends State<TrackerView> {
                         Text(_formatTrackerNote(selectedPitch), style: const TextStyle(color: DawTheme.accentGold, fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    EatBitsSlider(
+                    EatsBitsSlider(
                       value: selectedPitch.toDouble(),
                       min: 24,
                       max: 84,
@@ -501,7 +501,7 @@ class _TrackerViewState extends State<TrackerView> {
                         Text('${(selectedVol * 100).toInt()}%', style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    EatBitsSlider(
+                    EatsBitsSlider(
                       value: selectedVol,
                       min: 0.0,
                       max: 1.0,

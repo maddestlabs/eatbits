@@ -1,11 +1,11 @@
-# EatBits
+# Eatsbits
 Mobile-first and web-first, totally unprofessional digital audio workstation (DAW) built with Flutter, WebAudio API, and Lua Live Scripting.
 
 ---
 
 ## Live Web App
 
-👉 **[https://maddestlabs.github.io/eatbits/](https://maddestlabs.github.io/eatbits/)**
+👉 **[https://maddestlabs.github.io/eatsbits/](https://maddestlabs.github.io/eatsbits/)**
 
 ---
 
@@ -26,8 +26,8 @@ Mobile-first and web-first, totally unprofessional digital audio workstation (DA
 ### Running Locally
 ```bash
 # Clone the repository
-git clone https://github.com/maddestlabs/eatbits.git
-cd eatbits
+git clone https://github.com/maddestlabs/eatsbits.git
+cd eatsbits
 
 # Fetch dependencies
 flutter pub get
@@ -38,7 +38,7 @@ flutter run -d chrome
 
 ### Building Web Release
 ```bash
-flutter build web --release --base-href "/eatbits/" --pwa-strategy=none
+flutter build web --release --base-href "/eatsbits/" --pwa-strategy=none
 ```
 
 ## GitHub Pages Build Stability
@@ -49,7 +49,7 @@ Avoid these regressions with these rules:
 
 - Prefer bundled fonts or generic `sans-serif` and `monospace` families for web builds instead of runtime font packages.
 - Keep the Pages workflow on a pinned Flutter SDK version so upstream `stable` changes do not silently change the compiler/toolchain.
-- Before pushing UI, dependency, or web bootstrap changes, run `flutter pub get`, `flutter analyze`, and `flutter build web --release --base-href "/eatbits/"` locally.
+- Before pushing UI, dependency, or web bootstrap changes, run `flutter pub get`, `flutter analyze`, and `flutter build web --release --base-href "/eatsbits/"` locally.
 - Treat `pubspec.yaml`, `pubspec.lock`, and `.github/workflows/deploy.yml` as one deployment surface. If one changes, verify the web release build before merging.
 - If remote fonts are required later, bundle them as project assets and declare them in Flutter rather than depending on `google_fonts` for the Pages build path.
 

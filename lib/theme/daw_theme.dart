@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 enum DawThemePreset {
-  cyberpunkCyan,   // EatBits Default Neon Cyan & Dark Obsidian
+  cyberpunkCyan,   // EatsBits Default Neon Cyan & Dark Obsidian
   midnightOled,    // Pitch Black OLED & Electric Cyan
   synthwavePurple, // Deep Purple & Neon Pink
   studioLight,     // Professional Studio Light Mode
@@ -108,7 +108,7 @@ class DawTheme {
       case DawThemePreset.midnightOled:
       case DawThemePreset.cyberpunkCyan:
       default:
-        return const Color(0xFF21F4E8); // EatBits Signature Cyan
+        return const Color(0xFF21F4E8); // EatsBits Signature Cyan
     }
   }
 

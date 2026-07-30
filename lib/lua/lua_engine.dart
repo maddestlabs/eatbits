@@ -94,7 +94,7 @@ class LuaEngine {
         }
       }
 
-      // Check for eatbits.v1 Param handles in Lua scripts
+      // Check for eatsbits.v1 / eatbits.v1 Param handles in Lua scripts
       final v1Matches = _v1ParamRegExp.allMatches(code);
       for (final m in v1Matches) {
         final name = m.group(1)!;
@@ -113,8 +113,8 @@ class LuaEngine {
         scriptType = 'effect';
       }
 
-      // Check basic Lua syntax markers or eatbits.v1 scripts
-      final isV1Script = code.contains('eatbits.v1') || code.contains('Eatbits.v1') || code.contains('eatbits');
+      // Check basic Lua syntax markers or eatsbits.v1 / eatbits.v1 scripts
+      final isV1Script = code.contains('eatsbits.v1') || code.contains('eatbits.v1') || code.contains('Eatsbits.v1') || code.contains('Eatbits.v1') || code.contains('eatsbits') || code.contains('eatbits');
       final hasFunctionOrLocal = code.contains('function') || code.contains('local') || code.contains('Param.add') || code.contains('--');
 
       if (!hasFunctionOrLocal && !isV1Script) {
@@ -129,7 +129,7 @@ class LuaEngine {
 
       return LuaCompilationResult(
         isSuccess: true,
-        errorMessage: 'Compiled successfully (Lua Live Scripting - eatbits.v1 Target)! Active parameters: ${params.length}',
+        errorMessage: 'Compiled successfully (Lua Live Scripting - eatsbits.v1 Target)! Active parameters: ${params.length}',
         params: params,
         scriptType: scriptType,
       );
@@ -143,6 +143,9 @@ class LuaEngine {
     }
   }
 
+  // Voice state map for stateful 303 monophonic synthesis
+  static final Map<String, _AcidVoiceState> _acidVoiceStates = {};
+
   // DSP Math & Synthesis Evaluator for Lua custom synths and drum engines
   static double evaluateSynth({
     required String code,
@@ -152,6 +155,10 @@ class LuaEngine {
     required Map<String, double> params,
     int? targetMidiNote,
     bool isSlide = false,
+    bool isAccent = false,
+    String? trackId,
+    int sampleIndex = 0,
+    int totalSamples = 1,
   }) {
     // 0. Procedural Kick Drum
     if (code.contains('ProceduralKick') || code.contains('StartFreq')) {
@@ -190,58 +197,80 @@ class LuaEngine {
       final res = params['Resonance'] ?? 8.0;
       final envMod = params['EnvMod'] ?? 0.75;
       final decay = params['Decay'] ?? 0.28;
-      final accent = params['Accent'] ?? 0.6;
+      final accentParam = params['Accent'] ?? 0.6;
       final drive = params['Overdrive'] ?? 0.3;
       final slideParam = params['Slide'] ?? 0.0;
 
       if (freq <= 0) return 0.0;
 
-      // Pitch glide / Portamento logic for simultaneous / polyphonic notes
+      final voiceKey = trackId ?? 'default_303';
+      final vState = _acidVoiceStates.putIfAbsent(voiceKey, () => _AcidVoiceState());
+
+      if (sampleIndex == 0) {
+        if (!isSlide) {
+          vState.lastEnv = 1.0;
+          vState.startFreq = freq;
+        } else {
+          vState.startFreq = vState.lastFreq > 0 ? vState.lastFreq : freq;
+        }
+      }
+
+      // Pitch glide / Portamento logic
       double currentFreq = freq;
       if (targetMidiNote != null && targetMidiNote > 0) {
         final targetFreq = 440.0 * math.pow(2.0, (targetMidiNote - 69) / 12.0);
-        currentFreq = targetFreq + (freq - targetFreq) * math.exp(-time / 0.065);
+        currentFreq = targetFreq + (vState.startFreq - targetFreq) * math.exp(-time / 0.060);
       } else if (isSlide || slideParam > 0.5) {
-        final targetFreq = freq * 1.5; // Default half-octave slide if target not specified
-        currentFreq = targetFreq + (freq - targetFreq) * math.exp(-time / 0.065);
+        final targetFreq = targetMidiNote != null ? (440.0 * math.pow(2.0, (targetMidiNote - 69) / 12.0)) : freq;
+        currentFreq = targetFreq + (vState.startFreq - targetFreq) * math.exp(-time / 0.060);
       }
+      vState.lastFreq = currentFreq;
 
-      // Authentic 303 Oscillators: Leaky Integrator Sawtooth & Differentiated Square
-      final phase = time * currentFreq;
-      final normPhase = phase - phase.floorToDouble();
+      // Authentic 303 Oscillators with Continuous Phase Accumulator
+      vState.phase = (vState.phase + (currentFreq / 44100.0)) % 1.0;
+      final normPhase = vState.phase;
       final sawRaw = 2.0 * normPhase - 1.0;
-      final sawHP = sawRaw - 0.85 * math.exp(-time * 15.0);
-      final sqrRaw = normPhase < 0.48 ? 0.75 : -0.75;
+      final sawHP = sawRaw - 0.85 * math.exp(-time * 12.0);
+      final sqrRaw = normPhase < 0.46 ? 0.75 : -0.75;
       final osc = waveType < 0.5 ? sawHP : sqrRaw;
 
-      // Accent boost logic & decay dynamics
-      final envBoost = 1.0 + (accent * 0.8);
-      final envDecay = (decay / envBoost).clamp(0.02, 2.0);
-      final env = math.exp(-time / envDecay);
+      // Dynamic Accent & VCF Envelope Decay Dynamics
+      final bool hasAccent = isAccent || (accentParam > 0.7 && !isSlide);
+      final envBoost = hasAccent ? (1.0 + accentParam * 1.1) : 1.0;
+      final envDecay = (decay / (hasAccent ? (1.0 + accentParam * 0.9) : 1.0)).clamp(0.02, 2.0);
+
+      // Envelope calculation (legato vs retriggered)
+      final env = isSlide ? (vState.lastEnv * math.exp(-time / envDecay)) : math.exp(-time / envDecay);
+      vState.lastEnv = env;
+
+      final accentPulse = hasAccent ? (accentParam * 0.4 * math.exp(-time / 0.035)) : 0.0;
 
       // 4-Pole 24dB Diode Ladder Filter cutoff & non-linear saturation
-      final modCutoff = (cutoff + (envMod * env * 5500.0 * envBoost)).clamp(40.0, 16000.0);
+      final modCutoff = (cutoff + (envMod * (env + accentPulse) * 6500.0 * envBoost)).clamp(40.0, 16000.0);
       final fNorm = (modCutoff / 44100.0 * math.pi * 2.0).clamp(0.005, 0.85);
-      final kRes = (res / 16.0 * 3.8).clamp(0.0, 3.95);
+      final kRes = (res / 16.0 * 3.85).clamp(0.0, 3.95);
 
-      final feedback = kRes * _tanh(osc * 0.5);
+      final feedback = kRes * _tanh(vState.stage4 * 0.45);
       final inputWithRes = _tanh(osc - feedback);
 
-      final stage1 = inputWithRes * fNorm / (1.0 + fNorm);
-      final stage2 = stage1 * fNorm / (1.0 + fNorm);
-      final stage3 = stage2 * fNorm / (1.0 + fNorm);
-      final stage4 = stage3 * fNorm / (1.0 + fNorm);
-      final filtered = stage4 * 4.0;
+      vState.stage1 += fNorm * (inputWithRes - vState.stage1);
+      vState.stage2 += fNorm * (vState.stage1 - vState.stage2);
+      vState.stage3 += fNorm * (vState.stage2 - vState.stage3);
+      vState.stage4 += fNorm * (vState.stage3 - vState.stage4);
+      final filtered = vState.stage4 * (1.0 + kRes * 0.22);
 
-      // Post-VCF 150Hz High-Pass filter & overdrive saturation
-      final highpassed = filtered - (filtered * math.exp(-time * 40.0));
-      double saturated = highpassed;
+      // Post-VCF 150Hz 1-Pole High-Pass filter (fixes attack transient muting bug)
+      final hpfOut = 0.978 * (vState.hpfY1 + filtered - vState.hpfX1);
+      vState.hpfX1 = filtered;
+      vState.hpfY1 = hpfOut;
+
+      double output = hpfOut * (hasAccent ? 1.35 : 1.0);
       if (drive > 0.05) {
-        final gain = 1.0 + (drive * 3.5);
-        saturated = _tanh(highpassed * gain);
+        final gain = 1.0 + (drive * 4.0);
+        output = _tanh(output * gain);
       }
 
-      return (saturated * env * (1.0 + accent * 0.3)).clamp(-1.0, 1.0);
+      return output.clamp(-1.0, 1.0);
     }
 
     // 2. Procedural Snare Drum
@@ -392,3 +421,17 @@ class LuaEngine {
     }
   }
 }
+
+class _AcidVoiceState {
+  double phase = 0.0;
+  double lastEnv = 1.0;
+  double lastFreq = 0.0;
+  double startFreq = 0.0;
+  double stage1 = 0.0;
+  double stage2 = 0.0;
+  double stage3 = 0.0;
+  double stage4 = 0.0;
+  double hpfX1 = 0.0;
+  double hpfY1 = 0.0;
+}
+

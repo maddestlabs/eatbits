@@ -3,7 +3,7 @@ import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
 import '../lua/lua_preset_library.dart';
-import 'widgets/eatbits_slider.dart';
+import 'widgets/eatsbits_slider.dart';
 import 'widgets/skeuomorphic_hardware_button.dart';
 
 class LuaWorkbenchView extends StatefulWidget {
@@ -40,7 +40,6 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
   @override
   Widget build(BuildContext context) {
     final activeTrack = widget.dawState.activeTrack;
-    final tracks = widget.dawState.activePattern.tracks;
     final result = widget.dawState.compilationResult;
 
     // Sync controller if external load happened
@@ -84,48 +83,6 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Active Track Selector Dropdown
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      decoration: BoxDecoration(
-                        color: DawTheme.controlBackground,
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: activeTrack.color, width: 1.5),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<int>(
-                          value: widget.dawState.activeTrackIndex,
-                          dropdownColor: DawTheme.panelBackground,
-                          items: List.generate(tracks.length, (idx) {
-                            final t = tracks[idx];
-                            return DropdownMenuItem<int>(
-                              value: idx,
-                              child: Row(
-                                children: [
-                                  Container(width: 8, height: 8, decoration: BoxDecoration(color: t.color, shape: BoxShape.circle)),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    t.name,
-                                    style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                          onChanged: (idx) {
-                            if (idx != null) {
-                              widget.dawState.activeTrackIndex = idx;
-                              final newTrack = tracks[idx];
-                              _lastTrackId = newTrack.id;
-                              _codeController.text = newTrack.luaScriptCode;
-                            }
-                          },
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(width: 8),
-
                     // Preset Loader Dropdown
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -316,7 +273,7 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                               ],
                             ),
 
-                            EatBitsSlider(
+                            EatsBitsSlider(
                               value: currentVal.clamp(param.min, param.max),
                               min: param.min,
                               max: param.max,

@@ -32,7 +32,7 @@ class _WrenDawAppState extends State<WrenDawApp> {
       animation: _dawState,
       builder: (context, _) {
         return MaterialApp(
-          title: 'Eatbits',
+          title: 'Eatsbits',
           debugShowCheckedModeBanner: false,
           theme: DawTheme.themeData,
           home: DawMainShell(dawState: _dawState),

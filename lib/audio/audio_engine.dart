@@ -271,6 +271,7 @@ class AudioEngine {
     double? scheduledTime,
     int? targetMidiNote,
     bool isSlide = false,
+    bool isAccent = false,
   }) {
     if (!kIsWeb || _audioContext == null) return;
     ensureContextRunning();
@@ -303,6 +304,7 @@ class AudioEngine {
       // Render custom Lua DSP synth sound sample
       pcmBuffer = List<double>.filled((44100 * durationSec).toInt(), 0.0);
       final double freq = PolySynth.midiToFreq(midiNote);
+      final bool activeAccent = isAccent || velocity > 0.75;
 
       for (int i = 0; i < pcmBuffer.length; i++) {
         final double t = i / 44100.0;
@@ -314,6 +316,10 @@ class AudioEngine {
           params: track.luaParams,
           targetMidiNote: targetMidiNote,
           isSlide: isSlide,
+          isAccent: activeAccent,
+          trackId: track.id,
+          sampleIndex: i,
+          totalSamples: pcmBuffer.length,
         );
       }
     } else {

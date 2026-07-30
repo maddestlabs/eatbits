@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../theme/daw_theme.dart';
 import 'compact_value_dialog.dart';
@@ -36,49 +37,57 @@ class SkeuomorphicHardwareSlider extends StatefulWidget {
 }
 
 class _SkeuomorphicHardwareSliderState extends State<SkeuomorphicHardwareSlider> {
-  double _dragStartValue = 0.0;
-  double _dragStartPos = 0.0;
+  void _updateValueFromPos(Offset localPosition, double totalLength, bool isHoriz) {
+    final pos = isHoriz ? localPosition.dx : localPosition.dy;
+    const margin = 14.0;
+    final capTravel = math.max(1.0, totalLength - 2 * margin);
+    final normalized = isHoriz
+        ? ((pos - margin) / capTravel).clamp(0.0, 1.0)
+        : ((totalLength - margin - pos) / capTravel).clamp(0.0, 1.0);
+    final range = widget.max - widget.min;
+    final newVal = widget.min + normalized * range;
+    widget.onChanged(newVal);
+  }
 
   @override
   Widget build(BuildContext context) {
     final activeColor = widget.activeColor ?? DawTheme.primaryCyan;
     final normalized = ((widget.value - widget.min) / (widget.max - widget.min)).clamp(0.0, 1.0);
     final isGrungy = DawTheme.currentPreset == DawThemePreset.grungyHardware;
-
     final isHoriz = widget.orientation == Axis.horizontal;
-    final widgetWidth = isHoriz ? widget.length : 40.0;
-    final widgetHeight = isHoriz ? 36.0 : widget.length;
 
-    return GestureDetector(
-      onPanStart: (details) {
-        _dragStartValue = widget.value;
-        _dragStartPos = isHoriz ? details.localPosition.dx : details.localPosition.dy;
-      },
-      onPanUpdate: (details) {
-        final currentPos = isHoriz ? details.localPosition.dx : details.localPosition.dy;
-        final deltaPos = isHoriz ? (currentPos - _dragStartPos) : (_dragStartPos - currentPos); // Up increases for vertical
-        final range = widget.max - widget.min;
-        final deltaVal = (deltaPos / (widget.length - 20.0)) * range;
-        final newVal = (_dragStartValue + deltaVal).clamp(widget.min, widget.max);
-        widget.onChanged(newVal);
-      },
-      onDoubleTap: () => widget.onChanged(widget.defaultValue),
-      onLongPress: () => _showManualEditDialog(context),
-      child: Tooltip(
-        message: '${widget.label ?? "Fader"}: ${widget.value.toStringAsFixed(2)}',
-        child: SizedBox(
-          width: widgetWidth,
-          height: widgetHeight,
-          child: CustomPaint(
-            painter: _FaderPainter(
-              normalizedValue: normalized,
-              accentColor: activeColor,
-              isGrungyTheme: isGrungy,
-              orientation: widget.orientation,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalLength = isHoriz
+            ? (constraints.hasBoundedWidth && constraints.maxWidth.isFinite ? constraints.maxWidth : widget.length)
+            : (constraints.hasBoundedHeight && constraints.maxHeight.isFinite ? constraints.maxHeight : widget.length);
+
+        final widgetWidth = isHoriz ? totalLength : 40.0;
+        final widgetHeight = isHoriz ? 36.0 : totalLength;
+
+        return GestureDetector(
+          onTapDown: (details) => _updateValueFromPos(details.localPosition, totalLength, isHoriz),
+          onPanDown: (details) => _updateValueFromPos(details.localPosition, totalLength, isHoriz),
+          onPanUpdate: (details) => _updateValueFromPos(details.localPosition, totalLength, isHoriz),
+          onDoubleTap: () => widget.onChanged(widget.defaultValue),
+          onLongPress: () => _showManualEditDialog(context),
+          child: Tooltip(
+            message: '${widget.label ?? "Fader"}: ${widget.value.toStringAsFixed(2)}',
+            child: SizedBox(
+              width: widgetWidth,
+              height: widgetHeight,
+              child: CustomPaint(
+                painter: _FaderPainter(
+                  normalizedValue: normalized,
+                  accentColor: activeColor,
+                  isGrungyTheme: isGrungy,
+                  orientation: widget.orientation,
+                ),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
-import 'widgets/eatbits_slider.dart';
+import 'widgets/eatsbits_slider.dart';
 
 class ArrangerView extends StatefulWidget {
   final DawState dawState;
@@ -163,7 +163,7 @@ class _ArrangerViewState extends State<ArrangerView> {
                                         SizedBox(
                                           width: 50,
                                           height: 20,
-                                          child: EatBitsSlider(
+                                          child: EatsBitsSlider(
                                             value: track.volume,
                                             min: 0.0,
                                             max: 1.5,

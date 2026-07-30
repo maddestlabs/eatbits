@@ -1,4 +1,4 @@
-# Eatbits Engine API — Audio & Scripting Specification Reference
+# Eatsbits Engine API — Audio & Scripting Specification Reference
 
 **Version:** 1.0.0-draft  
 **Target Runtimes:** WebAudio API (Browser / Flutter Web), Native C++ / Soundpipe / AudioUnit / VST Core  
@@ -32,7 +32,7 @@ Everything a script does becomes a message on a one-directional command queue in
 
 ---
 
-## 2. Core API Surface (`eatbits.v1`)
+## 2. Core API Surface (`eatsbits.v1`)
 
 ### 2.1 Opaque Handles (`NodeHandle`, `ParamHandle`, `BusHandle`)
 Scripts never hold pointers or direct JS/C++ object references into the audio graph. All references are lightweight numeric/string identifiers wrapped in Lua opaque handle tables.
@@ -52,15 +52,15 @@ function NodeHandle:getParam(paramName)
 end
 
 function NodeHandle:connect(targetNode)
-  eatbits.v1.connect(self.id, targetNode.id)
+  eatsbits.v1.connect(self.id, targetNode.id)
 end
 
 function NodeHandle:connectToParam(targetParamHandle)
-  eatbits.v1.connectToParam(self.id, targetParamHandle.nodeId, targetParamHandle.paramName)
+  eatsbits.v1.connectToParam(self.id, targetParamHandle.nodeId, targetParamHandle.paramName)
 end
 
 function NodeHandle:disconnect()
-  eatbits.v1.disconnect(self.id)
+  eatsbits.v1.disconnect(self.id)
 end
 
 -- ParamHandle Table Structure
@@ -72,19 +72,19 @@ function ParamHandle.new(nodeId, paramName)
 end
 
 function ParamHandle:setValueAtTime(value, time)
-  eatbits.v1.scheduleParamOp(self.nodeId, self.paramName, "setValue", value, time)
+  eatsbits.v1.scheduleParamOp(self.nodeId, self.paramName, "setValue", value, time)
 end
 
 function ParamHandle:exponentialRampToValueAtTime(value, time)
-  eatbits.v1.scheduleParamOp(self.nodeId, self.paramName, "exponentialRamp", value, time)
+  eatsbits.v1.scheduleParamOp(self.nodeId, self.paramName, "exponentialRamp", value, time)
 end
 ```
 
 ---
 
-### 2.2 Node Factory & Registry
+## 2.2 Node Factory & Registry
 
-Scripts request audio processing nodes via `eatbits.v1.createNode(nodeType, configTable)`. The native WebAudio graph instantiates corresponding nodes.
+Scripts request audio processing nodes via `eatsbits.v1.createNode(nodeType, configTable)`. The native WebAudio graph instantiates corresponding nodes.
 
 #### Standard Native Node Registry:
 | Category | Node Name | Config Keys & Defaults | Exposed `ParamHandle`s |
@@ -110,9 +110,9 @@ Scripts dynamically alter signal chains at runtime without recreating nodes or d
 
 ```lua
 -- Route Synth -> Delay -> Master Bus
-local synth = eatbits.v1.createNode("TB303", {})
-local delay = eatbits.v1.createNode("StereoDelayFX", { timeMs = 250 })
-local master = eatbits.v1.getMasterBus()
+local synth = eatsbits.v1.createNode("TB303", {})
+local delay = eatsbits.v1.createNode("StereoDelayFX", { timeMs = 250 })
+local master = eatsbits.v1.getMasterBus()
 
 synth:connect(delay)
 delay:connect(master)
@@ -161,11 +161,11 @@ $$\text{Time}_{\text{seconds}} = \text{Clock}_{\text{start}} + \left( \text{Beat
 local Scheduler = {}
 
 function Scheduler.bpm()
-  return eatbits.v1.getBpm()
+  return eatsbits.v1.getBpm()
 end
 
 function Scheduler.currentTime()
-  return eatbits.v1.getAudioTime()
+  return eatsbits.v1.getAudioTime()
 end
 
 function Scheduler.beatsToSeconds(beats)
@@ -175,7 +175,7 @@ end
 function Scheduler.scheduleNote(pitch, velocity, beatOffset, durationBeats)
   local startTime = Scheduler.currentTime() + Scheduler.beatsToSeconds(beatOffset)
   local durationSec = Scheduler.beatsToSeconds(durationBeats)
-  eatbits.v1.sendNoteOn(pitch, velocity, startTime, durationSec)
+  eatsbits.v1.sendNoteOn(pitch, velocity, startTime, durationSec)
 end
 ```
 
@@ -186,9 +186,9 @@ end
 Events flow into a timestamped queue processed by native instrument engines ahead of playhead arrival (50ms - 150ms lookahead horizon).
 
 ```lua
-eatbits.v1.sendNoteOn(60, 0.9, startTime, durationSeconds)
-eatbits.v1.sendNoteOff(60, stopTime)
-eatbits.v1.sendEvent("triggerAccent", { accentLevel = 1.0 }, startTime)
+eatsbits.v1.sendNoteOn(60, 0.9, startTime, durationSeconds)
+eatsbits.v1.sendNoteOff(60, stopTime)
+eatsbits.v1.sendEvent("triggerAccent", { accentLevel = 1.0 }, startTime)
 ```
 
 ---
@@ -201,7 +201,7 @@ Scripts and UI poll double-buffered feedback snapshots without blocking audio ex
 local Meter = {}
 
 function Meter.getSnapshot()
-  return eatbits.v1.getMeterSnapshot()
+  return eatsbits.v1.getMeterSnapshot()
 end
 ```
 
@@ -240,6 +240,6 @@ return MyTrackScript
 
 ---
 
-### 2.10 Versioned API Namespace (`eatbits.v1`)
+### 2.10 Versioned API Namespace (`eatsbits.v1`)
 
-All track scripts target explicitly versioned namespaces (`eatbits.v1`), guaranteeing backwards compatibility across engine upgrades.
+All track scripts target explicitly versioned namespaces (`eatsbits.v1`), guaranteeing backwards compatibility across engine upgrades.

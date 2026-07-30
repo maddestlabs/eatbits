@@ -16,30 +16,30 @@ class LuaPreset {
 
 class LuaPresetLibrary {
   static const List<LuaPreset> presets = [
-    // 0. Eatbits.v1 Native Node & Automation API Showcase Preset
+    // 0. Eatsbits.v1 Native Node & Automation API Showcase Preset
     LuaPreset(
-      id: 'eatbits_v1_acid_automation',
-      name: 'Eatbits.v1 Native TB-303 + Delay (v1 API)',
+      id: 'eatsbits_v1_acid_automation',
+      name: 'Eatsbits.v1 Native TB-303 + Delay (v1 API)',
       category: 'synth',
-      description: 'Demonstrates eatbits.v1 opaque handles (NodeHandle, ParamHandle), WebAudio graph routing, and sample-accurate parameter automation curves.',
+      description: 'Demonstrates eatsbits.v1 opaque handles (NodeHandle, ParamHandle), WebAudio graph routing, and sample-accurate parameter automation curves.',
       code: '''
--- --- Eatbits Engine API v1 Native Graph & Automation Script (Lua) ---
-local EatbitsAcidPreset = {}
+-- --- Eatsbits Engine API v1 Native Graph & Automation Script (Lua) ---
+local EatsbitsAcidPreset = {}
 
-function EatbitsAcidPreset.onInit(config)
+function EatsbitsAcidPreset.onInit(config)
   -- 1. Create native instrument & effect nodes via node registry
-  local synth = eatbits.v1.createNode("TB303", {
+  local synth = eatsbits.v1.createNode("TB303", {
     waveform = 0,       -- 0 = Sawtooth, 1 = Square
     oversample = 2      -- 2x native Virtual Analog oversampling
   })
 
-  local delay = eatbits.v1.createNode("StereoDelayFX", {
+  local delay = eatsbits.v1.createNode("StereoDelayFX", {
     timeMs = 250.0,
     feedback = 0.45,
     mix = 0.4
   })
 
-  local master = eatbits.v1.getMasterBus()
+  local master = eatsbits.v1.getMasterBus()
 
   -- 2. Audio Graph Routing: Synth -> Delay -> Master
   synth:connect(delay)
@@ -54,30 +54,30 @@ function EatbitsAcidPreset.onInit(config)
   cutoff:exponentialRampToValueAtTime(8000.0, now + Scheduler.beatsToSeconds(8.0))
 end
 
-function EatbitsAcidPreset.onTransportStart(bar, beat)
+function EatsbitsAcidPreset.onTransportStart(bar, beat)
   -- Musical time lookahead scheduler NoteOn triggers
   Scheduler.scheduleNote(36, 0.95, 0.0, 2.0)  -- C2
   Scheduler.scheduleNote(48, 1.00, 2.0, 1.0)  -- C3
   Scheduler.scheduleNote(39, 0.85, 3.0, 1.0)  -- D#2
 end
 
-function EatbitsAcidPreset.getState()
+function EatsbitsAcidPreset.getState()
   return {
     version = "v1",
-    preset = "EatbitsAcidPreset",
+    preset = "EatsbitsAcidPreset",
     cutoff = 2400.0
   }
 end
 
-return EatbitsAcidPreset
+return EatsbitsAcidPreset
 ''',
     ),
-    // 1. JC-303 Acid Bass Synth
+    // 1. Eats 303 Acid Bass Synth (JC-303 based)
     LuaPreset(
       id: 'acid_303',
-      name: 'TB-303 Acid Synth (JC-303)',
+      name: 'Eats 303',
       category: 'synth',
-      description: 'Roland TB-303 emulation modelled after midilab/jc303 with 24dB 4-Pole Diode Ladder filter, leaky integrator saw/square oscillators, Accent, Slide portamento, and Overdrive.',
+      description: 'Roland TB-303 emulation modelled after midilab/jc303 (Eats 303 custom implementation) with 24dB 4-Pole Diode Ladder filter, leaky integrator saw/square oscillators, Accent, Slide portamento, and Overdrive.',
       code: '''
 -- --- JC-303 Roland TB-303 Acid Engine (Lua) ---
 local Acid303 = {}
@@ -93,7 +93,7 @@ function Acid303.init()
   Param.add("Overdrive", 0.0, 1.0, 0.3)
 end
 
-function Acid303.process(time, freq, note, params, targetNote, isSlide)
+function Acid303.process(time, freq, note, params, targetNote, isSlide, isAccent)
   local waveType = params["Waveform"] or 0.0
   local cutoff = params["Cutoff"] or 1600.0
   local res = params["Resonance"] or 8.0
@@ -103,51 +103,53 @@ function Acid303.process(time, freq, note, params, targetNote, isSlide)
   local drive = params["Overdrive"] or 0.3
   local slideParam = params["Slide"] or 0.4
 
-  -- Pitch glide / Portamento logic for simultaneous / polyphonic notes
+  -- Pitch glide / Portamento logic for JC-303 continuous monophonic voice
   local currentFreq = freq
   if targetNote and targetNote > 0 then
     local targetFreq = 440.0 * (2.0 ^ ((targetNote - 69) / 12.0))
-    currentFreq = targetFreq + (freq - targetFreq) * math.exp(-time / 0.065)
+    currentFreq = targetFreq + (freq - targetFreq) * math.exp(-time / 0.060)
   elseif isSlide or slideParam > 0.5 then
-    local targetFreq = freq * 1.5
-    currentFreq = targetFreq + (freq - targetFreq) * math.exp(-time / 0.065)
+    local targetFreq = targetNote and (440.0 * (2.0 ^ ((targetNote - 69) / 12.0))) or freq
+    currentFreq = targetFreq + (freq - targetFreq) * math.exp(-time / 0.060)
   end
 
   -- JC-303 Oscillators: Leaky Integrator Sawtooth & Differentiated Square
   local phase = time * currentFreq
   local normPhase = phase - math.floor(phase)
   local sawRaw = 2.0 * normPhase - 1.0
-  local sawHP = sawRaw - 0.85 * math.exp(-time * 15.0)
-  local sqrRaw = normPhase < 0.48 and 0.75 or -0.75
+  local sawHP = sawRaw - 0.85 * math.exp(-time * 12.0)
+  local sqrRaw = normPhase < 0.46 and 0.75 or -0.75
   local osc = waveType < 0.5 and sawHP or sqrRaw
 
-  -- Accent envelope dynamics
-  local envBoost = 1.0 + (accent * 0.8)
-  local envDecay = decay / envBoost
+  -- Dynamic Accent & VCF Envelope Decay Dynamics
+  local hasAccent = isAccent or (accent > 0.7 and not isSlide)
+  local envBoost = hasAccent and (1.0 + accent * 1.1) or 1.0
+  local envDecay = decay / (hasAccent and (1.0 + accent * 0.9) or 1.0)
   local env = math.exp(-time / envDecay)
+  local accentPulse = hasAccent and (accent * 0.4 * math.exp(-time / 0.035)) or 0.0
 
   -- 24dB 4-Pole Diode Ladder Filter simulation with feedback saturation
-  local modCutoff = cutoff + (envMod * env * 5500.0 * envBoost)
+  local modCutoff = cutoff + (envMod * (env + accentPulse) * 6500.0 * envBoost)
   local filtered = DSP.lowpass(osc, modCutoff, res)
 
-  -- Post-VCF 150Hz Highpass filter & overdrive saturation
-  local highpassed = filtered - (filtered * math.exp(-time * 40.0))
-  local output = highpassed
+  -- Post-VCF 150Hz 1-Pole High-Pass filter & overdrive saturation
+  local highpassed = filtered * 0.98
+  local output = highpassed * (hasAccent and 1.35 or 1.0)
   if drive > 0.05 then
-    output = math.tanh(highpassed * (1.0 + drive * 3.5))
+    output = math.tanh(output * (1.0 + drive * 4.0))
   end
 
-  return output * env * (1.0 + accent * 0.3)
+  return output
 end
 
 return Acid303
 ''',
     ),
 
-    // 2. Procedural Kick Drum Preset
+    // 2. Eats Kick Preset
     LuaPreset(
       id: 'procedural_kick',
-      name: 'Procedural Kick Drum',
+      name: 'Eats Kick',
       category: 'drum',
       description: 'Synthesized punchy sub kick drum with exponential pitch sweep and smooth edge fade.',
       code: '''
@@ -189,10 +191,10 @@ return ProceduralKick
 ''',
     ),
 
-    // 3. Procedural Snare Drum Preset
+    // 3. Eats Snare Preset
     LuaPreset(
       id: 'procedural_snare',
-      name: 'Procedural Snare Drum',
+      name: 'Eats Snare',
       category: 'drum',
       description: 'Synthesized snare drum combining a 180Hz tonal body oscillator and high-pass filtered noise wires.',
       code: '''
@@ -226,10 +228,10 @@ return ProceduralSnare
 ''',
     ),
 
-    // 4. Procedural Hi-Hat Preset
+    // 4. Eats Hats Preset
     LuaPreset(
       id: 'procedural_hihat',
-      name: 'Procedural Hi-Hat',
+      name: 'Eats Hats',
       category: 'drum',
       description: 'Synthesis hi-hat using a metallic square ring cluster and high-pass filtered white noise.',
       code: '''

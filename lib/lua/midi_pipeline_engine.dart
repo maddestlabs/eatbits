@@ -138,7 +138,7 @@ class MidiPipelineEngine {
   /// it updates the `notes = { ... }` block while preserving the rest of the code.
   static String serializeNotesToLua(List<Note> notes, {String? existingCode}) {
     final notesBuffer = StringBuffer();
-    notesBuffer.writeln('-- Clip Notes Data (eatbits.v1)');
+    notesBuffer.writeln('-- Clip Notes Data (eatsbits.v1)');
     notesBuffer.writeln('notes = {');
     for (int i = 0; i < notes.length; i++) {
       final n = notes[i];

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/daw_theme.dart';
 import 'skeuomorphic_hardware_slider.dart';
 
-class EatBitsSlider extends StatelessWidget {
+class EatsBitsSlider extends StatelessWidget {
   final double value;
   final double min;
   final double max;
@@ -14,7 +14,7 @@ class EatBitsSlider extends StatelessWidget {
   final int? divisions;
   final String Function(double)? formatValue;
 
-  const EatBitsSlider({
+  const EatsBitsSlider({
     super.key,
     required this.value,
     this.min = 0.0,

@@ -141,7 +141,7 @@ class DawState extends ChangeNotifier {
   void _initDemoTracks() {
     final trackKick = TrackChannel(
       id: 't_kick',
-      name: 'Kick Drum',
+      name: 'Eats Kick',
       color: DawTheme.secondaryMagenta,
       type: TrackType.luaScript,
       luaScriptCode: LuaPresetLibrary.presets.firstWhere((p) => p.id == 'procedural_kick').code,
@@ -155,7 +155,7 @@ class DawState extends ChangeNotifier {
 
     final trackSnare = TrackChannel(
       id: 't_snare',
-      name: 'Snare',
+      name: 'Eats Snare',
       color: DawTheme.primaryCyan,
       type: TrackType.luaScript,
       luaScriptCode: LuaPresetLibrary.presets.firstWhere((p) => p.id == 'procedural_snare').code,
@@ -169,7 +169,7 @@ class DawState extends ChangeNotifier {
 
     final trackHat = TrackChannel(
       id: 't_hihat',
-      name: 'Hi-Hat',
+      name: 'Eats Hats',
       color: DawTheme.accentGold,
       type: TrackType.luaScript,
       luaScriptCode: LuaPresetLibrary.presets.firstWhere((p) => p.id == 'procedural_hihat').code,
@@ -181,10 +181,10 @@ class DawState extends ChangeNotifier {
           .toList(),
     );
 
-    // Lua Script Track - JC-303 Acid Synth
+    // Lua Script Track - Eats 303 Acid Synth
     final trackLua303 = TrackChannel(
       id: 't_lua_303',
-      name: 'JC-303 Acid Synth',
+      name: 'Eats 303',
       color: DawTheme.accentGreen,
       type: TrackType.luaScript,
       volume: 0.9,
@@ -237,6 +237,12 @@ class DawState extends ChangeNotifier {
         ],
       ),
     ];
+
+    // Synchronize initial Lua editor code and parameters with active track on startup
+    if (activeTrack.luaScriptCode.isNotEmpty) {
+      luaCode = activeTrack.luaScriptCode;
+      compilationResult = LuaEngine.compile(luaCode);
+    }
   }
 
   // Lua Engine Compilation & Hot Swap
@@ -436,25 +442,20 @@ class DawState extends ChangeNotifier {
             
             if (clip.notes.isNotEmpty) {
               final matchingNotes = clip.notes.where((n) => n.startStep.toInt() == localStep).toList();
-              if (matchingNotes.length > 1) {
-                // Polyphony / Simultaneous Notes -> Auto-Slide / Pitch Glide
-                matchingNotes.sort((a, b) => a.pitch.compareTo(b.pitch));
-                final first = matchingNotes.first;
-                final second = matchingNotes.last;
-                audioEngine.playNoteOrSample(
-                  track: track,
-                  midiNote: first.pitch,
-                  targetMidiNote: second.pitch,
-                  isSlide: true,
-                  velocity: first.velocity,
-                  durationSec: first.durationSteps * stepDurationSec,
-                  scheduledTime: hardwareTime,
-                );
-              } else if (matchingNotes.length == 1) {
+              if (matchingNotes.isNotEmpty) {
                 final note = matchingNotes.first;
+                final nextLocalStep = localStep + 1;
+                final nextNotes = clip.notes.where((n) => n.startStep.toInt() == nextLocalStep).toList();
+                final int? targetPitch = nextNotes.isNotEmpty ? nextNotes.first.pitch : (matchingNotes.length > 1 ? matchingNotes.last.pitch : null);
+                final bool isSlideNote = note.isSlide || (note.durationSteps > 1.0) || (nextNotes.isNotEmpty && (note.isSlide || note.durationSteps >= 1.0));
+                final bool isAccentNote = note.isAccent || note.velocity > 0.75;
+
                 audioEngine.playNoteOrSample(
                   track: track,
                   midiNote: note.pitch,
+                  targetMidiNote: targetPitch,
+                  isSlide: isSlideNote,
+                  isAccent: isAccentNote,
                   velocity: note.velocity,
                   durationSec: note.durationSteps * stepDurationSec,
                   scheduledTime: hardwareTime,
@@ -463,9 +464,17 @@ class DawState extends ChangeNotifier {
             } else if (localStep < track.steps.length) {
               final step = track.steps[localStep % track.steps.length];
               if (step.active) {
+                final nextStep = track.steps[(localStep + 1) % track.steps.length];
+                final bool isSlideStep = step.isSlide || (nextStep.active && step.isSlide);
+                final int? targetPitch = nextStep.active ? nextStep.pitch : null;
+                final bool isAccentStep = step.isAccent || step.velocity > 0.75;
+
                 audioEngine.playNoteOrSample(
                   track: track,
                   midiNote: step.pitch,
+                  targetMidiNote: targetPitch,
+                  isSlide: isSlideStep,
+                  isAccent: isAccentStep,
                   velocity: step.velocity,
                   scheduledTime: hardwareTime,
                 );
@@ -478,25 +487,20 @@ class DawState extends ChangeNotifier {
         final int patternStep = stepIdx % currentPattern.lengthSteps;
         final matchingNotes = track.notes.where((n) => n.startStep.toInt() == patternStep).toList();
 
-        if (matchingNotes.length > 1) {
-          // Polyphony / Simultaneous Notes -> Auto-Slide / Pitch Glide
-          matchingNotes.sort((a, b) => a.pitch.compareTo(b.pitch));
-          final first = matchingNotes.first;
-          final second = matchingNotes.last;
-          audioEngine.playNoteOrSample(
-            track: track,
-            midiNote: first.pitch,
-            targetMidiNote: second.pitch,
-            isSlide: true,
-            velocity: first.velocity,
-            durationSec: (first.durationSteps * stepDurationSec),
-            scheduledTime: hardwareTime,
-          );
-        } else if (matchingNotes.length == 1) {
+        if (matchingNotes.isNotEmpty) {
           final note = matchingNotes.first;
+          final nextPatternStep = (patternStep + 1) % currentPattern.lengthSteps;
+          final nextNotes = track.notes.where((n) => n.startStep.toInt() == nextPatternStep).toList();
+          final int? targetPitch = nextNotes.isNotEmpty ? nextNotes.first.pitch : (matchingNotes.length > 1 ? matchingNotes.last.pitch : null);
+          final bool isSlideNote = note.isSlide || (note.durationSteps > 1.0) || (nextNotes.isNotEmpty && (note.isSlide || note.durationSteps >= 1.0));
+          final bool isAccentNote = note.isAccent || note.velocity > 0.75;
+
           audioEngine.playNoteOrSample(
             track: track,
             midiNote: note.pitch,
+            targetMidiNote: targetPitch,
+            isSlide: isSlideNote,
+            isAccent: isAccentNote,
             velocity: note.velocity,
             durationSec: (note.durationSteps * stepDurationSec),
             scheduledTime: hardwareTime,
@@ -504,9 +508,17 @@ class DawState extends ChangeNotifier {
         } else if (patternStep < track.steps.length) {
           final step = track.steps[patternStep];
           if (step.active) {
+            final nextStep = track.steps[(patternStep + 1) % track.steps.length];
+            final bool isSlideStep = step.isSlide || (nextStep.active && step.isSlide);
+            final int? targetPitch = nextStep.active ? nextStep.pitch : null;
+            final bool isAccentStep = step.isAccent || step.velocity > 0.75;
+
             audioEngine.playNoteOrSample(
               track: track,
               midiNote: step.pitch,
+              targetMidiNote: targetPitch,
+              isSlide: isSlideStep,
+              isAccent: isAccentStep,
               velocity: step.velocity,
               scheduledTime: hardwareTime,
             );

@@ -35,15 +35,15 @@ class TransportHeader extends StatelessWidget {
       ),
         child: Row(
           children: [
-            // EatBits Monster Icon drawn directly on background
+            // EatsBits Monster Icon drawn directly on background
             Tooltip(
-              message: 'Eatbits Settings',
+              message: 'Eatsbits Settings',
               child: InkWell(
                 onTap: () => _showSettingsDialog(context),
                 borderRadius: BorderRadius.circular(6),
                 child: const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-                  child: EatBitsMonsterIcon(size: 28),
+                  child: EatsBitsMonsterIcon(size: 28),
                 ),
               ),
             ),
@@ -126,10 +126,10 @@ class TransportHeader extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Row(
             children: [
-              const EatBitsMonsterIcon(size: 28),
+              const EatsBitsMonsterIcon(size: 28),
               const SizedBox(width: 10),
               Text(
-                'EATBITS SETTINGS',
+                'EATSBITS SETTINGS',
                 style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ],
@@ -259,10 +259,10 @@ class TransportHeader extends StatelessWidget {
   }
 }
 
-// Custom EatBits Monster Icon Widget
-class EatBitsMonsterIcon extends StatelessWidget {
+// Custom EatsBits Monster Icon Widget
+class EatsBitsMonsterIcon extends StatelessWidget {
   final double size;
-  const EatBitsMonsterIcon({super.key, this.size = 24.0});
+  const EatsBitsMonsterIcon({super.key, this.size = 24.0});
 
   @override
   Widget build(BuildContext context) {
@@ -276,14 +276,14 @@ class EatBitsMonsterIcon extends StatelessWidget {
       child: Center(
         child: CustomPaint(
           size: Size(size * 0.85, size * 0.85),
-          painter: _EatBitsMonsterPainter(),
+          painter: _EatsBitsMonsterPainter(),
         ),
       ),
     );
   }
 }
 
-class _EatBitsMonsterPainter extends CustomPainter {
+class _EatsBitsMonsterPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()

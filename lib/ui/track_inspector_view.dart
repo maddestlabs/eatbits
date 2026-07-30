@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
-import 'widgets/eatbits_slider.dart';
+import 'widgets/eatsbits_slider.dart';
 import 'widgets/skeuomorphic_hardware_knob.dart';
 import 'widgets/grungy_rack_panel.dart';
 import 'widgets/glowing_nixie_display.dart';
@@ -113,7 +113,7 @@ class TrackInspectorView extends StatelessWidget {
                   children: [
                     SizedBox(width: 70, child: Text('VOLUME', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textSecondary, fontSize: 11))),
                     Expanded(
-                      child: EatBitsSlider(
+                      child: EatsBitsSlider(
                         value: track.volume,
                         min: 0.0,
                         max: 1.5,
@@ -132,7 +132,7 @@ class TrackInspectorView extends StatelessWidget {
                   children: [
                     SizedBox(width: 70, child: Text('PAN', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textSecondary, fontSize: 11))),
                     Expanded(
-                      child: EatBitsSlider(
+                      child: EatsBitsSlider(
                         value: track.pan,
                         min: -1.0,
                         max: 1.0,
@@ -184,7 +184,7 @@ class TrackInspectorView extends StatelessWidget {
                         children: [
                           SizedBox(width: 100, child: Text(paramDef.name, style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11))),
                           Expanded(
-                            child: EatBitsSlider(
+                            child: EatsBitsSlider(
                               value: currentVal,
                               min: paramDef.min,
                               max: paramDef.max,
