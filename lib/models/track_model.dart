@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum MusicViewType { pianoRoll, tracker, score }
+enum MusicViewType { pianoRoll, tracker, script, score }
 enum TrackType { sampler, synth, luaScript, bass;
   // Backward compatibility getter
   bool get isScript => this == TrackType.luaScript;
@@ -136,6 +136,54 @@ class FXInsert {
   );
 }
 
+class MidiFXInsert {
+  String id;
+  String name;
+  bool enabled;
+  String luaScriptCode;
+  Map<String, double> luaParams;
+
+  MidiFXInsert({
+    required this.id,
+    required this.name,
+    this.enabled = true,
+    this.luaScriptCode = '',
+    Map<String, double>? luaParams,
+  }) : luaParams = luaParams ?? {};
+
+  MidiFXInsert copyWith({
+    String? id,
+    String? name,
+    bool? enabled,
+    String? luaScriptCode,
+    Map<String, double>? luaParams,
+  }) {
+    return MidiFXInsert(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      enabled: enabled ?? this.enabled,
+      luaScriptCode: luaScriptCode ?? this.luaScriptCode,
+      luaParams: luaParams ?? Map.from(this.luaParams),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'enabled': enabled,
+    'luaScriptCode': luaScriptCode,
+    'luaParams': luaParams,
+  };
+
+  factory MidiFXInsert.fromJson(Map<String, dynamic> json) => MidiFXInsert(
+    id: json['id'] ?? '',
+    name: json['name'] ?? '',
+    enabled: json['enabled'] ?? true,
+    luaScriptCode: json['luaScriptCode'] ?? '',
+    luaParams: Map<String, double>.from(json['luaParams'] ?? {}),
+  );
+}
+
 class TrackClip {
   String id;
   String name;
@@ -143,6 +191,9 @@ class TrackClip {
   int startBar; // 0, 1, 2, 3...
   int barLength; // 1, 2, 4, 8...
   List<Note> notes;
+  String luaScriptCode;
+  Map<String, double> luaParams;
+  List<Note>? evaluatedNotesCache;
 
   TrackClip({
     required this.id,
@@ -151,7 +202,11 @@ class TrackClip {
     this.startBar = 0,
     this.barLength = 4,
     List<Note>? notes,
-  }) : notes = notes ?? [];
+    this.luaScriptCode = '',
+    Map<String, double>? luaParams,
+    this.evaluatedNotesCache,
+  })  : notes = notes ?? [],
+        luaParams = luaParams ?? {};
 
   TrackClip copyWith({
     String? id,
@@ -160,6 +215,9 @@ class TrackClip {
     int? startBar,
     int? barLength,
     List<Note>? notes,
+    String? luaScriptCode,
+    Map<String, double>? luaParams,
+    List<Note>? evaluatedNotesCache,
   }) {
     return TrackClip(
       id: id ?? this.id,
@@ -168,8 +226,33 @@ class TrackClip {
       startBar: startBar ?? this.startBar,
       barLength: barLength ?? this.barLength,
       notes: notes ?? this.notes.map((n) => n.copyWith()).toList(),
+      luaScriptCode: luaScriptCode ?? this.luaScriptCode,
+      luaParams: luaParams ?? Map.from(this.luaParams),
+      evaluatedNotesCache: evaluatedNotesCache ?? (this.evaluatedNotesCache != null ? this.evaluatedNotesCache!.map((n) => n.copyWith()).toList() : null),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'trackId': trackId,
+    'startBar': startBar,
+    'barLength': barLength,
+    'notes': notes.map((n) => n.toJson()).toList(),
+    'luaScriptCode': luaScriptCode,
+    'luaParams': luaParams,
+  };
+
+  factory TrackClip.fromJson(Map<String, dynamic> json) => TrackClip(
+    id: json['id'] ?? '',
+    name: json['name'] ?? '',
+    trackId: json['trackId'] ?? '',
+    startBar: json['startBar'] ?? 0,
+    barLength: json['barLength'] ?? 4,
+    notes: (json['notes'] as List?)?.map((n) => Note.fromJson(n)).toList() ?? [],
+    luaScriptCode: json['luaScriptCode'] ?? '',
+    luaParams: Map<String, double>.from(json['luaParams'] ?? {}),
+  );
 }
 
 class TrackChannel {
@@ -205,8 +288,9 @@ class TrackChannel {
   List<Note> notes; // Active clip notes
   List<TrackClip> clips; // Per-track arrangement clips
 
-  // FX Rack
-  List<FXInsert> fxRack;
+  // FX Racks
+  List<FXInsert> fxRack; // Audio FX Rack
+  List<MidiFXInsert> midiFXRack; // MIDI FX Rack
 
   // Multi-View Config
   int trackerColumns; // Number of tracker sub-channel columns for polyphony (default 4)
@@ -237,12 +321,14 @@ class TrackChannel {
     List<Note>? notes,
     List<TrackClip>? clips,
     List<FXInsert>? fxRack,
+    List<MidiFXInsert>? midiFXRack,
   })  : luaScriptCode = luaScriptCode.isNotEmpty ? luaScriptCode : wrenScriptCode,
         luaParams = luaParams ?? wrenParams ?? {},
         steps = steps ?? List.generate(32, (_) => StepEvent()),
         notes = notes ?? [],
         clips = clips ?? [],
-        fxRack = fxRack ?? [];
+        fxRack = fxRack ?? [],
+        midiFXRack = midiFXRack ?? [];
 
   TrackChannel copyWith({
     String? id,
@@ -269,6 +355,7 @@ class TrackChannel {
     List<Note>? notes,
     List<TrackClip>? clips,
     List<FXInsert>? fxRack,
+    List<MidiFXInsert>? midiFXRack,
   }) {
     return TrackChannel(
       id: id ?? this.id,
@@ -293,6 +380,7 @@ class TrackChannel {
       notes: notes ?? this.notes.map((n) => n.copyWith()).toList(),
       clips: clips ?? this.clips.map((c) => c.copyWith()).toList(),
       fxRack: fxRack ?? List.from(this.fxRack),
+      midiFXRack: midiFXRack ?? List.from(this.midiFXRack),
     );
   }
 
@@ -320,6 +408,7 @@ class TrackChannel {
     'steps': steps.map((s) => s.toJson()).toList(),
     'notes': notes.map((n) => n.toJson()).toList(),
     'fxRack': fxRack.map((f) => f.toJson()).toList(),
+    'midiFXRack': midiFXRack.map((f) => f.toJson()).toList(),
   };
 }
 

@@ -47,6 +47,10 @@ class LuaEngine {
     "getParam\\(\\s*[\"']([^\"']+)[\"']\\s*\\)",
   );
 
+  static final RegExp _clipParamRegExp = RegExp(
+    "registerParam\\(\\s*[\"']([^\"']+)[\"']\\s*,\\s*([\\d\\.-]+)\\s*,\\s*([\\d\\.-]+)\\s*,\\s*([\\d\\.-]+)\\s*\\)",
+  );
+
   static LuaCompilationResult compile(String code) {
     if (code.trim().isEmpty) {
       return LuaCompilationResult(
@@ -71,6 +75,23 @@ class LuaEngine {
           max: maxVal,
           defaultValue: defVal,
         ));
+      }
+
+      // Check for clip:registerParam
+      final clipMatches = _clipParamRegExp.allMatches(code);
+      for (final m in clipMatches) {
+        final name = m.group(1)!;
+        final minVal = double.tryParse(m.group(2)!) ?? 0.0;
+        final maxVal = double.tryParse(m.group(3)!) ?? 1.0;
+        final defVal = double.tryParse(m.group(4)!) ?? minVal;
+        if (!params.any((p) => p.name == name)) {
+          params.add(LuaParamDef(
+            name: name,
+            min: minVal,
+            max: maxVal,
+            defaultValue: defVal,
+          ));
+        }
       }
 
       // Check for eatbits.v1 Param handles in Lua scripts

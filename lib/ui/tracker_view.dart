@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
@@ -15,6 +16,195 @@ class TrackerView extends StatefulWidget {
 
 class _TrackerViewState extends State<TrackerView> {
   final ScrollController _verticalScroll = ScrollController();
+  final ScrollController _horizontalScroll = ScrollController();
+  final FocusNode _focusNode = FocusNode();
+  int _qwertyBaseOctave = 4; // Default C4 = 60
+
+  DateTime? _lastTapTime;
+  String? _lastTapCellKey;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _verticalScroll.dispose();
+    _horizontalScroll.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _scrollToSelectedStep() {
+    if (!_verticalScroll.hasClients) return;
+    final targetOffset = widget.dawState.trackerSelectedStep * 32.0;
+    final double currentMin = _verticalScroll.offset;
+    final double currentMax = currentMin + 250.0;
+    if (targetOffset < currentMin || targetOffset > currentMax) {
+      _verticalScroll.animateTo(
+        targetOffset.clamp(0.0, _verticalScroll.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  void _handleCellTap(int stepIdx, int colIdx, TrackChannel track, Note noteMatch) {
+    _focusNode.requestFocus();
+    widget.dawState.selectTrackerCell(stepIdx, colIdx);
+
+    final now = DateTime.now();
+    final cellKey = '${stepIdx}_$colIdx';
+
+    if (_lastTapTime != null &&
+        _lastTapCellKey == cellKey &&
+        now.difference(_lastTapTime!) < const Duration(milliseconds: 320)) {
+      _showTrackerCellEditor(context, track, stepIdx, colIdx, noteMatch);
+      _lastTapTime = null;
+      _lastTapCellKey = null;
+    } else {
+      _lastTapTime = now;
+      _lastTapCellKey = cellKey;
+    }
+  }
+
+  KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+
+    final totalSteps = widget.dawState.activePattern.lengthSteps;
+    final totalColumns = widget.dawState.activeTrack.trackerColumns;
+    final key = event.logicalKey;
+
+    // Arrow & Navigation Keys
+    if (key == LogicalKeyboardKey.arrowUp) {
+      widget.dawState.selectTrackerCell(
+        (widget.dawState.trackerSelectedStep - 1).clamp(0, totalSteps - 1),
+        widget.dawState.trackerSelectedColumn,
+      );
+      _scrollToSelectedStep();
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.arrowDown) {
+      widget.dawState.selectTrackerCell(
+        (widget.dawState.trackerSelectedStep + 1).clamp(0, totalSteps - 1),
+        widget.dawState.trackerSelectedColumn,
+      );
+      _scrollToSelectedStep();
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.arrowLeft) {
+      widget.dawState.selectTrackerCell(
+        widget.dawState.trackerSelectedStep,
+        (widget.dawState.trackerSelectedColumn - 1).clamp(0, totalColumns - 1),
+      );
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.arrowRight) {
+      widget.dawState.selectTrackerCell(
+        widget.dawState.trackerSelectedStep,
+        (widget.dawState.trackerSelectedColumn + 1).clamp(0, totalColumns - 1),
+      );
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.pageUp) {
+      widget.dawState.selectTrackerCell(
+        (widget.dawState.trackerSelectedStep - 4).clamp(0, totalSteps - 1),
+        widget.dawState.trackerSelectedColumn,
+      );
+      _scrollToSelectedStep();
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.pageDown) {
+      widget.dawState.selectTrackerCell(
+        (widget.dawState.trackerSelectedStep + 4).clamp(0, totalSteps - 1),
+        widget.dawState.trackerSelectedColumn,
+      );
+      _scrollToSelectedStep();
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.home) {
+      widget.dawState.selectTrackerCell(0, widget.dawState.trackerSelectedColumn);
+      _scrollToSelectedStep();
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.end) {
+      widget.dawState.selectTrackerCell(totalSteps - 1, widget.dawState.trackerSelectedColumn);
+      _scrollToSelectedStep();
+      return KeyEventResult.handled;
+    }
+
+    // Delete / Erase Note
+    if (key == LogicalKeyboardKey.delete || key == LogicalKeyboardKey.backspace) {
+      widget.dawState.deleteTrackerNoteAtSelectedCell();
+      return KeyEventResult.handled;
+    }
+
+    // Base Octave adjustment keys
+    if (key == LogicalKeyboardKey.bracketLeft || key == LogicalKeyboardKey.minus) {
+      setState(() => _qwertyBaseOctave = (_qwertyBaseOctave - 1).clamp(1, 6));
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.bracketRight || key == LogicalKeyboardKey.equal) {
+      setState(() => _qwertyBaseOctave = (_qwertyBaseOctave + 1).clamp(1, 6));
+      return KeyEventResult.handled;
+    }
+
+    // Desktop QWERTY DAW Tracker Keymap (FastTracker2 / Renoise / FL Studio Style)
+    final qwertyNoteMap = <LogicalKeyboardKey, int>{
+      // Lower Octave
+      LogicalKeyboardKey.keyZ: 0, // C
+      LogicalKeyboardKey.keyS: 1, // C#
+      LogicalKeyboardKey.keyX: 2, // D
+      LogicalKeyboardKey.keyD: 3, // D#
+      LogicalKeyboardKey.keyC: 4, // E
+      LogicalKeyboardKey.keyV: 5, // F
+      LogicalKeyboardKey.keyG: 6, // F#
+      LogicalKeyboardKey.keyB: 7, // G
+      LogicalKeyboardKey.keyH: 8, // G#
+      LogicalKeyboardKey.keyN: 9, // A
+      LogicalKeyboardKey.keyJ: 10, // A#
+      LogicalKeyboardKey.keyM: 11, // B
+
+      // Upper Octave (+1 Octave)
+      LogicalKeyboardKey.keyQ: 12, // C
+      LogicalKeyboardKey.digit2: 13, // C#
+      LogicalKeyboardKey.keyW: 14, // D
+      LogicalKeyboardKey.digit3: 15, // D#
+      LogicalKeyboardKey.keyE: 16, // E
+      LogicalKeyboardKey.keyR: 17, // F
+      LogicalKeyboardKey.digit5: 18, // F#
+      LogicalKeyboardKey.keyT: 19, // G
+      LogicalKeyboardKey.digit6: 20, // G#
+      LogicalKeyboardKey.keyY: 21, // A
+      LogicalKeyboardKey.digit7: 22, // A#
+      LogicalKeyboardKey.keyU: 23, // B
+      LogicalKeyboardKey.keyI: 24, // C (+2 Octaves)
+      LogicalKeyboardKey.digit9: 25, // C#
+      LogicalKeyboardKey.keyO: 26, // D
+      LogicalKeyboardKey.digit0: 27, // D#
+      LogicalKeyboardKey.keyP: 28, // E
+    };
+
+    if (qwertyNoteMap.containsKey(key)) {
+      final semitones = qwertyNoteMap[key]!;
+      final pitch = (_qwertyBaseOctave + 1) * 12 + semitones;
+      widget.dawState.addOrUpdateTrackerNote(
+        pitch: pitch,
+        velocity: 0.85,
+        autoAdvance: true,
+      );
+      _scrollToSelectedStep();
+      return KeyEventResult.handled;
+    }
+
+    return KeyEventResult.ignored;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,142 +217,223 @@ class _TrackerViewState extends State<TrackerView> {
       noteMap['${n.startStep.toInt()}_${n.column}'] = n;
     }
 
-    return Column(
-      children: [
-        // Sub-channel Column Titles Header
-        Container(
-          color: DawTheme.controlBackground,
-          padding: const EdgeInsets.symmetric(vertical: 6),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 44,
-                child: Text(
-                  'ROW',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: List.generate(totalColumns, (colIdx) {
-                      return SizedBox(
-                        width: 130,
-                        child: Text(
-                          'COL 0${colIdx + 1}',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: colIdx % 2 == 0 ? DawTheme.primaryCyan : DawTheme.secondaryMagenta,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      );
-                    }),
+    const double columnWidth = 130.0;
+    const double rowHeaderWidth = 44.0;
+    final double tableWidth = rowHeaderWidth + (totalColumns * (columnWidth + 4.0));
+
+    return Focus(
+      focusNode: _focusNode,
+      onKeyEvent: _handleKeyEvent,
+      child: Column(
+        children: [
+          // Sub-channel Column Titles Header & Desktop Octave Display
+          Container(
+            color: DawTheme.controlBackground,
+            padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+            child: Row(
+              children: [
+                Icon(Icons.view_column, size: 16, color: DawTheme.primaryCyan),
+                const SizedBox(width: 6),
+                Text(
+                  'TRACKER MATRIX',
+                  style: TextStyle(
+                    color: DawTheme.textSecondary,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.0,
                   ),
                 ),
-              ),
-            ],
-          ),
-        ),
-
-        // Vertical Tracker Step Matrix
-        Expanded(
-          child: ListView.builder(
-            controller: _verticalScroll,
-            itemCount: totalSteps,
-            itemBuilder: (context, stepIdx) {
-              final isCurrentStep = widget.dawState.isPlaying && widget.dawState.currentStep == stepIdx;
-              final isBeatFour = stepIdx % 4 == 0;
-
-              return Container(
-                height: 32,
-                decoration: BoxDecoration(
-                  color: isCurrentStep
-                      ? DawTheme.primaryCyan.withOpacity(0.25)
-                      : (isBeatFour ? DawTheme.panelBackground : DawTheme.backgroundDark),
-                  border: Border(
-                    bottom: BorderSide(
-                      color: isBeatFour ? DawTheme.panelHeader : DawTheme.controlBackground.withOpacity(0.4),
-                      width: isBeatFour ? 1.5 : 0.5,
+                const Spacer(),
+                // QWERTY Octave Indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: DawTheme.panelBackground,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: DawTheme.panelHeader),
+                  ),
+                  child: Text(
+                    'OCT: C$_qwertyBaseOctave',
+                    style: TextStyle(
+                      color: DawTheme.primaryCyan,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    // Step Row Counter
-                    SizedBox(
-                      width: 44,
-                      child: Center(
-                        child: Text(
-                          stepIdx.toString().padLeft(2, '0'),
-                          style: TextStyle(
-                            color: isCurrentStep
-                                ? DawTheme.accentGreen
-                                : (isBeatFour ? DawTheme.accentGold : DawTheme.textMuted),
-                            fontFamily: 'monospace',
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                          ),
+              ],
+            ),
+          ),
+
+          // High-Performance Unified Scroll Matrix Layout
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _focusNode.requestFocus(),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                controller: _horizontalScroll,
+                child: SizedBox(
+                  width: tableWidth,
+                  child: Column(
+                    children: [
+                      // Sub-channel Column Header Row
+                      Container(
+                        color: DawTheme.controlBackground,
+                        padding: const EdgeInsets.symmetric(vertical: 4),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: rowHeaderWidth,
+                              child: Text(
+                                'ROW',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: DawTheme.textMuted,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            ...List.generate(totalColumns, (colIdx) {
+                              final isSelectedCol = widget.dawState.trackerSelectedColumn == colIdx;
+                              return SizedBox(
+                                width: columnWidth + 4.0,
+                                child: Text(
+                                  'COL 0${colIdx + 1}',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: isSelectedCol
+                                        ? DawTheme.accentGold
+                                        : (colIdx % 2 == 0 ? DawTheme.primaryCyan : DawTheme.secondaryMagenta),
+                                    fontSize: 10,
+                                    fontWeight: isSelectedCol ? FontWeight.bold : FontWeight.normal,
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
                         ),
                       ),
-                    ),
 
-                    // Sub-Channel Note Data Columns
-                    Expanded(
-                      child: SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: Row(
-                          children: List.generate(totalColumns, (colIdx) {
-                            // Find note event matching startStep & column index via O(1) map
-                            final noteMatch = noteMap['${stepIdx}_$colIdx'] ?? Note(id: '', pitch: -1, startStep: -1);
+                      // Vertical Steps Builder
+                      Expanded(
+                        child: ListView.builder(
+                          controller: _verticalScroll,
+                          itemCount: totalSteps,
+                          itemBuilder: (context, stepIdx) {
+                            final isCurrentStep = widget.dawState.isPlaying && widget.dawState.currentStep == stepIdx;
+                            final isSelectedLine = widget.dawState.trackerSelectedStep == stepIdx;
+                            final isBeatFour = stepIdx % 4 == 0;
 
-                            final hasNote = noteMatch.pitch != -1;
-                            final noteStr = hasNote ? _formatTrackerNote(noteMatch.pitch) : '---';
-                            final volStr = hasNote ? 'V${(noteMatch.velocity * 99).toInt().toString().padLeft(2, '0')}' : '..';
-                            final fxStr = hasNote ? noteMatch.effectCommand : '00';
-
-                            return GestureDetector(
-                              onTap: () {
-                                _showTrackerCellEditor(context, track, stepIdx, colIdx, noteMatch);
-                              },
-                              child: Container(
-                                width: 130,
-                                margin: const EdgeInsets.symmetric(horizontal: 2),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: hasNote
-                                      ? track.color.withOpacity(0.25)
-                                      : DawTheme.controlBackground.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(4),
-                                  border: Border.all(
-                                    color: hasNote ? track.color.withOpacity(0.6) : Colors.transparent,
+                            return Container(
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: isCurrentStep
+                                    ? DawTheme.primaryCyan.withOpacity(0.30)
+                                    : (isSelectedLine
+                                        ? DawTheme.secondaryMagenta.withOpacity(0.20)
+                                        : (isBeatFour ? DawTheme.panelBackground : DawTheme.backgroundDark)),
+                                border: Border(
+                                  bottom: BorderSide(
+                                    color: isSelectedLine
+                                        ? DawTheme.secondaryMagenta.withOpacity(0.8)
+                                        : (isBeatFour ? DawTheme.panelHeader : DawTheme.controlBackground.withOpacity(0.4)),
+                                    width: isSelectedLine ? 1.5 : (isBeatFour ? 1.5 : 0.5),
                                   ),
                                 ),
-                                child: Text(
-                                  '$noteStr  $volStr  $fxStr',
-                                  style: DawTheme.getDisplayFontStyle(
-                                    color: hasNote ? DawTheme.textPrimary : DawTheme.textMuted,
-                                    fontSize: 11,
-                                    fontWeight: hasNote ? FontWeight.bold : FontWeight.normal,
+                              ),
+                              child: Row(
+                                children: [
+                                  // Step Row Counter
+                                  SizedBox(
+                                    width: rowHeaderWidth,
+                                    child: Center(
+                                      child: Text(
+                                        stepIdx.toString().padLeft(2, '0'),
+                                        style: TextStyle(
+                                          color: isCurrentStep
+                                              ? DawTheme.accentGreen
+                                              : (isSelectedLine
+                                                  ? DawTheme.secondaryMagenta
+                                                  : (isBeatFour ? DawTheme.accentGold : DawTheme.textMuted)),
+                                          fontFamily: 'monospace',
+                                          fontWeight: (isCurrentStep || isSelectedLine) ? FontWeight.bold : FontWeight.normal,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
 
+                                  // Sub-Channel Note Data Columns
+                                  ...List.generate(totalColumns, (colIdx) {
+                                    final noteMatch = noteMap['${stepIdx}_$colIdx'] ?? Note(id: '', pitch: -1, startStep: -1);
+
+                                    final hasNote = noteMatch.pitch != -1;
+                                    final isSelectedCell = isSelectedLine && widget.dawState.trackerSelectedColumn == colIdx;
+
+                                    final noteStr = hasNote ? _formatTrackerNote(noteMatch.pitch) : '---';
+                                    final volStr = hasNote ? 'V${(noteMatch.velocity * 99).toInt().toString().padLeft(2, '0')}' : '..';
+                                    final fxStr = hasNote ? noteMatch.effectCommand : '00';
+
+                                    return GestureDetector(
+                                      behavior: HitTestBehavior.opaque,
+                                      onTapDown: (_) {
+                                        _handleCellTap(stepIdx, colIdx, track, noteMatch);
+                                      },
+                                      child: Container(
+                                        width: columnWidth,
+                                        margin: const EdgeInsets.symmetric(horizontal: 2),
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: isSelectedCell
+                                              ? DawTheme.secondaryMagenta.withOpacity(0.40)
+                                              : (hasNote
+                                                  ? track.color.withOpacity(0.25)
+                                                  : DawTheme.controlBackground.withOpacity(0.3)),
+                                          borderRadius: BorderRadius.circular(4),
+                                          border: Border.all(
+                                            color: isSelectedCell
+                                                ? DawTheme.secondaryMagenta
+                                                : (hasNote ? track.color.withOpacity(0.6) : Colors.transparent),
+                                            width: isSelectedCell ? 2.0 : 1.0,
+                                          ),
+                                          boxShadow: isSelectedCell
+                                              ? [
+                                                  BoxShadow(
+                                                    color: DawTheme.secondaryMagenta.withOpacity(0.4),
+                                                    blurRadius: 4,
+                                                    spreadRadius: 1,
+                                                  )
+                                                ]
+                                              : null,
+                                        ),
+                                        child: Text(
+                                          '$noteStr  $volStr  $fxStr',
+                                          style: DawTheme.getDisplayFontStyle(
+                                            color: isSelectedCell
+                                                ? Colors.white
+                                                : (hasNote ? DawTheme.textPrimary : DawTheme.textMuted),
+                                            fontSize: 11,
+                                            fontWeight: (hasNote || isSelectedCell) ? FontWeight.bold : FontWeight.normal,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }),
+                                ],
                               ),
                             );
-                          }),
+                          },
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              );
-            },
+              ),
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

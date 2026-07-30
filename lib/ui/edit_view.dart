@@ -4,6 +4,7 @@ import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
 import 'piano_roll_view.dart';
 import 'tracker_view.dart';
+import 'script_view.dart';
 import 'widgets/skeuomorphic_hardware_button.dart';
 
 class EditView extends StatelessWidget {
@@ -14,12 +15,13 @@ class EditView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final track = dawState.activeTrack;
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Column(
       children: [
         // Editor Header View Switcher
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           color: DawTheme.panelHeader,
           child: Row(
             children: [
@@ -29,13 +31,16 @@ class EditView extends StatelessWidget {
                 decoration: BoxDecoration(color: track.color, shape: BoxShape.circle),
               ),
               const SizedBox(width: 8),
-              Text(
-                'EDITING: ${track.name.toUpperCase()}',
-                style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
+              Flexible(
+                child: Text(
+                  isMobile ? track.name.toUpperCase() : 'EDITING: ${track.name.toUpperCase()}',
+                  style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
               if (track.activeView == MusicViewType.pianoRoll) ...[
-                Text('SNAP: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 11)),
+                if (!isMobile) Text('SNAP: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 11)),
                 DropdownButton<double>(
                   value: dawState.quantizeSnap,
                   dropdownColor: DawTheme.panelBackground,
@@ -51,7 +56,7 @@ class EditView extends StatelessWidget {
                     if (val != null) dawState.setQuantizeSnap(val);
                   },
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
               ] else if (track.activeView == MusicViewType.tracker) ...[
                 IconButton(
                   icon: Icon(Icons.remove_circle_outline, color: DawTheme.textSecondary, size: 18),
@@ -73,10 +78,12 @@ class EditView extends StatelessWidget {
                   tooltip: 'Add Tracker Column',
                   onPressed: () => dawState.setTrackerColumns(track, track.trackerColumns + 1),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
               ],
+
+              // View Switcher Buttons (Icon-only on Mobile)
               SkeuomorphicHardwareButton(
-                label: 'PIANO ROLL',
+                label: isMobile ? null : 'PIANO ROLL',
                 icon: Icons.piano,
                 isActive: track.activeView == MusicViewType.pianoRoll,
                 activeColor: DawTheme.primaryCyan,
@@ -85,11 +92,20 @@ class EditView extends StatelessWidget {
               ),
               const SizedBox(width: 6),
               SkeuomorphicHardwareButton(
-                label: 'TRACKER',
-                icon: Icons.grid_on,
+                label: isMobile ? null : 'TRACKER',
+                icon: Icons.view_column,
                 isActive: track.activeView == MusicViewType.tracker,
                 activeColor: DawTheme.secondaryMagenta,
                 onTap: () => dawState.setTrackActiveView(track, MusicViewType.tracker),
+                height: 32,
+              ),
+              const SizedBox(width: 6),
+              SkeuomorphicHardwareButton(
+                label: isMobile ? null : 'SCRIPT',
+                icon: Icons.code,
+                isActive: track.activeView == MusicViewType.script,
+                activeColor: DawTheme.accentGold,
+                onTap: () => dawState.setTrackActiveView(track, MusicViewType.script),
                 height: 32,
               ),
             ],
@@ -98,11 +114,21 @@ class EditView extends StatelessWidget {
 
         // Main Editor Canvas
         Expanded(
-          child: track.activeView == MusicViewType.tracker
-              ? TrackerView(dawState: dawState)
-              : PianoRollView(dawState: dawState),
+          child: _buildActiveView(track.activeView),
         ),
       ],
     );
+  }
+
+  Widget _buildActiveView(MusicViewType activeView) {
+    switch (activeView) {
+      case MusicViewType.tracker:
+        return TrackerView(dawState: dawState);
+      case MusicViewType.script:
+        return ScriptView(dawState: dawState);
+      case MusicViewType.pianoRoll:
+      default:
+        return PianoRollView(dawState: dawState);
+    }
   }
 }

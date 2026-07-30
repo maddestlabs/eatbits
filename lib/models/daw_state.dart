@@ -7,11 +7,36 @@ import '../audio/audio_engine.dart';
 import '../audio/wav_exporter.dart';
 import '../theme/daw_theme.dart';
 import '../lua/lua_engine.dart';
+import '../audio/time_context.dart';
 import '../lua/lua_preset_library.dart';
 import 'track_model.dart';
 
 class DawState extends ChangeNotifier {
   final AudioEngine audioEngine = AudioEngine();
+  final LuaEngine luaEngine = LuaEngine();
+
+  void notifyState() => notifyListeners();
+
+  TimeContext get timeContext => TimeContext.fromBeat(
+    beat: (_currentBar * 4 + _currentStep / 4).toDouble(),
+    bpm: _bpm,
+  );
+
+  TrackClip get activeTrackClip {
+    if (activeTrack.clips.isEmpty) {
+      activeTrack.clips.add(TrackClip(
+        id: 'clip_${activeTrack.id}_0',
+        name: '${activeTrack.name} Clip',
+        trackId: activeTrack.id,
+        startBar: 0,
+        barLength: 4,
+        notes: activeTrack.notes,
+        luaScriptCode: activeTrack.luaScriptCode,
+        luaParams: activeTrack.luaParams,
+      ));
+    }
+    return activeTrack.clips.first;
+  }
 
   // Navigation & View Mode
   int _activeTabIndex = 0; // 0: Arranger, 1: Edit, 2: Track, 3: Mixer, 4: Scripts
@@ -637,6 +662,61 @@ class DawState extends ChangeNotifier {
 
   void setTrackerColumns(TrackChannel track, int columns) {
     track.trackerColumns = columns.clamp(1, 8);
+    if (trackerSelectedColumn >= track.trackerColumns) {
+      trackerSelectedColumn = track.trackerColumns - 1;
+    }
+    notifyListeners();
+  }
+
+  // Tracker State & Editing
+  int trackerSelectedStep = 0;
+  int trackerSelectedColumn = 0;
+
+  void selectTrackerCell(int step, int column) {
+    trackerSelectedStep = step.clamp(0, activePattern.lengthSteps - 1);
+    trackerSelectedColumn = column.clamp(0, activeTrack.trackerColumns - 1);
+    notifyListeners();
+  }
+
+  void addOrUpdateTrackerNote({
+    required int pitch,
+    double velocity = 0.85,
+    bool autoAdvance = true,
+  }) {
+    final track = activeTrack;
+    track.notes.removeWhere(
+      (n) => n.startStep.toInt() == trackerSelectedStep && n.column == trackerSelectedColumn,
+    );
+
+    track.notes.add(
+      Note(
+        id: 'trk_${DateTime.now().millisecondsSinceEpoch}',
+        pitch: pitch,
+        startStep: trackerSelectedStep.toDouble(),
+        durationSteps: 1.0,
+        velocity: velocity,
+        column: trackerSelectedColumn,
+      ),
+    );
+
+    audioEngine.playNoteOrSample(
+      track: track,
+      midiNote: pitch,
+      velocity: velocity,
+    );
+
+    if (autoAdvance) {
+      trackerSelectedStep = (trackerSelectedStep + 1) % activePattern.lengthSteps;
+    }
+
+    notifyListeners();
+  }
+
+  void deleteTrackerNoteAtSelectedCell() {
+    final track = activeTrack;
+    track.notes.removeWhere(
+      (n) => n.startStep.toInt() == trackerSelectedStep && n.column == trackerSelectedColumn,
+    );
     notifyListeners();
   }
 

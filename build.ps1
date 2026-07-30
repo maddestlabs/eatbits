@@ -31,7 +31,7 @@
 [CmdletBinding()]
 param (
     [switch]$Clean,
-    [int]$Port = 0,
+    [int]$Port = 8080,
     [switch]$Wasm,
     [switch]$Profile,
     [switch]$NoBrowser

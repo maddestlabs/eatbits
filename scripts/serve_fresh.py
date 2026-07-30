@@ -12,16 +12,26 @@ import shutil
 PID_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".server.pid")
 WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "build", "web")
 
-class NoCacheHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
+class EatBitsHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=WEB_DIR, **kwargs)
 
     def end_headers(self):
-        # Explicitly instruct browsers NOT to cache any files
-        self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-        self.send_header("Pragma", "no-cache")
-        self.send_header("Expires", "0")
+        # HTML and ServiceWorker revalidate to pick up changes immediately
+        if self.path == "/" or self.path.endswith(".html") or "flutter_service_worker.js" in self.path:
+            self.send_header("Cache-Control", "no-cache, must-revalidate")
+            self.send_header("Pragma", "no-cache")
+            self.send_header("Expires", "0")
+        else:
+            # Allow static resources (.wasm, .js, .png, etc.) to be cached by browser & ServiceWorker
+            self.send_header("Cache-Control", "public, max-age=3600")
         super().end_headers()
+
+    def handle_one_request(self):
+        try:
+            super().handle_one_request()
+        except (ConnectionAbortedError, ConnectionResetError, BrokenPipeError, OSError):
+            pass
 
     def log_message(self, format, *args):
         # Keep terminal log clean
@@ -65,10 +75,30 @@ def build_flutter_web(wasm=False, profile=False):
     if res.returncode != 0:
         print("[!] Flutter build failed. Exiting.")
         sys.exit(res.returncode)
+    patch_service_worker()
+
+def patch_service_worker():
+    sw_path = os.path.join(WEB_DIR, "flutter_service_worker.js")
+    if not os.path.exists(sw_path):
+        return
+    with open(sw_path, "r", encoding="utf-8") as f:
+        content = f.read()
+
+    # Prevent onlineFirst from throwing uncaught errors on fetch failure
+    content = content.replace("throw error;", "return fetch(event.request);")
+
+    # Add fallback fetch for resource loading failures
+    old_fetch = "return response || fetch(event.request).then((response) => {\n          if (response && Boolean(response.ok)) {\n            cache.put(event.request, response.clone());\n          }\n          return response;\n        });"
+    new_fetch = "return response || fetch(event.request).then((response) => {\n          if (response && Boolean(response.ok)) {\n            cache.put(event.request, response.clone());\n          }\n          return response;\n        }).catch(() => fetch(event.request));"
+    content = content.replace(old_fetch, new_fetch)
+
+    with open(sw_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    print("[+] Patched flutter_service_worker.js for network fallback resilience.")
 
 def main():
     parser = argparse.ArgumentParser(description="Rebuild Flutter Web and serve on a fresh random port with no-cache headers.")
-    parser.add_argument("--port", type=int, default=0, help="Port number to listen on (0 for random)")
+    parser.add_argument("--port", type=int, default=8080, help="Port number to listen on (default: 8080)")
     parser.add_argument("--no-build", action="store_true", help="Skip rebuilding Flutter web and only start server")
     parser.add_argument("--wasm", action="store_true", help="Build with --wasm flag")
     parser.add_argument("--profile", action="store_true", help="Build with --profile flag")
@@ -94,7 +124,7 @@ def main():
         '.css': 'text/css',
     })
 
-    port = args.port if args.port > 0 else find_random_port()
+    port = args.port if args.port > 0 else 8080
     url = f"http://localhost:{port}"
 
     # Save PID
@@ -102,10 +132,10 @@ def main():
         f.write(str(os.getpid()))
 
     print("\n" + "=" * 60)
-    print(f"  [+] FRESH FLUTTER WEB SERVER STARTED")
+    print(f"  [+] EATBITS FLUTTER WEB SERVER STARTED")
     print(f"  URL: {url}")
-    print(f"  Port: {port} (Randomly assigned)")
-    print(f"  Cache-Control: DISABLED (no-store, no-cache)")
+    print(f"  Port: {port}")
+    print(f"  Cache-Control: Optimized (HTML/SW revalidate, static assets cached)")
     print("=" * 60 + "\n")
 
     if not args.no_browser:
@@ -113,7 +143,7 @@ def main():
         webbrowser.open(url)
 
     try:
-        with socketserver.TCPServer(("127.0.0.1", port), NoCacheHTTPRequestHandler) as httpd:
+        with socketserver.TCPServer(("127.0.0.1", port), EatBitsHTTPRequestHandler) as httpd:
             print("[+] Press Ctrl+C to stop the server.\n")
             httpd.serve_forever()
     except KeyboardInterrupt:

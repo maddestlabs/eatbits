@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
+import '../models/track_model.dart';
 import '../theme/daw_theme.dart';
 
 class VirtualPianoKeyboard extends StatefulWidget {
@@ -118,6 +119,13 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
       velocity: velocity,
       durationSec: 0.35,
     );
+    if (track.activeView == MusicViewType.tracker) {
+      widget.dawState.addOrUpdateTrackerNote(
+        pitch: pitch,
+        velocity: velocity,
+        autoAdvance: true,
+      );
+    }
   }
 
   // Map 2D touch inside piano canvas to MIDI pitch & vertical velocity
