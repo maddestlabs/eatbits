@@ -14,6 +14,7 @@ class SkeuomorphicHardwareButton extends StatefulWidget {
   final double? width;
   final EdgeInsetsGeometry padding;
   final bool showLed;
+  final BorderRadius? borderRadius;
 
   const SkeuomorphicHardwareButton({
     super.key,
@@ -27,6 +28,7 @@ class SkeuomorphicHardwareButton extends StatefulWidget {
     this.width,
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
     this.showLed = true,
+    this.borderRadius,
   });
 
   @override
@@ -38,11 +40,16 @@ class _SkeuomorphicHardwareButtonState extends State<SkeuomorphicHardwareButton>
 
   @override
   Widget build(BuildContext context) {
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.grungyHardware;
+    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
     final ledColor = widget.activeColor ?? (isGrungy ? const Color(0xFFFF8C00) : DawTheme.primaryCyan);
-    final btnColor = isGrungy
-        ? (_isPressed ? const Color(0xFF1E1B18) : const Color(0xFF38322B))
-        : (_isPressed ? DawTheme.controlBackground : DawTheme.panelHeader);
+    final btnColor = widget.isActive
+        ? Color.alphaBlend(
+            ledColor.withOpacity(isGrungy ? 0.45 : 0.35),
+            isGrungy ? const Color(0xFF38322B) : DawTheme.panelHeader,
+          )
+        : (isGrungy
+            ? (_isPressed ? const Color(0xFF1E1B18) : const Color(0xFF38322B))
+            : (_isPressed ? DawTheme.controlBackground : DawTheme.panelHeader));
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -58,32 +65,32 @@ class _SkeuomorphicHardwareButtonState extends State<SkeuomorphicHardwareButton>
         padding: widget.padding,
         transform: Matrix4.translationValues(0, _isPressed ? 2.0 : 0.0, 0),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: widget.borderRadius ?? BorderRadius.circular(4),
           color: btnColor,
           border: Border.all(
             color: widget.isActive
                 ? ledColor
-                : (isGrungy ? const Color(0xFF594F45) : Colors.white24),
+                : (isGrungy ? const Color(0xFF594F45) : (DawTheme.isLight ? Colors.black26 : Colors.white24)),
             width: widget.isActive ? 1.5 : 1.0,
           ),
           boxShadow: _isPressed
               ? [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.6),
+                    color: Colors.black.withOpacity(0.4),
                     blurRadius: 1,
                     offset: const Offset(0, 1),
                   ),
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.5),
+                    color: Colors.black.withOpacity(DawTheme.isLight ? 0.15 : 0.4),
                     blurRadius: 4,
-                    offset: const Offset(0, 3),
+                    offset: const Offset(0, 2),
                   ),
                   if (widget.isActive)
                     BoxShadow(
-                      color: ledColor.withOpacity(0.5),
-                      blurRadius: 8,
+                      color: ledColor.withOpacity(0.6),
+                      blurRadius: 10,
                       spreadRadius: 1,
                     ),
                 ],
@@ -117,27 +124,38 @@ class _SkeuomorphicHardwareButtonState extends State<SkeuomorphicHardwareButton>
             if (widget.customChild != null)
               widget.customChild!
             else ...[
-              if (widget.icon != null) ...[
-                Icon(
-                  widget.icon,
-                  size: (widget.label != null && widget.label!.isNotEmpty) ? 16 : 18,
-                  color: widget.isActive
-                      ? (isGrungy ? const Color(0xFFFFF5E0) : Colors.white)
-                      : (isGrungy ? const Color(0xFFA89C8C) : DawTheme.textSecondary),
-                ),
-                if (widget.label != null && widget.label!.isNotEmpty) const SizedBox(width: 6),
-              ],
-              if (widget.label != null && widget.label!.isNotEmpty)
-                Text(
-                  widget.label!.toUpperCase(),
-                  style: DawTheme.getDisplayFontStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    color: widget.isActive
-                        ? (isGrungy ? const Color(0xFFFFF5E0) : Colors.white)
-                        : (isGrungy ? const Color(0xFFA89C8C) : DawTheme.textSecondary),
-                  ),
-                ),
+              () {
+                final activeContentColor = (widget.activeColor != null)
+                    ? (widget.activeColor!.computeLuminance() > 0.35 ? const Color(0xFF0B0E14) : Colors.white)
+                    : (isGrungy ? const Color(0xFFFFF8E7) : (DawTheme.isLight ? const Color(0xFF0F172A) : Colors.white));
+                final inactiveContentColor = widget.activeColor != null
+                    ? (DawTheme.isLight && widget.activeColor == DawTheme.primaryCyan ? const Color(0xFF006680) : widget.activeColor!.withOpacity(0.95))
+                    : (isGrungy ? const Color(0xFFA89C8C) : DawTheme.textSecondary);
+                final finalColor = widget.isActive ? activeContentColor : inactiveContentColor;
+
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (widget.icon != null) ...[
+                      Icon(
+                        widget.icon,
+                        size: (widget.label != null && widget.label!.isNotEmpty) ? 16 : 18,
+                        color: finalColor,
+                      ),
+                      if (widget.label != null && widget.label!.isNotEmpty) const SizedBox(width: 6),
+                    ],
+                    if (widget.label != null && widget.label!.isNotEmpty)
+                      Text(
+                        widget.label!.toUpperCase(),
+                        style: DawTheme.getDisplayFontStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: finalColor,
+                        ),
+                      ),
+                  ],
+                );
+              }(),
             ],
           ],
         ),

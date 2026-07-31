@@ -21,7 +21,7 @@ class GlowingNixieDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.grungyHardware;
+    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
     final amberGlow = glowColor ?? (isGrungy ? const Color(0xFFFF8C00) : DawTheme.primaryCyan);
 
     final hasLabel = label.trim().isNotEmpty;

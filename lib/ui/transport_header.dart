@@ -15,7 +15,7 @@ class TransportHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.grungyHardware;
+    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
 
     return Container(
       height: 64,
@@ -53,88 +53,115 @@ class TransportHeader extends StatelessWidget {
 
           const SizedBox(width: 10),
 
-          // Transport Play / Stop Mechanical Button (no LED dot)
-          SkeuomorphicHardwareButton(
-            label: dawState.isPlaying ? 'STOP' : 'PLAY',
-            icon: dawState.isPlaying ? Icons.stop : Icons.play_arrow,
-            isActive: dawState.isPlaying,
-            activeColor: dawState.isPlaying ? DawTheme.muteColor : const Color(0xFF00FF66),
-            onTap: dawState.isPlaying ? dawState.stop : dawState.togglePlay,
-            height: 38,
-            showLed: false,
+          // Attached 3-Button Mechanical Transport Control Row (Play/Pause, Stop, Record)
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 1. Play / Pause Button (▶ when stopped/paused, ⏸ when playing)
+              Tooltip(
+                message: dawState.isPlaying ? 'Pause' : 'Play',
+                child: SkeuomorphicHardwareButton(
+                  customChild: TransportSymbolWidget(
+                    symbol: dawState.isPlaying ? TransportSymbol.pause : TransportSymbol.play,
+                    color: dawState.isPlaying
+                        ? const Color(0xFF0B0E14)
+                        : (DawTheme.isLight ? const Color(0xFF0F172A) : DawTheme.textSecondary),
+                    size: 13,
+                  ),
+                  isActive: dawState.isPlaying,
+                  activeColor: const Color(0xFF00FF66), // Green backlight
+                  onTap: dawState.togglePlay,
+                  height: 34,
+                  width: 34,
+                  padding: EdgeInsets.zero,
+                  showLed: false,
+                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(4)),
+                ),
+              ),
+
+              // 2. Stop Button (⏹ - resets position to start)
+              Tooltip(
+                message: 'Stop (Reset Position)',
+                child: SkeuomorphicHardwareButton(
+                  customChild: TransportSymbolWidget(
+                    symbol: TransportSymbol.stop,
+                    color: DawTheme.isLight ? const Color(0xFF0F172A) : DawTheme.textSecondary,
+                    size: 12,
+                  ),
+                  isActive: false,
+                  activeColor: DawTheme.primaryCyan,
+                  onTap: dawState.stop,
+                  height: 34,
+                  width: 34,
+                  padding: EdgeInsets.zero,
+                  showLed: false,
+                  borderRadius: BorderRadius.zero,
+                ),
+              ),
+
+              // 3. Record Button (⏺ - future use)
+              Tooltip(
+                message: 'Record (Arm)',
+                child: SkeuomorphicHardwareButton(
+                  customChild: TransportSymbolWidget(
+                    symbol: TransportSymbol.record,
+                    color: dawState.isRecording
+                        ? const Color(0xFF0B0E14)
+                        : (DawTheme.isLight ? const Color(0xFF0F172A) : const Color(0xFFFF3B30)),
+                    size: 12,
+                  ),
+                  isActive: dawState.isRecording,
+                  activeColor: const Color(0xFFFF3B30), // Red backlight
+                  onTap: dawState.toggleRecord,
+                  height: 34,
+                  width: 34,
+                  padding: EdgeInsets.zero,
+                  showLed: false,
+                  borderRadius: const BorderRadius.horizontal(right: Radius.circular(4)),
+                ),
+              ),
+            ],
           ),
 
           const SizedBox(width: 10),
 
-          // BPM Glowing Nixie Display & Tap Tempo Button (no LED dot)
-          GestureDetector(
-            onLongPress: () => _showBpmEditDialog(context),
-            child: Row(
-              children: [
-                GlowingNixieDisplay(
-                  label: '',
-                  valueText: dawState.bpm.toStringAsFixed(0),
-                  unit: 'BPM',
-                  fontSize: 14,
-                  glowColor: DawTheme.accentGold,
-                ),
-                const SizedBox(width: 6),
-                SkeuomorphicHardwareButton(
-                  label: 'TAP',
-                  isActive: false,
-                  activeColor: DawTheme.accentGold,
-                  onTap: dawState.tapTempo,
-                  height: 32,
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  showLed: false,
-                ),
-              ],
+          // BPM Glowing Nixie Display with Direct Tap Tempo & LongPress Edit
+          Tooltip(
+            message: 'Tap tempo | Long press to edit BPM',
+            child: GestureDetector(
+              onTap: dawState.tapTempo,
+              onLongPress: () => _showBpmEditDialog(context),
+              onDoubleTap: () => _showBpmEditDialog(context),
+              child: GlowingNixieDisplay(
+                label: '',
+                valueText: dawState.bpm.toStringAsFixed(0),
+                unit: 'BPM',
+                fontSize: 14,
+                glowColor: DawTheme.accentGold,
+              ),
             ),
           ),
 
           const Spacer(),
 
-          // Stereo Master Peak Meter
-          SizedBox(
-            width: 50,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                _buildMeterBar('L', dawState.audioEngine.leftPeak),
-                const SizedBox(height: 3),
-                _buildMeterBar('R', dawState.audioEngine.rightPeak),
-              ],
+          // Glass-Encased Stereo Master Peak Meter (L/R)
+          _buildGlassLrMasterMeter(dawState),
+
+          const SizedBox(width: 10),
+
+          // Consolidated Top Right Project & Import/Export Hub Button (Floppy Disk Icon)
+          Tooltip(
+            message: 'Project Details, Save/Load & Export',
+            child: SkeuomorphicHardwareButton(
+              icon: Icons.save,
+              isActive: false,
+              activeColor: DawTheme.accentGold,
+              onTap: () => _showProjectHubDialog(context),
+              height: 34,
+              width: 36,
+              padding: EdgeInsets.zero,
+              showLed: false,
             ),
-          ),
-
-          const SizedBox(width: 8),
-
-          // Save .eats.lua Button
-          IconButton(
-            onPressed: () => _handleSave(context),
-            icon: Icon(Icons.save, color: DawTheme.accentGold, size: 20),
-            tooltip: 'Save Project (.eats.lua)',
-          ),
-
-          // Load .eats.lua Button
-          IconButton(
-            onPressed: () => _handleLoad(context),
-            icon: Icon(Icons.folder_open, color: DawTheme.primaryCyan, size: 20),
-            tooltip: 'Load Project (.eats.lua)',
-          ),
-
-          // Code View / Share Button
-          IconButton(
-            onPressed: () => _showCodeViewDialog(context),
-            icon: Icon(Icons.code, color: DawTheme.textSecondary, size: 20),
-            tooltip: 'View / Paste .eats.lua Script',
-          ),
-
-          // Export WAV Icon Button
-          IconButton(
-            onPressed: dawState.exportWavSong,
-            icon: Icon(Icons.download, color: DawTheme.primaryCyan, size: 20),
-            tooltip: 'Export Song WAV',
           ),
         ],
       ),
@@ -196,9 +223,9 @@ class TransportHeader extends StatelessWidget {
               controller: controller,
               maxLines: null,
               expands: true,
-              style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.white70),
+              style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: DawTheme.textPrimary),
               decoration: InputDecoration(
-                fillColor: Colors.black45,
+                fillColor: DawTheme.controlBackground,
                 filled: true,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
@@ -229,7 +256,7 @@ class TransportHeader extends StatelessWidget {
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('CLOSE', style: TextStyle(color: Colors.white54)),
+              child: Text('CLOSE', style: TextStyle(color: DawTheme.textMuted)),
             ),
           ],
         );
@@ -269,18 +296,17 @@ class TransportHeader extends StatelessWidget {
                 ...DawThemePreset.values.map((preset) {
                   final isSelected = DawTheme.currentPreset == preset;
 
-                  String title = 'Cyberpunk Cyan (Default)';
-                  if (preset == DawThemePreset.midnightOled) title = 'Midnight OLED (Pitch Black)';
-                  if (preset == DawThemePreset.synthwavePurple) title = 'Synthwave Neon (Pink & Purple)';
-                  if (preset == DawThemePreset.studioLight) title = 'Studio Light Mode';
-                  if (preset == DawThemePreset.grungyHardware) title = 'Grungy Vintage Hardware (SILT / Analog Rack)';
+                  String title = 'Ate Track (Default)';
+                  if (preset == DawThemePreset.cyanCrunch) title = 'Cyan Crunch';
+                  if (preset == DawThemePreset.midnightBites) title = 'Midnight Bites';
+                  if (preset == DawThemePreset.lightSnack) title = 'Light Snack';
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     decoration: BoxDecoration(
                       color: isSelected ? DawTheme.controlBackground : Colors.transparent,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: isSelected ? DawTheme.primaryCyan : Colors.white10),
+                      border: Border.all(color: isSelected ? DawTheme.primaryCyan : DawTheme.textMuted.withOpacity(0.2)),
                     ),
                     child: ListTile(
                       title: Text(title, style: TextStyle(color: isSelected ? DawTheme.primaryCyan : DawTheme.textPrimary, fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
@@ -308,42 +334,19 @@ class TransportHeader extends StatelessWidget {
                   style: TextStyle(color: DawTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0),
                 ),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: DawTheme.accentGold,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          _handleSave(context);
-                        },
-                        icon: const Icon(Icons.save, size: 16),
-                        label: const Text('SAVE (.EATS.LUA)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: DawTheme.primaryCyan,
-                          foregroundColor: Colors.black,
-                          padding: const EdgeInsets.symmetric(vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          _handleLoad(context);
-                        },
-                        icon: const Icon(Icons.folder_open, size: 16),
-                        label: const Text('LOAD (.EATS.LUA)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: DawTheme.primaryCyan,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    _showProjectHubDialog(context);
+                  },
+                  icon: const Icon(Icons.folder_special, size: 18),
+                  label: const Text('OPEN PROJECT & COMPOSITION HUB', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                 ),
                 const SizedBox(height: 16),
 
@@ -398,6 +401,258 @@ class TransportHeader extends StatelessWidget {
     );
   }
 
+  Widget _buildGlassLrMasterMeter(DawState dawState) {
+    return Container(
+      width: 60,
+      height: 36,
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 3),
+      decoration: BoxDecoration(
+        color: const Color(0xFF090A0D),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: DawTheme.isLight ? Colors.black26 : const Color(0xFF2E3445),
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(2),
+        child: Stack(
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _buildMeterBar('L', dawState.audioEngine.leftPeak),
+                const SizedBox(height: 3),
+                _buildMeterBar('R', dawState.audioEngine.rightPeak),
+              ],
+            ),
+            // Diagonal Glass Reflection Overlay
+            const Positioned.fill(
+              child: IgnorePointer(
+                child: CustomPaint(
+                  painter: _HeaderMeterGlassReflectionPainter(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showProjectHubDialog(BuildContext context) {
+    final titleController = TextEditingController(text: dawState.projectName);
+    final authorController = TextEditingController(text: dawState.authorName);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: DawTheme.panelBackground,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(color: DawTheme.primaryCyan.withOpacity(0.5), width: 1.5),
+          ),
+          child: Container(
+            width: 440,
+            padding: const EdgeInsets.all(18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header Title
+                Row(
+                  children: [
+                    Icon(Icons.folder_special, color: DawTheme.primaryCyan, size: 22),
+                    const SizedBox(width: 8),
+                    Text(
+                      'PROJECT & COMPOSITION HUB',
+                      style: DawTheme.getPrimaryFontStyle(
+                        color: DawTheme.primaryCyan,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Project Details Section
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: DawTheme.controlBackground,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: DawTheme.panelHeader),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('COMPOSITION DETAILS', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+
+                      // Title input
+                      TextField(
+                        controller: titleController,
+                        style: TextStyle(color: DawTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
+                        decoration: InputDecoration(
+                          labelText: 'Title / Song Name',
+                          labelStyle: TextStyle(color: DawTheme.textMuted, fontSize: 11),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                        onChanged: (val) => dawState.projectName = val,
+                      ),
+                      const SizedBox(height: 10),
+
+                      // Author input
+                      TextField(
+                        controller: authorController,
+                        style: TextStyle(color: DawTheme.textPrimary, fontSize: 13),
+                        decoration: InputDecoration(
+                          labelText: 'Author / Creator',
+                          labelStyle: TextStyle(color: DawTheme.textMuted, fontSize: 11),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                        onChanged: (val) => dawState.authorName = val,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: DawTheme.primaryCyan.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text('AUDIO COMPOSITION', style: TextStyle(color: DawTheme.primaryCyan, fontSize: 9, fontWeight: FontWeight.bold)),
+                          ),
+                          const SizedBox(width: 6),
+                          Text('• WebAudio / Lua Live Scripting', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+                Text('IMPORT / EXPORT & ACTIONS', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+
+                // 2x2 Grid of Actions
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildHubActionButton(
+                        icon: Icons.save,
+                        label: 'SAVE (.eats.lua)',
+                        color: DawTheme.accentGold,
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          _handleSave(context);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildHubActionButton(
+                        icon: Icons.folder_open,
+                        label: 'LOAD (.eats.lua)',
+                        color: DawTheme.primaryCyan,
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          _handleLoad(context);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildHubActionButton(
+                        icon: Icons.code,
+                        label: 'LUA CODE SCRIPT',
+                        color: DawTheme.secondaryMagenta,
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          _showCodeViewDialog(context);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _buildHubActionButton(
+                        icon: Icons.download,
+                        label: 'EXPORT WAV',
+                        color: DawTheme.accentGreen,
+                        onTap: () {
+                          Navigator.of(context).pop();
+                          dawState.exportWavSong();
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Close Button
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text('CLOSE', style: TextStyle(color: DawTheme.textMuted)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHubActionButton({required IconData icon, required String label, required Color color, required VoidCallback onTap}) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: color.withOpacity(0.4)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 16, color: color),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMeterBar(String label, double level) {
     return Row(
       children: [
@@ -417,6 +672,34 @@ class TransportHeader extends StatelessWidget {
       ],
     );
   }
+}
+
+class _HeaderMeterGlassReflectionPainter extends CustomPainter {
+  const _HeaderMeterGlassReflectionPainter();
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final glarePath = Path();
+    glarePath.moveTo(0, 0);
+    glarePath.lineTo(size.width, 0);
+    glarePath.lineTo(size.width, size.height * 0.45);
+    glarePath.close();
+
+    final glarePaint = Paint()
+      ..shader = LinearGradient(
+        colors: [
+          Colors.white.withOpacity(0.18),
+          Colors.white.withOpacity(0.0),
+        ],
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft,
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height * 0.45));
+
+    canvas.drawPath(glarePath, glarePaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 // Custom EatsBits Monster Icon Widget
@@ -475,4 +758,95 @@ class _EatsBitsMonsterPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// Vector Canvas Transport Symbols (Zero Font Dependency)
+enum TransportSymbol { play, pause, stop, record }
+
+class TransportSymbolWidget extends StatelessWidget {
+  final TransportSymbol symbol;
+  final Color color;
+  final double size;
+
+  const TransportSymbolWidget({
+    super.key,
+    required this.symbol,
+    required this.color,
+    this.size = 14.0,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _TransportSymbolPainter(symbol: symbol, color: color),
+      ),
+    );
+  }
+}
+
+class _TransportSymbolPainter extends CustomPainter {
+  final TransportSymbol symbol;
+  final Color color;
+
+  _TransportSymbolPainter({required this.symbol, required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final w = size.width;
+    final h = size.height;
+
+    switch (symbol) {
+      case TransportSymbol.play:
+        // Triangle pointing right
+        final path = Path()
+          ..moveTo(w * 0.15, h * 0.05)
+          ..lineTo(w * 0.90, h * 0.50)
+          ..lineTo(w * 0.15, h * 0.95)
+          ..close();
+        canvas.drawPath(path, paint);
+        break;
+
+      case TransportSymbol.pause:
+        // Two vertical bars
+        final barW = w * 0.32;
+        final gap = w * 0.22;
+        final rRect1 = RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.05, h * 0.05, barW, h * 0.90),
+          const Radius.circular(1.5),
+        );
+        final rRect2 = RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.05 + barW + gap, h * 0.05, barW, h * 0.90),
+          const Radius.circular(1.5),
+        );
+        canvas.drawRRect(rRect1, paint);
+        canvas.drawRRect(rRect2, paint);
+        break;
+
+      case TransportSymbol.stop:
+        // Rounded square
+        final rect = RRect.fromRectAndRadius(
+          Rect.fromLTWH(w * 0.08, h * 0.08, w * 0.84, h * 0.84),
+          const Radius.circular(2.0),
+        );
+        canvas.drawRRect(rect, paint);
+        break;
+
+      case TransportSymbol.record:
+        // Solid circle
+        canvas.drawCircle(Offset(w * 0.5, h * 0.5), w * 0.44, paint);
+        break;
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _TransportSymbolPainter oldDelegate) {
+    return oldDelegate.symbol != symbol || oldDelegate.color != color;
+  }
 }

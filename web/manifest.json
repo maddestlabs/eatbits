@@ -1,10 +1,10 @@
 {
     "name": "Eatsbits DAW",
     "short_name": "Eatsbits",
-    "start_url": ".",
+    "start_url": "./",
     "display": "standalone",
-    "background_color": "#0B0E14",
-    "theme_color": "#21f4e8",
+    "background_color": "#141210",
+    "theme_color": "#FF8C00",
     "description": "Mobile-First WebAudio DAW with Lua Live Scripting.",
     "orientation": "any",
     "prefer_related_applications": false,
@@ -34,9 +34,9 @@
             "purpose": "maskable"
         },
         {
-            "src": "app_icon.svg",
-            "sizes": "512x512",
-            "type": "image/svg+xml",
+            "src": "favicon.png",
+            "sizes": "64x64",
+            "type": "image/png",
             "purpose": "any"
         }
     ]

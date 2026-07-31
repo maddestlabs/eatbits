@@ -197,9 +197,14 @@ class _PianoRollViewState extends State<PianoRollView> {
                                 return Container(
                                   height: _keyHeight,
                                   decoration: BoxDecoration(
-                                    color: isBlackKey ? Colors.white.withOpacity(0.02) : Colors.transparent,
+                                    color: isBlackKey
+                                        ? (DawTheme.isLight ? Colors.black.withOpacity(0.04) : Colors.white.withOpacity(0.02))
+                                        : Colors.transparent,
                                     border: Border(
-                                      bottom: BorderSide(color: Colors.white.withOpacity(0.04), width: 1),
+                                      bottom: BorderSide(
+                                        color: DawTheme.isLight ? Colors.black.withOpacity(0.12) : Colors.white.withOpacity(0.04),
+                                        width: 1,
+                                      ),
                                     ),
                                   ),
                                 );
@@ -216,11 +221,13 @@ class _PianoRollViewState extends State<PianoRollView> {
                                   decoration: BoxDecoration(
                                     border: Border(
                                       left: BorderSide(
-                                        color: isBarHeader ? DawTheme.primaryCyan.withOpacity(0.35) : Colors.white.withOpacity(0.04),
+                                        color: isBarHeader
+                                            ? DawTheme.primaryCyan.withOpacity(0.45)
+                                            : (DawTheme.isLight ? Colors.black.withOpacity(0.12) : Colors.white.withOpacity(0.04)),
                                         width: isBarHeader ? 1.5 : 1.0,
                                       ),
                                       right: BorderSide(
-                                        color: Colors.white.withOpacity(0.04),
+                                        color: DawTheme.isLight ? Colors.black.withOpacity(0.08) : Colors.white.withOpacity(0.04),
                                         width: 1.0,
                                       ),
                                     ),

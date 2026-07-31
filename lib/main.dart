@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'models/daw_state.dart';
 import 'theme/daw_theme.dart';
@@ -25,6 +26,12 @@ class WrenDawApp extends StatefulWidget {
 
 class _WrenDawAppState extends State<WrenDawApp> {
   final DawState _dawState = DawState();
+
+  @override
+  void dispose() {
+    _dawState.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,9 +61,22 @@ class DawMainShell extends StatefulWidget {
 class _DawMainShellState extends State<DawMainShell> {
   @override
   Widget build(BuildContext context) {
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.grungyHardware;
+    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
 
-    return Scaffold(
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.space): () {
+          final primaryFocus = FocusManager.instance.primaryFocus;
+          if (primaryFocus != null && primaryFocus.context != null) {
+            final editableState = primaryFocus.context!.findAncestorStateOfType<EditableTextState>();
+            if (editableState != null) {
+              return; // User is editing text (Script Editor, TextFields, manual dialogs). Do not interrupt typing.
+            }
+          }
+          widget.dawState.togglePlay();
+        },
+      },
+      child: Scaffold(
       backgroundColor: DawTheme.backgroundDark,
       body: SafeArea(
         child: Column(
@@ -117,6 +137,7 @@ class _DawMainShellState extends State<DawMainShell> {
           ],
         ),
       ),
+    ),
     );
   }
 

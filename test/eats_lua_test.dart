@@ -29,6 +29,7 @@ void main() {
       state.projectName = 'Test Techno Track';
       state.setBpm(132.5);
       state.setMasterVolume(0.88);
+      state.setLoopPoints(2, 6);
 
       // Modify active track notes and parameters
       final track = state.activeTrack;
@@ -64,6 +65,9 @@ void main() {
       expect(newState.projectName, equals('Test Techno Track'));
       expect(newState.bpm, equals(132.5));
       expect(newState.masterVolume, equals(0.88));
+      expect(newState.isLooping, isTrue);
+      expect(newState.loopStartBar, equals(2));
+      expect(newState.loopEndBar, equals(6));
 
       final loadedTrack = newState.patterns.first.tracks.firstWhere((t) => t.name == 'Acid 303 Lead');
       expect(loadedTrack.cutoff, equals(4500.0));

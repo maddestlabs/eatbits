@@ -255,7 +255,7 @@ class _MixerViewState extends State<MixerView> {
                   ),
                   const SizedBox(width: 5),
 
-                  // Compact Vertical Hardware Button Column
+                  // Compact Vertical Attached Hardware Button Column
                   Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
@@ -267,8 +267,9 @@ class _MixerViewState extends State<MixerView> {
                         height: 26,
                         width: 26,
                         padding: EdgeInsets.zero,
+                        showLed: false,
+                        borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
                       ),
-                      const SizedBox(height: 4),
                       SkeuomorphicHardwareButton(
                         label: 's',
                         isActive: track.isSoloed,
@@ -277,8 +278,9 @@ class _MixerViewState extends State<MixerView> {
                         height: 26,
                         width: 26,
                         padding: EdgeInsets.zero,
+                        showLed: false,
+                        borderRadius: BorderRadius.zero,
                       ),
-                      const SizedBox(height: 6),
                       SkeuomorphicHardwareButton(
                         label: 'FX',
                         isActive: track.fxRack.any((f) => f.enabled),
@@ -287,6 +289,8 @@ class _MixerViewState extends State<MixerView> {
                         height: 26,
                         width: 26,
                         padding: EdgeInsets.zero,
+                        showLed: false,
+                        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(4)),
                       ),
                     ],
                   ),
@@ -312,7 +316,7 @@ class _MixerViewState extends State<MixerView> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  title: const Text('Bitcrusher 8-Bit', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  title: Text('Bitcrusher 8-Bit', style: TextStyle(color: DawTheme.textPrimary, fontSize: 13)),
                   subtitle: Text('Sample reduction & bit depth', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
                   trailing: Switch(
                     value: track.fxRack.any((f) => f.name == 'Bitcrusher'),
@@ -320,7 +324,7 @@ class _MixerViewState extends State<MixerView> {
                   ),
                 ),
                 ListTile(
-                  title: const Text('Tube Distortion', style: TextStyle(color: Colors.white, fontSize: 13)),
+                  title: Text('Tube Distortion', style: TextStyle(color: DawTheme.textPrimary, fontSize: 13)),
                   subtitle: Text('Soft clipping warmth', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
                   trailing: Switch(
                     value: track.fxRack.any((f) => f.name == 'TubeDistortion'),

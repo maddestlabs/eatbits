@@ -18,6 +18,13 @@ class DawState extends ChangeNotifier {
   final LuaEngine luaEngine = LuaEngine();
 
   String projectName = 'Untitled Song';
+  String authorName = 'Anonymous Producer';
+
+  void setProjectDetails(String name, String author) {
+    projectName = name.trim().isEmpty ? 'Untitled Song' : name.trim();
+    authorName = author.trim().isEmpty ? 'Anonymous Producer' : author.trim();
+    notifyListeners();
+  }
 
   void notifyState() => notifyListeners();
 
@@ -59,6 +66,14 @@ class DawState extends ChangeNotifier {
   // Playback & Clock State
   bool _isPlaying = false;
   bool get isPlaying => _isPlaying;
+
+  bool _isRecording = false;
+  bool get isRecording => _isRecording;
+
+  void toggleRecord() {
+    _isRecording = !_isRecording;
+    notifyListeners();
+  }
 
   bool _isSongMode = false;
   bool get isSongMode => _isSongMode;
@@ -153,13 +168,22 @@ class DawState extends ChangeNotifier {
     _startMeterTimer();
   }
 
+  Timer? _meterTimer;
+
   void _startMeterTimer() {
-    Timer.periodic(const Duration(milliseconds: 50), (_) {
+    _meterTimer?.cancel();
+    _meterTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
       if (_isPlaying || audioEngine.hasActiveMeterActivity) {
         audioEngine.updateMeters();
         notifyListeners();
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _meterTimer?.cancel();
+    super.dispose();
   }
 
   void _initDemoTracks() {
@@ -379,6 +403,11 @@ class DawState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setLooping(bool looping) {
+    _isLooping = looping;
+    notifyListeners();
+  }
+
   void seekToBar(int bar) {
     final targetBar = bar.clamp(0, 31);
     _currentStep = targetBar * 16;
@@ -507,12 +536,20 @@ class DawState extends ChangeNotifier {
     }
   }
 
+  void _syncClipNotes(TrackChannel track) {
+    if (track.clips.isNotEmpty) {
+      for (final clip in track.clips) {
+        clip.notes = track.notes;
+      }
+    }
+  }
+
   // Step Editing
   void toggleStep(TrackChannel track, int stepIndex) {
     if (stepIndex >= 0 && stepIndex < track.steps.length) {
       final step = track.steps[stepIndex];
       step.active = !step.active;
-      
+
       if (step.active) {
         // Add matching note for Piano Roll
         track.notes.removeWhere((n) => n.startStep.toInt() == stepIndex && n.pitch == step.pitch);
@@ -532,6 +569,7 @@ class DawState extends ChangeNotifier {
         // Remove matching note
         track.notes.removeWhere((n) => n.startStep.toInt() == stepIndex && n.pitch == step.pitch);
       }
+      _syncClipNotes(track);
       notifyListeners();
     }
   }
@@ -554,6 +592,7 @@ class DawState extends ChangeNotifier {
   // Piano Roll Note Editing
   void addNote(TrackChannel track, Note note) {
     track.notes.add(note);
+    _syncClipNotes(track);
     audioEngine.playNoteOrSample(
       track: track,
       midiNote: note.pitch,
@@ -566,12 +605,14 @@ class DawState extends ChangeNotifier {
     final idx = track.notes.indexWhere((n) => n.id == updatedNote.id);
     if (idx != -1) {
       track.notes[idx] = updatedNote;
+      _syncClipNotes(track);
       notifyListeners();
     }
   }
 
   void removeNote(TrackChannel track, String noteId) {
     track.notes.removeWhere((n) => n.id == noteId);
+    _syncClipNotes(track);
     notifyListeners();
   }
 
@@ -700,6 +741,7 @@ class DawState extends ChangeNotifier {
       trackerSelectedStep = (trackerSelectedStep + 1) % activePattern.lengthSteps;
     }
 
+    _syncClipNotes(track);
     notifyListeners();
   }
 
@@ -708,6 +750,7 @@ class DawState extends ChangeNotifier {
     track.notes.removeWhere(
       (n) => n.startStep.toInt() == trackerSelectedStep && n.column == trackerSelectedColumn,
     );
+    _syncClipNotes(track);
     notifyListeners();
   }
 

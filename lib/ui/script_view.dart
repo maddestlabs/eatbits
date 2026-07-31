@@ -144,7 +144,7 @@ end''',
   @override
   Widget build(BuildContext context) {
     final clip = widget.dawState.activeTrackClip;
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.grungyHardware;
+    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
 
     return CallbackShortcuts(
       bindings: {
@@ -227,7 +227,7 @@ end''',
                                 min: p.min,
                                 max: p.max,
                                 activeColor: DawTheme.secondaryMagenta,
-                                inactiveColor: Colors.white12,
+                                inactiveColor: DawTheme.controlBackground,
                                 onChanged: (val) {
                                   setState(() {
                                     clip.luaParams[p.name] = val;
@@ -294,10 +294,10 @@ end''',
                             height: 1.3,
                             color: Color(0xFF00FFCC),
                           ),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: '-- Write Lua clip generator script here...',
-                            hintStyle: TextStyle(color: Colors.white24, fontFamily: 'monospace'),
+                            hintStyle: TextStyle(color: DawTheme.textMuted, fontFamily: 'monospace'),
                           ),
                           onChanged: (val) {
                             _recompile(val);

@@ -84,7 +84,7 @@ class _SkeuomorphicHardwareKnobState extends State<SkeuomorphicHardwareKnob> {
                 painter: _KnobPainter(
                   normalizedValue: normalized,
                   accentColor: activeColor,
-                  isGrungyTheme: DawTheme.currentPreset == DawThemePreset.grungyHardware,
+                  isGrungyTheme: DawTheme.currentPreset == DawThemePreset.ateTrack,
                 ),
               ),
             ),
@@ -146,107 +146,141 @@ class _KnobPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final outerRadius = size.width / 2;
-    final knobRadius = outerRadius * 0.75;
+    final outerRadius = math.min(size.width, size.height) / 2;
 
     // Angle range: 7 o'clock (135 deg / 0.75*pi) to 5 o'clock (405 deg / 2.25*pi)
     const startAngle = 0.75 * math.pi;
     const totalAngleRange = 1.5 * math.pi;
-    final currentAngle = startAngle + (normalizedValue * totalAngleRange);
+    final currentAngle = startAngle + (normalizedValue.clamp(0.0, 1.0) * totalAngleRange);
 
-    // 1. Recessed Base Well Shadow
-    final shadowPaint = Paint()
-      ..color = Colors.black87
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4.0);
-    canvas.drawCircle(center + const Offset(0, 2), knobRadius + 2, shadowPaint);
+    // ----------------------------------------------------
+    // 1. Outer Arc Value Track (Arc Meter around Perimeter)
+    // ----------------------------------------------------
+    final arcRadius = outerRadius - 3.0;
+    final arcRect = Rect.fromCircle(center: center, radius: arcRadius);
 
-    // 2. Outer Perimeter Scale / Ticks
-    const tickCount = 11;
-    final tickPaint = Paint()
-      ..color = isGrungyTheme ? const Color(0xFF8A8275) : Colors.white30
-      ..strokeWidth = 1.2
-      ..strokeCap = StrokeCap.round;
+    // Inactive Background Track Arc
+    final inactiveArcPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..color = isGrungyTheme ? const Color(0xFF38322B) : const Color(0xFF222733);
+    canvas.drawArc(arcRect, startAngle, totalAngleRange, false, inactiveArcPaint);
 
-    final activeTickPaint = Paint()
-      ..color = accentColor
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round;
+    // Active Glowing Value Arc
+    if (normalizedValue > 0.001) {
+      final sweepAngle = (normalizedValue * totalAngleRange).clamp(0.001, totalAngleRange);
 
-    for (int i = 0; i < tickCount; i++) {
-      final t = i / (tickCount - 1);
-      final tickAngle = startAngle + (t * totalAngleRange);
-      final isPassed = t <= normalizedValue;
+      // Arc Glow Pass
+      final arcGlowPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4.0
+        ..strokeCap = StrokeCap.round
+        ..color = accentColor.withOpacity(0.5)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
+      canvas.drawArc(arcRect, startAngle, sweepAngle, false, arcGlowPaint);
 
-      final innerP = center + Offset(math.cos(tickAngle) * (knobRadius + 2), math.sin(tickAngle) * (knobRadius + 2));
-      final outerP = center + Offset(math.cos(tickAngle) * (outerRadius - 1), math.sin(tickAngle) * (outerRadius - 1));
-
-      canvas.drawLine(innerP, outerP, isPassed ? activeTickPaint : tickPaint);
+      // Arc Foreground Line
+      final activeArcPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.5
+        ..strokeCap = StrokeCap.round
+        ..color = accentColor;
+      canvas.drawArc(arcRect, startAngle, sweepAngle, false, activeArcPaint);
     }
 
-    // 3. Knurled Metallic Knob Body Gradient
-    final metallicGradient = SweepGradient(
+    // ----------------------------------------------------
+    // 2. Physical Knob Body & Bezel (3D Skeuomorphic Rotary Dial)
+    // ----------------------------------------------------
+    final knobRadius = outerRadius * 0.76;
+
+    // Bezel Drop Shadow
+    final shadowPaint = Paint()
+      ..color = Colors.black.withOpacity(0.65)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.5);
+    canvas.drawCircle(center + const Offset(0, 2), knobRadius + 1, shadowPaint);
+
+    // Outer Dark Bezel Well Rim
+    final bezelPaint = Paint()
+      ..color = isGrungyTheme ? const Color(0xFF1B1815) : const Color(0xFF14171E);
+    canvas.drawCircle(center, knobRadius + 1, bezelPaint);
+
+    // Outer Bezel Rim Line
+    final bezelRimPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.0
+      ..color = isGrungyTheme ? const Color(0xFF3A342D) : const Color(0xFF282D3A);
+    canvas.drawCircle(center, knobRadius + 1, bezelRimPaint);
+
+    // Knob Body Cap Main Gradient
+    final bodyGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
       colors: isGrungyTheme
           ? [
-              const Color(0xFF4A443D),
-              const Color(0xFF2C2824),
-              const Color(0xFF6B6258),
-              const Color(0xFF2C2824),
-              const Color(0xFF4A443D),
+              const Color(0xFF4A433B),
+              const Color(0xFF2C2722),
+              const Color(0xFF1F1C18),
             ]
           : [
-              const Color(0xFF5A6577),
-              const Color(0xFF202736),
-              const Color(0xFF889BB7),
-              const Color(0xFF202736),
-              const Color(0xFF5A6577),
+              const Color(0xFF3A4250),
+              const Color(0xFF222834),
+              const Color(0xFF161A22),
             ],
-      stops: const [0.0, 0.25, 0.5, 0.75, 1.0],
+      stops: const [0.0, 0.5, 1.0],
     );
 
     final knobBodyPaint = Paint()
-      ..shader = metallicGradient.createShader(Rect.fromCircle(center: center, radius: knobRadius));
-
+      ..shader = bodyGradient.createShader(Rect.fromCircle(center: center, radius: knobRadius));
     canvas.drawCircle(center, knobRadius, knobBodyPaint);
 
-    // Inner Metallic Cap Highlight
-    final capGradient = RadialGradient(
+    // Inner Concentric Cap Face
+    final innerRadius = knobRadius * 0.82;
+    final innerFaceGradient = RadialGradient(
+      center: const Alignment(-0.2, -0.3),
+      radius: 0.95,
       colors: isGrungyTheme
-          ? [const Color(0xFF6E645A), const Color(0xFF221F1C)]
-          : [const Color(0xFF7A8B9E), const Color(0xFF161C26)],
-      stops: const [0.6, 1.0],
+          ? [
+              const Color(0xFF3D3730),
+              const Color(0xFF201D19),
+            ]
+          : [
+              const Color(0xFF2A313D),
+              const Color(0xFF141820),
+            ],
     );
-    final capPaint = Paint()..shader = capGradient.createShader(Rect.fromCircle(center: center, radius: knobRadius * 0.85));
-    canvas.drawCircle(center, knobRadius * 0.85, capPaint);
 
-    // Bevel Rim Line
-    final rimPaint = Paint()
+    final innerCapPaint = Paint()
+      ..shader = innerFaceGradient.createShader(Rect.fromCircle(center: center, radius: innerRadius));
+    canvas.drawCircle(center, innerRadius, innerCapPaint);
+
+    // Inner Face Bevel Rim Line
+    final innerRimPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0
-      ..color = Colors.white.withOpacity(isGrungyTheme ? 0.15 : 0.25);
-    canvas.drawCircle(center, knobRadius * 0.85, rimPaint);
+      ..color = Colors.white.withOpacity(isGrungyTheme ? 0.12 : 0.20);
+    canvas.drawCircle(center, innerRadius, innerRimPaint);
 
-    // 4. Indicator Line & Glowing LED Marker
-    final indicatorStart = center + Offset(math.cos(currentAngle) * (knobRadius * 0.3), math.sin(currentAngle) * (knobRadius * 0.3));
-    final indicatorEnd = center + Offset(math.cos(currentAngle) * (knobRadius * 0.8), math.sin(currentAngle) * (knobRadius * 0.8));
+    // ----------------------------------------------------
+    // 3. Illuminated Capsule Pointer Notch (Center Indicator)
+    // ----------------------------------------------------
+    final p1 = center + Offset(math.cos(currentAngle) * (knobRadius * 0.28), math.sin(currentAngle) * (knobRadius * 0.28));
+    final p2 = center + Offset(math.cos(currentAngle) * (knobRadius * 0.68), math.sin(currentAngle) * (knobRadius * 0.68));
 
-    // Outer Glow
-    final glowPaint = Paint()
-      ..color = accentColor
-      ..strokeWidth = 3.5
+    // Pointer Glow
+    final pointerGlowPaint = Paint()
+      ..color = accentColor.withOpacity(0.6)
+      ..strokeWidth = 4.0
       ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3.0);
-    canvas.drawLine(indicatorStart, indicatorEnd, glowPaint);
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
+    canvas.drawLine(p1, p2, pointerGlowPaint);
 
-    // Bright Core Indicator Line
-    final linePaint = Paint()
-      ..color = isGrungyTheme ? const Color(0xFFFFF0D0) : Colors.white
-      ..strokeWidth = 2.0
+    // Pointer Core Line
+    final pointerCorePaint = Paint()
+      ..color = accentColor
+      ..strokeWidth = 2.5
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(indicatorStart, indicatorEnd, linePaint);
-
-    // Center Screw / Cap Axis Dot
-    canvas.drawCircle(center, 3.0, Paint()..color = const Color(0xFF111111));
-    canvas.drawCircle(center, 1.5, Paint()..color = isGrungyTheme ? const Color(0xFF777777) : Colors.white54);
+    canvas.drawLine(p1, p2, pointerCorePaint);
   }
 
   @override

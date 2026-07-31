@@ -186,7 +186,7 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
 
   @override
   Widget build(BuildContext context) {
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.grungyHardware;
+    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
     final activeTrack = widget.dawState.activeTrack;
     final trackColor = activeTrack.color;
 
@@ -204,7 +204,9 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
           ),
         ),
       ),
-      child: Column(
+      child: ClipRect(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
         children: [
           // Drag / Pull Tab Header
           GestureDetector(
@@ -224,7 +226,7 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
               });
             },
             child: Container(
-              height: _pullTabHeight,
+              height: _pullTabHeight - 1.5,
               width: double.infinity,
               color: isGrungy ? const Color(0xFF28231E) : DawTheme.panelHeader,
               child: Stack(
@@ -235,7 +237,7 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                     width: 70,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: isGrungy ? const Color(0xFF8C7A6B) : Colors.white54,
+                      color: isGrungy ? const Color(0xFF8C7A6B) : DawTheme.textMuted,
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
@@ -247,13 +249,13 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                         Icon(
                           Icons.piano,
                           size: 14,
-                          color: _isExpanded ? DawTheme.primaryCyan : Colors.white70,
+                          color: _isExpanded ? DawTheme.primaryCyan : DawTheme.textSecondary,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           'PIANO KEYBOARD',
                           style: TextStyle(
-                            color: _isExpanded ? DawTheme.primaryCyan : Colors.white70,
+                            color: _isExpanded ? DawTheme.primaryCyan : DawTheme.textSecondary,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.1,
@@ -267,7 +269,7 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                     child: Icon(
                       _isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
                       size: 16,
-                      color: Colors.white70,
+                      color: DawTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -397,10 +399,10 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Text(
+                            Text(
                               'OCT:',
                               style: TextStyle(
-                                color: Colors.white54,
+                                color: DawTheme.textMuted,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -410,13 +412,13 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                               icon: const Icon(Icons.chevron_left, size: 18),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                              color: _baseOctave > 1 ? Colors.white : Colors.white30,
+                              color: _baseOctave > 1 ? DawTheme.textPrimary : DawTheme.textMuted.withOpacity(0.5),
                               onPressed: _baseOctave > 1 ? () => _shiftOctave(-1) : null,
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: Colors.black45,
+                                color: DawTheme.controlBackground,
                                 borderRadius: BorderRadius.circular(3),
                               ),
                               child: Text(
@@ -432,7 +434,7 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                               icon: const Icon(Icons.chevron_right, size: 18),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                              color: _baseOctave < 6 ? Colors.white : Colors.white30,
+                              color: _baseOctave < 6 ? DawTheme.textPrimary : DawTheme.textMuted.withOpacity(0.5),
                               onPressed: _baseOctave < 6 ? () => _shiftOctave(1) : null,
                             ),
                           ],
@@ -478,6 +480,7 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
             ),
         ],
       ),
+    ),
     );
   }
 }

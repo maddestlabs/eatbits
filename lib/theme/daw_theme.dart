@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
 
 enum DawThemePreset {
-  cyberpunkCyan,   // EatsBits Default Neon Cyan & Dark Obsidian
-  midnightOled,    // Pitch Black OLED & Electric Cyan
-  synthwavePurple, // Deep Purple & Neon Pink
-  studioLight,     // Professional Studio Light Mode
-  grungyHardware   // Grungy Vintage Realistic Hardware (SILT / PunchBOX2 Style)
+  ateTrack,      // Ate Track (Default)
+  cyanCrunch,    // Cyan Crunch
+  midnightBites, // Midnight Bites
+  lightSnack     // Light Snack
 }
 
 class DawTheme {
-  static DawThemePreset currentPreset = DawThemePreset.cyberpunkCyan;
+  static DawThemePreset currentPreset = DawThemePreset.ateTrack;
+
+  static bool get isLight => currentPreset == DawThemePreset.lightSnack;
 
   // --- Dual-Context Font Settings ---
   // Context 1: Primary UI Font (App Headers, Navigation, Track Titles, Buttons, Menus)
@@ -35,15 +36,13 @@ class DawTheme {
 
   static Color get backgroundDark {
     switch (currentPreset) {
-      case DawThemePreset.midnightOled:
+      case DawThemePreset.midnightBites:
         return const Color(0xFF000000);
-      case DawThemePreset.synthwavePurple:
-        return const Color(0xFF130024);
-      case DawThemePreset.studioLight:
+      case DawThemePreset.lightSnack:
         return const Color(0xFFF4F6F9); // Crisp clean light background
-      case DawThemePreset.grungyHardware:
+      case DawThemePreset.ateTrack:
         return const Color(0xFF141210); // Weathered vintage rack dark background
-      case DawThemePreset.cyberpunkCyan:
+      case DawThemePreset.cyanCrunch:
       default:
         return const Color(0xFF0B0E14);
     }
@@ -51,15 +50,13 @@ class DawTheme {
 
   static Color get panelBackground {
     switch (currentPreset) {
-      case DawThemePreset.midnightOled:
+      case DawThemePreset.midnightBites:
         return const Color(0xFF101010);
-      case DawThemePreset.synthwavePurple:
-        return const Color(0xFF22003B);
-      case DawThemePreset.studioLight:
+      case DawThemePreset.lightSnack:
         return const Color(0xFFFFFFFF); // Pure white panel
-      case DawThemePreset.grungyHardware:
+      case DawThemePreset.ateTrack:
         return const Color(0xFF24211D); // Aged metal chassis surface
-      case DawThemePreset.cyberpunkCyan:
+      case DawThemePreset.cyanCrunch:
       default:
         return const Color(0xFF131822);
     }
@@ -67,15 +64,13 @@ class DawTheme {
 
   static Color get panelHeader {
     switch (currentPreset) {
-      case DawThemePreset.midnightOled:
+      case DawThemePreset.midnightBites:
         return const Color(0xFF181818);
-      case DawThemePreset.synthwavePurple:
-        return const Color(0xFF320056);
-      case DawThemePreset.studioLight:
+      case DawThemePreset.lightSnack:
         return const Color(0xFFE2E8F0); // Light grey header
-      case DawThemePreset.grungyHardware:
+      case DawThemePreset.ateTrack:
         return const Color(0xFF332F2A); // Dark brushed metallic header
-      case DawThemePreset.cyberpunkCyan:
+      case DawThemePreset.cyanCrunch:
       default:
         return const Color(0xFF1A212F);
     }
@@ -83,15 +78,13 @@ class DawTheme {
 
   static Color get controlBackground {
     switch (currentPreset) {
-      case DawThemePreset.midnightOled:
+      case DawThemePreset.midnightBites:
         return const Color(0xFF222222);
-      case DawThemePreset.synthwavePurple:
-        return const Color(0xFF430072);
-      case DawThemePreset.studioLight:
+      case DawThemePreset.lightSnack:
         return const Color(0xFFCBD5E1); // Soft control fill
-      case DawThemePreset.grungyHardware:
+      case DawThemePreset.ateTrack:
         return const Color(0xFF181614); // Recessed control well background
-      case DawThemePreset.cyberpunkCyan:
+      case DawThemePreset.cyanCrunch:
       default:
         return const Color(0xFF242E42);
     }
@@ -99,14 +92,12 @@ class DawTheme {
 
   static Color get primaryCyan {
     switch (currentPreset) {
-      case DawThemePreset.synthwavePurple:
-        return const Color(0xFFFF007F); // Neon Pink highlight
-      case DawThemePreset.studioLight:
+      case DawThemePreset.lightSnack:
         return const Color(0xFF007799); // Deep Teal for high contrast
-      case DawThemePreset.grungyHardware:
+      case DawThemePreset.ateTrack:
         return const Color(0xFFFF8C00); // Warm Amber / Vintage Nixie Glow
-      case DawThemePreset.midnightOled:
-      case DawThemePreset.cyberpunkCyan:
+      case DawThemePreset.midnightBites:
+      case DawThemePreset.cyanCrunch:
       default:
         return const Color(0xFF21F4E8); // EatsBits Signature Cyan
     }
@@ -122,19 +113,19 @@ class DawTheme {
   static const Color soloColor = Color(0xFFFFCC00);
 
   static Color get textPrimary {
-    return currentPreset == DawThemePreset.studioLight ? const Color(0xFF0F172A) : const Color(0xFFF0F4F8);
+    return currentPreset == DawThemePreset.lightSnack ? const Color(0xFF0F172A) : const Color(0xFFF0F4F8);
   }
 
   static Color get textSecondary {
-    return currentPreset == DawThemePreset.studioLight ? const Color(0xFF334155) : const Color(0xFF8E9BAE);
+    return currentPreset == DawThemePreset.lightSnack ? const Color(0xFF334155) : const Color(0xFF8E9BAE);
   }
 
   static Color get textMuted {
-    return currentPreset == DawThemePreset.studioLight ? const Color(0xFF64748B) : const Color(0xFF535D6E);
+    return currentPreset == DawThemePreset.lightSnack ? const Color(0xFF64748B) : const Color(0xFF535D6E);
   }
 
   static ThemeData get themeData {
-    final isLight = currentPreset == DawThemePreset.studioLight;
+    final isLight = currentPreset == DawThemePreset.lightSnack;
     final baseTheme = isLight ? ThemeData.light() : ThemeData.dark();
 
     return baseTheme.copyWith(

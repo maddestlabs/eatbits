@@ -221,14 +221,14 @@ class TrackInspectorView extends StatelessWidget {
                 Text('FX INSERT RACK', style: DawTheme.getPrimaryFontStyle(color: DawTheme.secondaryMagenta, fontWeight: FontWeight.bold, fontSize: 12)),
                 const SizedBox(height: 12),
                 SwitchListTile(
-                  title: Text('Bitcrusher 8-Bit', style: DawTheme.getPrimaryFontStyle(color: Colors.white, fontSize: 12)),
+                  title: Text('Bitcrusher 8-Bit', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontSize: 12)),
                   subtitle: Text('Sample & bit depth reducer', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textMuted, fontSize: 10)),
                   value: track.fxRack.any((f) => f.name == 'Bitcrusher'),
                   activeColor: DawTheme.secondaryMagenta,
                   onChanged: (val) => dawState.toggleBitcrusher(track, val),
                 ),
                 SwitchListTile(
-                  title: Text('Tube Distortion', style: DawTheme.getPrimaryFontStyle(color: Colors.white, fontSize: 12)),
+                  title: Text('Tube Distortion', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontSize: 12)),
                   subtitle: Text('Soft clipping saturation', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textMuted, fontSize: 10)),
                   value: track.fxRack.any((f) => f.name == 'TubeDistortion'),
                   activeColor: DawTheme.secondaryMagenta,
@@ -244,7 +244,7 @@ class TrackInspectorView extends StatelessWidget {
           GrungyRackPanel(
             title: 'Analog Hardware DSP Unit - SILT 808',
             subtitle: 'Real-Time Skeuomorphic Rotary Controls & Nixie Segment Readouts',
-            accentColor: DawTheme.currentPreset == DawThemePreset.grungyHardware
+            accentColor: DawTheme.currentPreset == DawThemePreset.ateTrack
                 ? const Color(0xFFFF8C00)
                 : track.color,
             child: Column(
@@ -256,7 +256,7 @@ class TrackInspectorView extends StatelessWidget {
                       label: 'GAIN OUTPUT',
                       valueText: '${(track.volume * 100).toInt()}',
                       unit: '%',
-                      glowColor: DawTheme.currentPreset == DawThemePreset.grungyHardware
+                      glowColor: DawTheme.currentPreset == DawThemePreset.ateTrack
                           ? const Color(0xFFFF8C00)
                           : track.color,
                     ),
@@ -265,7 +265,7 @@ class TrackInspectorView extends StatelessWidget {
                       valueText: track.pan == 0
                           ? 'CENTER'
                           : (track.pan < 0 ? 'L${(track.pan.abs() * 100).toInt()}' : 'R${(track.pan * 100).toInt()}'),
-                      glowColor: DawTheme.currentPreset == DawThemePreset.grungyHardware
+                      glowColor: DawTheme.currentPreset == DawThemePreset.ateTrack
                           ? const Color(0xFFFF8C00)
                           : track.color,
                     ),
@@ -281,7 +281,7 @@ class TrackInspectorView extends StatelessWidget {
                       min: 0.0,
                       max: 1.5,
                       defaultValue: 1.0,
-                      accentColor: DawTheme.currentPreset == DawThemePreset.grungyHardware
+                      accentColor: DawTheme.currentPreset == DawThemePreset.ateTrack
                           ? const Color(0xFFFF8C00)
                           : track.color,
                       onChanged: (val) => dawState.setTrackVolume(track, val),
@@ -293,7 +293,7 @@ class TrackInspectorView extends StatelessWidget {
                       min: -1.0,
                       max: 1.0,
                       defaultValue: 0.0,
-                      accentColor: DawTheme.currentPreset == DawThemePreset.grungyHardware
+                      accentColor: DawTheme.currentPreset == DawThemePreset.ateTrack
                           ? const Color(0xFFFF8C00)
                           : track.color,
                       onChanged: (val) => dawState.setTrackPan(track, val),

@@ -55,7 +55,7 @@ class _SkeuomorphicHardwareSliderState extends State<SkeuomorphicHardwareSlider>
   Widget build(BuildContext context) {
     final activeColor = widget.activeColor ?? DawTheme.primaryCyan;
     final normalized = ((widget.value - widget.min) / (widget.max - widget.min)).clamp(0.0, 1.0);
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.grungyHardware;
+    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
     final isHoriz = widget.orientation == Axis.horizontal;
 
     return LayoutBuilder(

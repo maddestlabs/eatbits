@@ -15,10 +15,14 @@ class EatsLuaSerializer {
 
     // 1. Meta / Transport settings
     buffer.writeln('  meta = {');
-    buffer.writeln('    title = "${_escapeString(projectName)}",');
+    buffer.writeln('    title = "${_escapeString(dawState.projectName)}",');
+    buffer.writeln('    author = "${_escapeString(dawState.authorName)}",');
     buffer.writeln('    bpm = ${dawState.bpm.toStringAsFixed(2)},');
     buffer.writeln('    masterVolume = ${dawState.masterVolume.toStringAsFixed(2)},');
     buffer.writeln('    isSongMode = ${dawState.isSongMode},');
+    buffer.writeln('    isLooping = ${dawState.isLooping},');
+    buffer.writeln('    loopStartBar = ${dawState.loopStartBar},');
+    buffer.writeln('    loopEndBar = ${dawState.loopEndBar},');
     buffer.writeln('    theme = "${DawTheme.currentPreset.name}",');
     buffer.writeln('  },');
     buffer.writeln();

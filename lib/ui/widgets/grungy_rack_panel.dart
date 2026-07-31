@@ -25,7 +25,7 @@ class GrungyRackPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.grungyHardware;
+    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
     final baseAccent = accentColor ?? DawTheme.primaryCyan;
     final basePanel = panelColor ?? (isGrungy ? const Color(0xFF26221D) : DawTheme.panelBackground);
 

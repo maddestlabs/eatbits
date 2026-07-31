@@ -22,21 +22,42 @@ class EatsLuaParser {
     // 1. Meta / Transport settings
     final meta = map['meta'] is Map ? Map<String, dynamic>.from(map['meta']) : {};
     final title = (meta['title'] as String?) ?? 'Untitled Song';
+    final author = (meta['author'] as String?) ?? 'Anonymous Producer';
     final bpm = (meta['bpm'] as num?)?.toDouble() ?? 124.0;
     final masterVol = (meta['masterVolume'] as num?)?.toDouble() ?? 0.85;
     final isSongMode = (meta['isSongMode'] as bool?) ?? false;
+    final isLooping = (meta['isLooping'] as bool?) ?? true;
+    final loopStartBar = (meta['loopStartBar'] as int?) ?? 0;
+    final loopEndBar = (meta['loopEndBar'] as int?) ?? 8;
     final themeName = meta['theme'] as String?;
 
+    dawState.setProjectDetails(title, author);
     dawState.setBpm(bpm);
     dawState.setMasterVolume(masterVol);
     dawState.isSongMode = isSongMode;
+    dawState.setLoopPoints(loopStartBar, loopEndBar);
+    dawState.setLooping(isLooping);
 
     if (themeName != null) {
-      final matchingPreset = DawThemePreset.values.firstWhere(
-        (p) => p.name == themeName,
-        orElse: () => DawThemePreset.cyberpunkCyan,
-      );
-      dawState.setThemePreset(matchingPreset);
+      DawThemePreset? matchingPreset;
+      for (final p in DawThemePreset.values) {
+        if (p.name == themeName) {
+          matchingPreset = p;
+          break;
+        }
+      }
+      if (matchingPreset == null) {
+        if (themeName == 'grungyHardware') {
+          matchingPreset = DawThemePreset.ateTrack;
+        } else if (themeName == 'studioLight') {
+          matchingPreset = DawThemePreset.lightSnack;
+        } else if (themeName == 'midnightOled') {
+          matchingPreset = DawThemePreset.midnightBites;
+        } else if (themeName == 'cyberpunkCyan') {
+          matchingPreset = DawThemePreset.cyanCrunch;
+        }
+      }
+      dawState.setThemePreset(matchingPreset ?? DawThemePreset.ateTrack);
     }
 
     // 2. Patterns & Tracks
@@ -203,6 +224,29 @@ class EatsLuaParser {
             ) : {},
           ));
         }
+      }
+    }
+
+    // Unify track notes and clip notes list reference
+    if (clips.isEmpty) {
+      clips.add(TrackClip(
+        id: 'clip_${map['id'] ?? 'tr'}_0',
+        name: '${map['name'] ?? 'Track'} Clip',
+        trackId: map['id'] ?? '',
+        startBar: 0,
+        barLength: 4,
+        notes: notes,
+        luaScriptCode: map['luaScriptCode'] ?? '',
+        luaParams: map['luaParams'] is Map ? Map<String, double>.from(
+          (map['luaParams'] as Map).map((k, v) => MapEntry(k.toString(), (v as num).toDouble())),
+        ) : {},
+      ));
+    } else {
+      for (final c in clips) {
+        if (notes.isEmpty && c.notes.isNotEmpty) {
+          notes.addAll(c.notes);
+        }
+        c.notes = notes;
       }
     }
 
