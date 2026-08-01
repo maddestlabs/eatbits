@@ -67,6 +67,10 @@ class Note {
 
   factory Note.fromJson(Map<String, dynamic> json) {
     final vel = (json['velocity'] as num?)?.toDouble() ?? 0.9;
+    final rawSlide = json['isSlide'];
+    final rawAccent = json['isAccent'];
+    final slideBool = rawSlide is bool ? rawSlide : (rawSlide.toString() == 'true');
+    final accentBool = rawAccent is bool ? rawAccent : (rawAccent == null ? vel > 0.75 : rawAccent.toString() == 'true');
     return Note(
       id: json['id'] ?? '',
       pitch: json['pitch'] ?? 60,
@@ -75,8 +79,8 @@ class Note {
       velocity: vel,
       column: json['column'] ?? 0,
       effectCommand: json['effectCommand'] ?? '00',
-      isSlide: json['isSlide'] ?? false,
-      isAccent: json['isAccent'] ?? (vel > 0.75),
+      isSlide: slideBool,
+      isAccent: accentBool,
     );
   }
 }

@@ -11,6 +11,7 @@ import '../lua/eats_lua_serializer.dart';
 import '../lua/eats_lua_parser.dart';
 import '../audio/time_context.dart';
 import '../lua/lua_preset_library.dart';
+import '../lua/default_song.dart';
 import 'track_model.dart';
 
 class DawState extends ChangeNotifier {
@@ -187,110 +188,7 @@ class DawState extends ChangeNotifier {
   }
 
   void _initDemoTracks() {
-    final trackKick = TrackChannel(
-      id: 't_kick',
-      name: 'Eats Kick',
-      color: DawTheme.secondaryMagenta,
-      type: TrackType.luaScript,
-      luaScriptCode: LuaPresetLibrary.presets.firstWhere((p) => p.id == 'procedural_kick').code,
-      luaParams: {'StartFreq': 160.0, 'EndFreq': 42.0, 'PitchDecay': 0.035, 'AmpDecay': 0.35, 'Click': 0.0},
-      volume: 0.95,
-      steps: List.generate(32, (i) => StepEvent(active: i % 4 == 0, velocity: 0.95, pitch: 36)),
-      notes: List.generate(32, (i) => i % 4 == 0 ? Note(id: 'k_$i', pitch: 36, startStep: i.toDouble(), durationSteps: 1.0, velocity: 0.95) : null)
-          .whereType<Note>()
-          .toList(),
-    );
-
-    final trackSnare = TrackChannel(
-      id: 't_snare',
-      name: 'Eats Snare',
-      color: DawTheme.primaryCyan,
-      type: TrackType.luaScript,
-      luaScriptCode: LuaPresetLibrary.presets.firstWhere((p) => p.id == 'procedural_snare').code,
-      luaParams: {'ToneFreq': 185.0, 'Snappy': 0.65, 'Decay': 0.1},
-      volume: 0.85,
-      steps: List.generate(32, (i) => StepEvent(active: i % 8 == 4, velocity: 0.9, pitch: 38)),
-      notes: List.generate(32, (i) => i % 8 == 4 ? Note(id: 's_$i', pitch: 38, startStep: i.toDouble(), durationSteps: 1.0, velocity: 0.9) : null)
-          .whereType<Note>()
-          .toList(),
-    );
-
-    final trackHat = TrackChannel(
-      id: 't_hihat',
-      name: 'Eats Hats',
-      color: DawTheme.accentGold,
-      type: TrackType.luaScript,
-      luaScriptCode: LuaPresetLibrary.presets.firstWhere((p) => p.id == 'procedural_hihat').code,
-      luaParams: {'Cutoff': 8500.0, 'Decay': 0.05, 'Metallic': 0.15},
-      volume: 0.75,
-      steps: List.generate(32, (i) => StepEvent(active: i % 2 == 0, velocity: i % 4 == 2 ? 0.9 : 0.6, pitch: 42)),
-      notes: List.generate(32, (i) => i % 2 == 0 ? Note(id: 'h_$i', pitch: 42, startStep: i.toDouble(), durationSteps: 1.0, velocity: i % 4 == 2 ? 0.9 : 0.6) : null)
-          .whereType<Note>()
-          .toList(),
-    );
-
-    // Lua Script Track - Eats 303 Acid Synth
-    final trackLua303 = TrackChannel(
-      id: 't_lua_303',
-      name: 'Eats 303',
-      color: DawTheme.accentGreen,
-      type: TrackType.luaScript,
-      volume: 0.9,
-      luaScriptCode: LuaPresetLibrary.presets.firstWhere((p) => p.id == 'acid_303').code,
-      luaParams: {
-        'Waveform': 0.0,
-        'Cutoff': 1800.0,
-        'Resonance': 8.0,
-        'EnvMod': 0.75,
-        'Decay': 0.28,
-        'Accent': 0.6,
-        'Slide': 0.4,
-        'Overdrive': 0.3,
-      },
-      notes: [
-        Note(id: 'n1', pitch: 36, startStep: 0, durationSteps: 2, velocity: 0.9), // C2
-        Note(id: 'n2', pitch: 36, startStep: 2, durationSteps: 1, velocity: 0.8),
-        Note(id: 'n3', pitch: 48, startStep: 3, durationSteps: 1, velocity: 1.0), // C3
-        Note(id: 'n4', pitch: 39, startStep: 4, durationSteps: 2, velocity: 0.85), // D#2
-        Note(id: 'n5', pitch: 41, startStep: 6, durationSteps: 2, velocity: 0.9), // F2
-        Note(id: 'n6', pitch: 43, startStep: 8, durationSteps: 2, velocity: 0.9), // G2
-        Note(id: 'n7', pitch: 36, startStep: 10, durationSteps: 2, velocity: 0.95),
-        Note(id: 'n8', pitch: 48, startStep: 12, durationSteps: 2, velocity: 1.0),
-        Note(id: 'n9', pitch: 46, startStep: 14, durationSteps: 2, velocity: 0.9),
-      ],
-      steps: List.generate(32, (i) => StepEvent(active: i % 2 == 0, velocity: 0.85, pitch: 36 + (i * 3) % 12)),
-    );
-
-    trackKick.clips.add(TrackClip(id: 'c_k1', name: 'Kick Beat A', trackId: trackKick.id, startBar: 0, barLength: 4, notes: trackKick.notes));
-    trackSnare.clips.add(TrackClip(id: 'c_s1', name: 'Snare Pattern', trackId: trackSnare.id, startBar: 0, barLength: 4, notes: trackSnare.notes));
-    trackHat.clips.add(TrackClip(id: 'c_h1', name: 'Hi-Hat Groove', trackId: trackHat.id, startBar: 0, barLength: 4, notes: trackHat.notes));
-    trackLua303.clips.add(TrackClip(id: 'c_w1', name: 'Acid 303 Riff', trackId: trackLua303.id, startBar: 0, barLength: 4, notes: trackLua303.notes));
-
-    patterns = [
-      Pattern(
-        id: 'p0',
-        name: 'Pattern A',
-        lengthSteps: 16,
-        tracks: [trackKick, trackSnare, trackHat, trackLua303],
-      ),
-      Pattern(
-        id: 'p1',
-        name: 'Pattern B',
-        lengthSteps: 32,
-        tracks: [
-          trackKick.copyWith(id: 'p1_k'),
-          trackSnare.copyWith(id: 'p1_s'),
-          trackHat.copyWith(id: 'p1_h'),
-          trackLua303.copyWith(id: 'p1_w'),
-        ],
-      ),
-    ];
-
-    // Synchronize initial Lua editor code and parameters with active track on startup
-    if (activeTrack.luaScriptCode.isNotEmpty) {
-      luaCode = activeTrack.luaScriptCode;
-      compilationResult = LuaEngine.compile(luaCode);
-    }
+    loadFromEatsLua(DefaultSong.midnightBitesLua);
   }
 
   // Lua Engine Compilation & Hot Swap

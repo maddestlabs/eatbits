@@ -137,6 +137,15 @@ class EatsLuaParser {
     return title;
   }
 
+  static bool _parseBool(dynamic val, [bool fallback = false]) {
+    if (val is bool) return val;
+    if (val is String) {
+      if (val.toLowerCase() == 'true') return true;
+      if (val.toLowerCase() == 'false') return false;
+    }
+    return fallback;
+  }
+
   static TrackChannel _parseTrack(Map<String, dynamic> map) {
     final colorVal = _parseColorVal(map['color']);
 
@@ -152,8 +161,8 @@ class EatsLuaParser {
             active: true,
             pitch: sMap['pitch'] ?? 60,
             velocity: (sMap['velocity'] as num?)?.toDouble() ?? 0.8,
-            isSlide: sMap['isSlide'] ?? false,
-            isAccent: sMap['isAccent'] ?? false,
+            isSlide: _parseBool(sMap['isSlide']),
+            isAccent: _parseBool(sMap['isAccent']),
           );
         }
       });
@@ -166,8 +175,8 @@ class EatsLuaParser {
             active: true,
             pitch: sMap['pitch'] ?? 60,
             velocity: (sMap['velocity'] as num?)?.toDouble() ?? 0.8,
-            isSlide: sMap['isSlide'] ?? false,
-            isAccent: sMap['isAccent'] ?? false,
+            isSlide: _parseBool(sMap['isSlide']),
+            isAccent: _parseBool(sMap['isAccent']),
           );
         }
       }
@@ -188,8 +197,8 @@ class EatsLuaParser {
             velocity: (nMap['velocity'] as num?)?.toDouble() ?? 0.9,
             column: nMap['column'] ?? 0,
             effectCommand: nMap['effectCommand'] ?? '00',
-            isSlide: nMap['isSlide'] ?? false,
-            isAccent: nMap['isAccent'] ?? false,
+            isSlide: _parseBool(nMap['isSlide']),
+            isAccent: _parseBool(nMap['isAccent']),
           ));
         }
       }
@@ -261,7 +270,7 @@ class EatsLuaParser {
             id: fMap['id'] ?? 'fx_${fxRack.length}',
             name: fMap['name'] ?? 'FX',
             type: FXType.values.firstWhere((e) => e.name == fMap['type'], orElse: () => FXType.biquadFilter),
-            enabled: fMap['enabled'] ?? true,
+            enabled: _parseBool(fMap['enabled'], true),
             mix: (fMap['mix'] as num?)?.toDouble() ?? 0.5,
             params: fMap['params'] is Map ? Map<String, double>.from(
               (fMap['params'] as Map).map((k, v) => MapEntry(k.toString(), (v as num).toDouble())),
@@ -281,7 +290,7 @@ class EatsLuaParser {
           midiFXRack.add(MidiFXInsert(
             id: mfMap['id'] ?? 'mfx_${midiFXRack.length}',
             name: mfMap['name'] ?? 'MIDI FX',
-            enabled: mfMap['enabled'] ?? true,
+            enabled: _parseBool(mfMap['enabled'], true),
             luaScriptCode: mfMap['luaScriptCode'] ?? '',
             luaParams: mfMap['luaParams'] is Map ? Map<String, double>.from(
               (mfMap['luaParams'] as Map).map((k, v) => MapEntry(k.toString(), (v as num).toDouble())),
@@ -310,8 +319,8 @@ class EatsLuaParser {
       type: trackType,
       volume: (map['volume'] as num?)?.toDouble() ?? 0.8,
       pan: (map['pan'] as num?)?.toDouble() ?? 0.0,
-      isMuted: map['isMuted'] ?? false,
-      isSoloed: map['isSoloed'] ?? false,
+      isMuted: _parseBool(map['isMuted']),
+      isSoloed: _parseBool(map['isSoloed']),
       sampleName: map['sampleName'] ?? 'kick',
       synthWaveform: map['synthWaveform'] ?? 'sawtooth',
       cutoff: (map['cutoff'] as num?)?.toDouble() ?? 3000.0,
