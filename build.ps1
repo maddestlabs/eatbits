@@ -91,6 +91,22 @@ if (-not (Test-Path $buildWebDir)) {
     exit 1
 }
 
+# Patch flutter_service_worker.js to prevent onlineFirst uncaught TypeError on fetch failure
+$swFile = Join-Path $buildWebDir "flutter_service_worker.js"
+if (Test-Path $swFile) {
+    try {
+        $swContent = Get-Content $swFile -Raw -Encoding UTF8
+        $swContent = $swContent.Replace("throw error;", "return new Response('', {status: 404, statusText: 'Not Found'});")
+        if ($swContent -notmatch "unhandledrejection") {
+            $swContent += "`nself.addEventListener('unhandledrejection', function(e) { e.preventDefault(); });`n"
+        }
+        Set-Content -Path $swFile -Value $swContent -Encoding UTF8
+        Write-Host "    [+] Patched flutter_service_worker.js for network resilience." -ForegroundColor Gray
+    } catch {
+        Write-Host "    [!] Note: Unable to patch service worker file: $_" -ForegroundColor Gray
+    }
+}
+
 Write-Host "[+] Build completed successfully!" -ForegroundColor Green
 
 # ------------------------------------------------------------------

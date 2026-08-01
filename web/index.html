@@ -19,10 +19,172 @@
   <link rel="shortcut icon" type="image/png" href="favicon.png">
   <link rel="icon" type="image/svg+xml" href="app_icon.svg">
 
-  <title>Eatsbits</title>
+  <title>Eatsbits DAW</title>
   <link rel="manifest" href="manifest.json">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #141210;
+      font-family: monospace, sans-serif;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    #app-loading-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #141210;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 99999;
+      transition: opacity 0.4s ease-out;
+    }
+
+    #app-loading-screen.fade-out {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .eatsbits-loader-box {
+      background: radial-gradient(circle at center, #24211D 0%, #161412 100%);
+      border: 2px solid #332F2A;
+      border-radius: 12px;
+      padding: 32px 48px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 90vw;
+      box-sizing: border-box;
+    }
+
+    .eatsbits-logo-container {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .eatsbits-logo-icon {
+      width: 56px;
+      height: 56px;
+      filter: drop-shadow(0 0 12px rgba(255, 140, 0, 0.6));
+    }
+
+    .eatsbits-title {
+      color: #FF8C00;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 3px;
+      text-shadow: 0 0 10px rgba(255, 140, 0, 0.5);
+      margin: 0;
+    }
+
+    .eatsbits-subtitle {
+      color: #21F4E8;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      margin-top: 4px;
+      opacity: 0.9;
+      text-transform: uppercase;
+    }
+
+    .vu-meter-bar {
+      display: flex;
+      gap: 8px;
+      margin: 20px 0;
+      padding: 8px 16px;
+      background: #0B0A09;
+      border: 1px solid #2B2621;
+      border-radius: 6px;
+    }
+
+    .vu-segment {
+      width: 10px;
+      height: 32px;
+      background-color: #26221D;
+      border-radius: 2px;
+      animation: vuPulse 1.2s infinite ease-in-out;
+    }
+
+    .vu-segment:nth-child(1) { animation-delay: 0.0s; }
+    .vu-segment:nth-child(2) { animation-delay: 0.15s; }
+    .vu-segment:nth-child(3) { animation-delay: 0.3s; }
+    .vu-segment:nth-child(4) { animation-delay: 0.45s; }
+    .vu-segment:nth-child(5) { animation-delay: 0.6s; }
+
+    @keyframes vuPulse {
+      0%, 100% {
+        background-color: #26221D;
+        box-shadow: none;
+      }
+      40% {
+        background-color: #21F4E8;
+        box-shadow: 0 0 10px #21F4E8;
+      }
+      70% {
+        background-color: #FF8C00;
+        box-shadow: 0 0 10px #FF8C00;
+      }
+    }
+
+    .loading-text {
+      color: #8E9BAE;
+      font-size: 12px;
+      letter-spacing: 2px;
+      animation: textBlink 1.5s infinite;
+    }
+
+    @keyframes textBlink {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1.0; }
+    }
+  </style>
 </head>
 <body>
+  <div id="app-loading-screen">
+    <div class="eatsbits-loader-box">
+      <div class="eatsbits-logo-container">
+        <img class="eatsbits-logo-icon" src="app_icon.svg" alt="Eatsbits Icon" />
+        <div>
+          <h1 class="eatsbits-title">EATSBITS</h1>
+          <div class="eatsbits-subtitle">AUDIO WORKSTATION // WEBAUDIO DAW</div>
+        </div>
+      </div>
+      <div class="vu-meter-bar">
+        <div class="vu-segment"></div>
+        <div class="vu-segment"></div>
+        <div class="vu-segment"></div>
+        <div class="vu-segment"></div>
+        <div class="vu-segment"></div>
+      </div>
+      <div class="loading-text">LOADING ASSETS &amp; WEBAUDIO ENGINE...</div>
+    </div>
+  </div>
+
+  <script>
+    window.hideAppLoadingScreen = function() {
+      var loader = document.getElementById('app-loading-screen');
+      if (loader && !loader.classList.contains('fade-out')) {
+        loader.classList.add('fade-out');
+        setTimeout(function() {
+          if (loader.parentNode) {
+            loader.parentNode.removeChild(loader);
+          }
+        }, 450);
+      }
+    };
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
+

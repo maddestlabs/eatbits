@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'models/daw_state.dart';
 import 'theme/daw_theme.dart';
 import 'ui/arranger_view.dart';
+import 'ui/eatsbits_loading_screen.dart';
 import 'ui/edit_view.dart';
 import 'ui/lua_workbench_view.dart';
 import 'ui/mixer_view.dart';
@@ -26,6 +27,7 @@ class WrenDawApp extends StatefulWidget {
 
 class _WrenDawAppState extends State<WrenDawApp> {
   final DawState _dawState = DawState();
+  bool _isInitialized = false;
 
   @override
   void dispose() {
@@ -42,7 +44,19 @@ class _WrenDawAppState extends State<WrenDawApp> {
           title: 'Eatsbits',
           debugShowCheckedModeBanner: false,
           theme: DawTheme.themeData,
-          home: DawMainShell(dawState: _dawState),
+          home: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 350),
+            child: _isInitialized
+                ? DawMainShell(key: const ValueKey('daw_shell'), dawState: _dawState)
+                : EatsbitsLoadingScreen(
+                    key: const ValueKey('loading_screen'),
+                    onInitializationComplete: () {
+                      setState(() {
+                        _isInitialized = true;
+                      });
+                    },
+                  ),
+          ),
         );
       },
     );

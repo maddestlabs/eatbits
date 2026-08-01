@@ -5,7 +5,7 @@ Mobile-first and web-first, totally unprofessional digital everything workstatio
 
 ## See it live
 
-▶︎ [https://maddestlabs.github.io/eatsbits/](https://maddestlabs.github.io/eatsbits/)
+▶︎ [https://eatsbits.app/](https://eatsbits.app/)
 
 ---
 
@@ -37,7 +37,7 @@ flutter run -d chrome
 
 ### Building Web Release
 ```bash
-flutter build web --release --base-href "/eatsbits/" --pwa-strategy=none
+flutter build web --release --base-href "/" --pwa-strategy=none
 ```
 
 ## GitHub Pages Build Stability
@@ -48,7 +48,7 @@ Avoid these regressions with these rules:
 
 - Prefer bundled fonts or generic `sans-serif` and `monospace` families for web builds instead of runtime font packages.
 - Keep the Pages workflow on a pinned Flutter SDK version so upstream `stable` changes do not silently change the compiler/toolchain.
-- Before pushing UI, dependency, or web bootstrap changes, run `flutter pub get`, `flutter analyze`, and `flutter build web --release --base-href "/eatsbits/"` locally.
+- Before pushing UI, dependency, or web bootstrap changes, run `flutter pub get`, `flutter analyze`, and `flutter build web --release --base-href "/"` locally.
 - Treat `pubspec.yaml`, `pubspec.lock`, and `.github/workflows/deploy.yml` as one deployment surface. If one changes, verify the web release build before merging.
 - If remote fonts are required later, bundle them as project assets and declare them in Flutter rather than depending on `google_fonts` for the Pages build path.
 

@@ -81,20 +81,27 @@ def patch_service_worker():
     sw_path = os.path.join(WEB_DIR, "flutter_service_worker.js")
     if not os.path.exists(sw_path):
         return
-    with open(sw_path, "r", encoding="utf-8") as f:
-        content = f.read()
+    try:
+        with open(sw_path, "r", encoding="utf-8") as f:
+            content = f.read()
 
-    # Prevent onlineFirst from throwing uncaught errors on fetch failure
-    content = content.replace("throw error;", "return fetch(event.request);")
+        # Prevent onlineFirst from throwing uncaught errors on fetch failure
+        content = content.replace("throw error;", "return new Response('', {status: 404, statusText: 'Not Found'});")
 
-    # Add fallback fetch for resource loading failures
-    old_fetch = "return response || fetch(event.request).then((response) => {\n          if (response && Boolean(response.ok)) {\n            cache.put(event.request, response.clone());\n          }\n          return response;\n        });"
-    new_fetch = "return response || fetch(event.request).then((response) => {\n          if (response && Boolean(response.ok)) {\n            cache.put(event.request, response.clone());\n          }\n          return response;\n        }).catch(() => fetch(event.request));"
-    content = content.replace(old_fetch, new_fetch)
+        # Add fallback fetch for resource loading failures
+        old_fetch = "return response || fetch(event.request).then((response) => {\n          if (response && Boolean(response.ok)) {\n            cache.put(event.request, response.clone());\n          }\n          return response;\n        });"
+        new_fetch = "return response || fetch(event.request).then((response) => {\n          if (response && Boolean(response.ok)) {\n            cache.put(event.request, response.clone());\n          }\n          return response;\n        }).catch(() => fetch(event.request));"
+        content = content.replace(old_fetch, new_fetch)
 
-    with open(sw_path, "w", encoding="utf-8") as f:
-        f.write(content)
-    print("[+] Patched flutter_service_worker.js for network fallback resilience.")
+        # Add unhandled rejection handler to service worker to suppress console noise
+        if "self.addEventListener('unhandledrejection'" not in content:
+            content += "\nself.addEventListener('unhandledrejection', function(e) { e.preventDefault(); });\n"
+
+        with open(sw_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        print("[+] Patched flutter_service_worker.js for network fallback resilience.")
+    except Exception as e:
+        print(f"[!] Warning: Failed to patch flutter_service_worker.js: {e}")
 
 def main():
     parser = argparse.ArgumentParser(description="Rebuild Flutter Web and serve on a fresh random port with no-cache headers.")
@@ -109,6 +116,8 @@ def main():
 
     if not args.no_build:
         build_flutter_web(wasm=args.wasm, profile=args.profile)
+    else:
+        patch_service_worker()
 
     if not os.path.exists(WEB_DIR):
         print(f"[!] Web build directory not found at: {WEB_DIR}")
