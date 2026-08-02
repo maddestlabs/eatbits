@@ -244,6 +244,32 @@ class _TrackerViewState extends State<TrackerView> {
                   ),
                 ),
                 const Spacer(),
+
+                // Tracker Column Controls
+                Text('COLS: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                IconButton(
+                  icon: Icon(Icons.remove_circle_outline, color: DawTheme.textSecondary, size: 16),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  tooltip: 'Remove Tracker Column',
+                  onPressed: () => widget.dawState.setTrackerColumns(track, track.trackerColumns - 1),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Text(
+                    '${track.trackerColumns}',
+                    style: DawTheme.getDisplayFontStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 11),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.add_circle_outline, color: DawTheme.primaryCyan, size: 16),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                  tooltip: 'Add Tracker Column',
+                  onPressed: () => widget.dawState.setTrackerColumns(track, track.trackerColumns + 1),
+                ),
+                const SizedBox(width: 8),
+
                 // QWERTY Octave Indicator
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

@@ -38,50 +38,9 @@ class EditView extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              const SizedBox(width: 8),
-              if (track.activeView == MusicViewType.pianoRoll) ...[
-                if (!isMobile) Text('SNAP: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 11)),
-                DropdownButton<double>(
-                  value: dawState.quantizeSnap,
-                  dropdownColor: DawTheme.panelBackground,
-                  underline: const SizedBox(),
-                  items: const [
-                    DropdownMenuItem(value: 0.5, child: Text('1/32', style: TextStyle(fontSize: 11))),
-                    DropdownMenuItem(value: 1.0, child: Text('1/16', style: TextStyle(fontSize: 11))),
-                    DropdownMenuItem(value: 2.0, child: Text('1/8', style: TextStyle(fontSize: 11))),
-                    DropdownMenuItem(value: 4.0, child: Text('1/4', style: TextStyle(fontSize: 11))),
-                    DropdownMenuItem(value: 0.0, child: Text('No Snap', style: TextStyle(fontSize: 11))),
-                  ],
-                  onChanged: (val) {
-                    if (val != null) dawState.setQuantizeSnap(val);
-                  },
-                ),
-                const SizedBox(width: 8),
-              ] else if (track.activeView == MusicViewType.tracker) ...[
-                IconButton(
-                  icon: Icon(Icons.remove_circle_outline, color: DawTheme.textSecondary, size: 18),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  tooltip: 'Remove Tracker Column',
-                  onPressed: () => dawState.setTrackerColumns(track, track.trackerColumns - 1),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'COLS: ${track.trackerColumns}',
-                  style: DawTheme.getDisplayFontStyle(color: DawTheme.accentGold, fontWeight: FontWeight.bold, fontSize: 11),
-                ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: Icon(Icons.add_circle_outline, color: DawTheme.primaryCyan, size: 18),
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  tooltip: 'Add Tracker Column',
-                  onPressed: () => dawState.setTrackerColumns(track, track.trackerColumns + 1),
-                ),
-                const SizedBox(width: 8),
-              ],
+              const Spacer(),
 
-              // View Switcher Buttons (Icon-only on Mobile)
+              // View Switcher Buttons (Right-aligned, Icon-only on Mobile)
               SkeuomorphicHardwareButton(
                 label: isMobile ? null : 'PIANO ROLL',
                 icon: Icons.piano,
@@ -104,7 +63,7 @@ class EditView extends StatelessWidget {
                 label: isMobile ? null : 'SCRIPT',
                 icon: Icons.code,
                 isActive: track.activeView == MusicViewType.script,
-                activeColor: DawTheme.accentGold,
+                activeColor: DawTheme.primaryCyan,
                 onTap: () => dawState.setTrackActiveView(track, MusicViewType.script),
                 height: 32,
               ),

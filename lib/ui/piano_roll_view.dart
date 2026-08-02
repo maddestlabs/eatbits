@@ -173,6 +173,62 @@ class _PianoRollViewState extends State<PianoRollView> {
     }
   }
 
+  void _selectPreviousNote(TrackChannel track) {
+    if (track.notes.isEmpty) return;
+    final sorted = List<Note>.from(track.notes)..sort((a, b) {
+      final stepComp = a.startStep.compareTo(b.startStep);
+      if (stepComp != 0) return stepComp;
+      return a.pitch.compareTo(b.pitch);
+    });
+
+    int currIdx = sorted.indexWhere((n) => n.id == _selectedNoteId);
+    int targetIdx;
+    if (currIdx <= 0) {
+      targetIdx = sorted.length - 1;
+    } else {
+      targetIdx = currIdx - 1;
+    }
+
+    final note = sorted[targetIdx];
+    setState(() {
+      _selectedNoteId = note.id;
+    });
+    widget.dawState.audioEngine.playNoteOrSample(
+      track: track,
+      midiNote: note.pitch,
+      velocity: note.velocity,
+    );
+    _ensureNoteAndMenuVisible(note);
+  }
+
+  void _selectNextNote(TrackChannel track) {
+    if (track.notes.isEmpty) return;
+    final sorted = List<Note>.from(track.notes)..sort((a, b) {
+      final stepComp = a.startStep.compareTo(b.startStep);
+      if (stepComp != 0) return stepComp;
+      return a.pitch.compareTo(b.pitch);
+    });
+
+    int currIdx = sorted.indexWhere((n) => n.id == _selectedNoteId);
+    int targetIdx;
+    if (currIdx == -1 || currIdx >= sorted.length - 1) {
+      targetIdx = 0;
+    } else {
+      targetIdx = currIdx + 1;
+    }
+
+    final note = sorted[targetIdx];
+    setState(() {
+      _selectedNoteId = note.id;
+    });
+    widget.dawState.audioEngine.playNoteOrSample(
+      track: track,
+      midiNote: note.pitch,
+      velocity: note.velocity,
+    );
+    _ensureNoteAndMenuVisible(note);
+  }
+
   void _transposeSelectedNote(TrackChannel track, Note note, int semitones) {
     final newPitch = (note.pitch + semitones).clamp(minPitch, maxPitch);
     if (newPitch != note.pitch) {
@@ -505,7 +561,7 @@ class _PianoRollViewState extends State<PianoRollView> {
 
     return Column(
       children: [
-        // Sub-toolbar for Piano Roll (Zoom Controls)
+        // Sub-toolbar for Piano Roll (Note Stepper, Snap & Zoom Controls)
         Container(
           height: 32,
           color: DawTheme.panelBackground,
@@ -521,37 +577,74 @@ class _PianoRollViewState extends State<PianoRollView> {
                 ),
               ),
               const SizedBox(width: 8),
-              if (!isMobile)
-                Text(
-                  'Tap note to select & edit | Pinch or use controls to zoom',
-                  style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontStyle: FontStyle.italic),
-                ),
+
+              // Note Stepper Buttons
+              Text('NOTES:', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+              const SizedBox(width: 2),
+              IconButton(
+                icon: const Icon(Icons.arrow_back_ios, size: 12),
+                color: DawTheme.primaryCyan,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                tooltip: 'Select Previous Note',
+                onPressed: () => _selectPreviousNote(track),
+              ),
+              IconButton(
+                icon: const Icon(Icons.arrow_forward_ios, size: 12),
+                color: DawTheme.primaryCyan,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
+                tooltip: 'Select Next Note',
+                onPressed: () => _selectNextNote(track),
+              ),
               const Spacer(),
+
+              // Snap Quantize Dropdown
+              Text('SNAP:', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+              const SizedBox(width: 2),
+              DropdownButton<double>(
+                value: widget.dawState.quantizeSnap,
+                dropdownColor: DawTheme.panelBackground,
+                underline: const SizedBox(),
+                isDense: true,
+                style: TextStyle(color: DawTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
+                items: const [
+                  DropdownMenuItem(value: 0.5, child: Text('1/32')),
+                  DropdownMenuItem(value: 1.0, child: Text('1/16')),
+                  DropdownMenuItem(value: 2.0, child: Text('1/8')),
+                  DropdownMenuItem(value: 4.0, child: Text('1/4')),
+                  DropdownMenuItem(value: 0.0, child: Text('Off')),
+                ],
+                onChanged: (val) {
+                  if (val != null) widget.dawState.setQuantizeSnap(val);
+                },
+              ),
+              const SizedBox(width: 8),
 
               // Zoom Controls
               Text('ZOOM:', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
-              const SizedBox(width: 4),
+              const SizedBox(width: 2),
               IconButton(
-                icon: const Icon(Icons.zoom_out, size: 16),
+                icon: const Icon(Icons.zoom_out, size: 15),
                 color: DawTheme.textSecondary,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                 tooltip: 'Zoom Out',
                 onPressed: () => _zoom(0.8),
               ),
               IconButton(
-                icon: const Icon(Icons.aspect_ratio, size: 14),
+                icon: const Icon(Icons.aspect_ratio, size: 13),
                 color: DawTheme.textMuted,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                 tooltip: 'Reset Zoom',
                 onPressed: _resetZoom,
               ),
               IconButton(
-                icon: const Icon(Icons.zoom_in, size: 16),
+                icon: const Icon(Icons.zoom_in, size: 15),
                 color: DawTheme.textSecondary,
                 padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                 tooltip: 'Zoom In',
                 onPressed: () => _zoom(1.25),
               ),
@@ -788,13 +881,19 @@ class _PianoRollViewState extends State<PianoRollView> {
                                     final noteHeight = _keyHeight - 2;
                                     final isSelected = note.id == _selectedNoteId;
 
+                                    final touchWidth = isMobile ? noteWidth.clamp(28.0, double.infinity) : noteWidth;
+                                    final touchHeight = isMobile ? noteHeight.clamp(28.0, double.infinity) : noteHeight;
+                                    final touchLeft = isMobile ? (noteLeft - (touchWidth - noteWidth) / 2).clamp(0.0, double.infinity) : noteLeft;
+                                    final touchTop = isMobile ? (noteTop - (touchHeight - noteHeight) / 2).clamp(0.0, double.infinity) : noteTop;
+
                                     return Positioned(
-                                      left: noteLeft,
-                                      top: noteTop,
-                                      width: noteWidth,
-                                      height: noteHeight,
+                                      left: touchLeft,
+                                      top: touchTop,
+                                      width: touchWidth,
+                                      height: touchHeight,
                                       child: GestureDetector(
-                                        onTap: () {
+                                        behavior: HitTestBehavior.opaque,
+                                        onTapDown: (details) {
                                           setState(() {
                                             _selectedNoteId = note.id;
                                           });
