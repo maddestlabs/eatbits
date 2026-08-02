@@ -327,6 +327,15 @@ class TrackChannel {
   // Multi-View Config
   int trackerColumns; // Number of tracker sub-channel columns for polyphony (default 4)
   MusicViewType activeView; // Active view for this track (pianoRoll, tracker, score)
+  bool isMonophonic;
+
+  bool get isMonophonicTrack =>
+      isMonophonic ||
+      type == TrackType.bass ||
+      luaScriptCode.contains('Acid303') ||
+      luaScriptCode.contains('TB303') ||
+      luaScriptCode.contains('polyphony = 1') ||
+      luaScriptCode.contains('setPolyphony(1)');
 
   TrackChannel({
     required this.id,
@@ -347,6 +356,7 @@ class TrackChannel {
     String wrenScriptCode = '',
     this.trackerColumns = 4,
     this.activeView = MusicViewType.pianoRoll,
+    this.isMonophonic = false,
     Map<String, double>? luaParams,
     Map<String, double>? wrenParams,
     List<StepEvent>? steps,
@@ -381,6 +391,7 @@ class TrackChannel {
     String? wrenScriptCode,
     int? trackerColumns,
     MusicViewType? activeView,
+    bool? isMonophonic,
     Map<String, double>? luaParams,
     Map<String, double>? wrenParams,
     List<StepEvent>? steps,
@@ -407,6 +418,7 @@ class TrackChannel {
       luaScriptCode: luaScriptCode ?? wrenScriptCode ?? this.luaScriptCode,
       trackerColumns: trackerColumns ?? this.trackerColumns,
       activeView: activeView ?? this.activeView,
+      isMonophonic: isMonophonic ?? this.isMonophonic,
       luaParams: luaParams ?? wrenParams ?? Map.from(this.luaParams),
       steps: steps ?? this.steps.map((s) => s.copyWith()).toList(),
       notes: notes ?? this.notes.map((n) => n.copyWith()).toList(),
@@ -435,6 +447,7 @@ class TrackChannel {
     'wrenScriptCode': luaScriptCode,
     'trackerColumns': trackerColumns,
     'activeView': activeView.name,
+    'isMonophonic': isMonophonic,
     'luaParams': luaParams,
     'wrenParams': luaParams,
     'steps': steps.map((s) => s.toJson()).toList(),

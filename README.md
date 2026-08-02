@@ -17,7 +17,7 @@ Mobile-first and web-first, totally unprofessional digital everything workstatio
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - [Flutter SDK](https://flutter.dev/docs/get-started/install) (3.x or later)

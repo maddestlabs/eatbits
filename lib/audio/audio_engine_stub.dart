@@ -19,5 +19,15 @@ class AudioEngineWebImpl {
     double? timeConstant,
   }) {}
   void updateMeters(Uint8List timeData, Function(double l, double r) setPeaks) {}
-  void playPcmBuffer(List<double> samples, double volume, double pan, [double? scheduledTime]) {}
+  void playPcmBuffer(
+    List<double> samples,
+    double volume,
+    double pan, [
+    double? scheduledTime,
+    String? trackId,
+    bool isMonophonic = false,
+    bool isSlide = false,
+    bool loop = false,
+  ]) {}
+  void stopTrackNotes(String trackId) {}
 }

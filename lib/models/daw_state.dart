@@ -98,6 +98,9 @@ class DawState extends ChangeNotifier {
   void resetActiveIndices() {
     _activePatternIndex = 0;
     _activeTrackIndex = 0;
+    if (activeTrack.clips.isNotEmpty) {
+      activeClip = activeTrack.clips.first;
+    }
     if (activeTrack.luaScriptCode.isNotEmpty) {
       luaCode = activeTrack.luaScriptCode;
       compilationResult = LuaEngine.compile(luaCode);
@@ -229,6 +232,9 @@ class DawState extends ChangeNotifier {
       trackId: track.id,
       startBar: startBar,
       barLength: 4,
+      notes: track.notes.map((n) => n.copyWith()).toList(),
+      luaScriptCode: track.luaScriptCode,
+      luaParams: Map.from(track.luaParams),
     );
     track.clips.add(newClip);
     activeClip = newClip;
@@ -395,8 +401,17 @@ class DawState extends ChangeNotifier {
               final note = matchingNotes.first;
               final nextLocalStep = localStep + 1;
               final nextNotes = clip.notes.where((n) => n.startStep.toInt() == nextLocalStep).toList();
-              final int? targetPitch = nextNotes.isNotEmpty ? nextNotes.first.pitch : (matchingNotes.length > 1 ? matchingNotes.last.pitch : null);
-              final bool isSlideNote = note.isSlide || (note.durationSteps > 1.0) || (nextNotes.isNotEmpty && (note.isSlide || note.durationSteps >= 1.0));
+              final int? targetPitch = nextNotes.isNotEmpty
+                  ? nextNotes.first.pitch
+                  : (matchingNotes.length > 1 ? matchingNotes.last.pitch : null);
+
+              final bool hasPrevOverlap = track.isMonophonicTrack &&
+                  clip.notes.any((n) => n.startStep < localStep && (n.startStep + n.durationSteps) > localStep);
+
+              final bool isSlideNote = note.isSlide ||
+                  hasPrevOverlap ||
+                  (note.durationSteps > 1.0) ||
+                  (nextNotes.isNotEmpty && (note.isSlide || note.durationSteps >= 1.0));
               final bool isAccentNote = note.isAccent || note.velocity > 0.75;
 
               audioEngine.playNoteOrSample(
@@ -414,7 +429,10 @@ class DawState extends ChangeNotifier {
             final step = track.steps[localStep % track.steps.length];
             if (step.active) {
               final nextStep = track.steps[(localStep + 1) % track.steps.length];
-              final bool isSlideStep = step.isSlide || (nextStep.active && step.isSlide);
+              final prevStep = track.steps[(localStep - 1 + track.steps.length) % track.steps.length];
+              final bool isSlideStep = step.isSlide ||
+                  (track.isMonophonicTrack && nextStep.active) ||
+                  (track.isMonophonicTrack && prevStep.active);
               final int? targetPitch = nextStep.active ? nextStep.pitch : null;
               final bool isAccentStep = step.isAccent || step.velocity > 0.75;
 

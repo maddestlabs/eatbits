@@ -10,6 +10,7 @@ class AudioEngineWebImpl {
 
   final Map<String, web.AudioNode> _nodeRegistry = {};
   final Map<String, web.AudioParam> _paramRegistry = {};
+  final Map<String, web.AudioBufferSourceNode> _activeTrackSources = {};
   int _nodeCounter = 0;
 
   bool _initialized = false;
@@ -187,9 +188,31 @@ class AudioEngineWebImpl {
     }
   }
 
-  void playPcmBuffer(List<double> samples, double volume, double pan, [double? scheduledTime]) {
+  void playPcmBuffer(
+    List<double> samples,
+    double volume,
+    double pan, [
+    double? scheduledTime,
+    String? trackId,
+    bool isMonophonic = false,
+    bool isSlide = false,
+    bool loop = false,
+  ]) {
     if (_audioContext == null) return;
     try {
+      if (isMonophonic && trackId != null) {
+        final prevSource = _activeTrackSources[trackId];
+        if (prevSource != null) {
+          try {
+            if (scheduledTime != null && scheduledTime > 0) {
+              prevSource.stop(scheduledTime);
+            } else {
+              prevSource.stop();
+            }
+          } catch (_) {}
+        }
+      }
+
       final audioBuf = _audioContext!.createBuffer(1, samples.length, 44100);
       final channelData = audioBuf.getChannelData(0).toDart;
       for (int i = 0; i < samples.length; i++) {
@@ -198,6 +221,13 @@ class AudioEngineWebImpl {
 
       final source = _audioContext!.createBufferSource();
       source.buffer = audioBuf;
+      if (loop) {
+        source.loop = true;
+      }
+
+      if (trackId != null) {
+        _activeTrackSources[trackId] = source;
+      }
 
       final trackGain = _audioContext!.createGain();
       trackGain.gain.value = volume;
@@ -216,6 +246,26 @@ class AudioEngineWebImpl {
       }
     } catch (e) {
       debugPrint('Error playing WebAudio PCM buffer: $e');
+    }
+  }
+
+  void stopTrackNotes(String trackId) {
+    if (_audioContext == null) return;
+    try {
+      final prevSource = _activeTrackSources[trackId];
+      if (prevSource != null) {
+        try {
+          final now = currentTime;
+          prevSource.stop(now + 0.03);
+        } catch (_) {
+          try {
+            prevSource.stop();
+          } catch (_) {}
+        }
+        _activeTrackSources.remove(trackId);
+      }
+    } catch (e) {
+      debugPrint('Error stopping WebAudio track notes: $e');
     }
   }
 }

@@ -1,14 +1,10 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mobile_wren_daw/main.dart';
+import 'package:mobile_wren_daw/models/daw_state.dart';
+import 'package:mobile_wren_daw/models/track_model.dart';
+import 'package:mobile_wren_daw/ui/arranger_view.dart';
 
 void main() {
   testWidgets('DAW smoke test', (WidgetTester tester) async {
@@ -16,5 +12,41 @@ void main() {
     await tester.pumpWidget(const WrenDawApp());
     expect(find.byType(WrenDawApp), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
+  });
+
+  testWidgets('Pattern Clip Selection & Note Preview Test', (WidgetTester tester) async {
+    final dawState = DawState();
+    final track = dawState.activeTrack;
+    expect(track.clips, isNotEmpty);
+
+    final clip = track.clips.first;
+    dawState.selectClip(clip);
+    expect(dawState.activeClip?.id, equals(clip.id));
+
+    // Add a note to track
+    dawState.addNote(
+      track,
+      Note(
+        id: 'test_n1',
+        pitch: 64,
+        startStep: 2.0,
+        durationSteps: 2.0,
+      ),
+    );
+    expect(clip.notes.any((n) => n.id == 'test_n1'), isTrue);
+
+    // Pump ArrangerView widget
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ArrangerView(dawState: dawState),
+        ),
+      ),
+    );
+
+    expect(find.byType(ArrangerView), findsOneWidget);
+    expect(find.byType(CustomPaint), findsWidgets);
+
+    dawState.dispose();
   });
 }

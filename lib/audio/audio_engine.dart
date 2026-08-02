@@ -150,6 +150,7 @@ class AudioEngine {
     int? targetMidiNote,
     bool isSlide = false,
     bool isAccent = false,
+    bool loop = false,
   }) {
     if (track.isMuted) return;
 
@@ -241,6 +242,20 @@ class AudioEngine {
       }
     }
 
-    _webImpl.playPcmBuffer(pcmBuffer, track.volume * velocity, track.pan, scheduledTime);
+    _webImpl.playPcmBuffer(
+      pcmBuffer,
+      track.volume * velocity,
+      track.pan,
+      scheduledTime,
+      track.id,
+      track.isMonophonicTrack,
+      isSlide,
+      loop,
+    );
+  }
+
+  void stopNote(TrackChannel track, [int? pitch]) {
+    if (!kIsWeb) return;
+    _webImpl.stopTrackNotes(track.id);
   }
 }

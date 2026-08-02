@@ -103,6 +103,20 @@ class DawTheme {
     }
   }
 
+  static Color get highlightColor {
+    switch (currentPreset) {
+      case DawThemePreset.lightSnack:
+        return const Color(0xFF0284C7);
+      case DawThemePreset.ateTrack:
+        return const Color(0xFFFF8C00);
+      case DawThemePreset.midnightBites:
+        return const Color(0xFF21F4E8);
+      case DawThemePreset.cyanCrunch:
+      default:
+        return const Color(0xFF21F4E8);
+    }
+  }
+
   static const Color secondaryMagenta = Color(0xFFFF007A);
   static const Color accentGold = Color(0xFFFFB700);
   static const Color accentGreen = Color(0xFF00FF66);

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_wren_daw/models/daw_state.dart';
 import 'package:mobile_wren_daw/models/track_model.dart';
@@ -131,6 +132,36 @@ end
       final newState = DawState();
       expect(() => newState.loadFromEatsLua(exported), returnsNormally);
       expect(newState.patterns.first.tracks.length, equals(state.patterns.first.tracks.length));
+    });
+  });
+
+  group('Monophonic Track & Slide Detection Tests', () {
+    test('TrackChannel detects monophonic tracks correctly', () {
+      final track303 = TrackChannel(
+        id: 't_303',
+        name: 'TB-303',
+        color: const Color(0xFF000000),
+        type: TrackType.luaScript,
+        luaScriptCode: 'local Acid303 = {}',
+      );
+      expect(track303.isMonophonicTrack, isTrue);
+
+      final trackBass = TrackChannel(
+        id: 't_bass',
+        name: 'Bass Line',
+        color: const Color(0xFF000000),
+        type: TrackType.bass,
+      );
+      expect(trackBass.isMonophonicTrack, isTrue);
+
+      final trackPoly = TrackChannel(
+        id: 't_poly',
+        name: 'Poly Synth',
+        color: const Color(0xFF000000),
+        type: TrackType.synth,
+        isMonophonic: false,
+      );
+      expect(trackPoly.isMonophonicTrack, isFalse);
     });
   });
 }

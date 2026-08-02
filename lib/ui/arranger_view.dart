@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
@@ -345,6 +346,8 @@ class _ArrangerViewState extends State<ArrangerView> {
 
                                           // Per-track Pattern Clips with Smooth Drag-Move & Edge-Resize
                                           ...track.clips.map((clip) {
+                                            final isClipSelected = widget.dawState.activeClip?.id == clip.id;
+
                                             return Positioned(
                                               left: clip.startBar * barWidth + 2,
                                               top: 6,
@@ -382,88 +385,119 @@ class _ArrangerViewState extends State<ArrangerView> {
                                                     }
                                                   }
                                                 },
-                                                child: Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                                child: AnimatedContainer(
+                                                  duration: const Duration(milliseconds: 120),
                                                   decoration: BoxDecoration(
-                                                    color: track.color,
+                                                    color: isClipSelected
+                                                        ? Color.alphaBlend(Colors.white.withOpacity(0.18), track.color)
+                                                        : track.color,
                                                     borderRadius: BorderRadius.circular(6),
+                                                    border: Border.all(
+                                                      color: isClipSelected ? DawTheme.highlightColor : Colors.white.withOpacity(0.15),
+                                                      width: isClipSelected ? 2.0 : 1.0,
+                                                    ),
                                                     boxShadow: [
+                                                      if (isClipSelected)
+                                                        BoxShadow(
+                                                          color: DawTheme.highlightColor.withOpacity(0.6),
+                                                          blurRadius: 10,
+                                                          spreadRadius: 1,
+                                                        ),
                                                       BoxShadow(color: track.color.withOpacity(0.4), blurRadius: 6),
                                                     ],
                                                   ),
-                                                  child: Row(
-                                                    children: [
-                                                      Expanded(
-                                                        child: Column(
-                                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                                          children: [
-                                                            Row(
-                                                              children: [
-                                                                Text(
-                                                                  clip.name,
-                                                                  style: TextStyle(
-                                                                    color: DawTheme.backgroundDark,
-                                                                    fontWeight: FontWeight.bold,
-                                                                    fontSize: 10,
-                                                                  ),
-                                                                ),
-                                                                const Spacer(),
-                                                                Icon(Icons.drag_indicator, size: 12, color: DawTheme.backgroundDark),
-                                                              ],
-                                                            ),
-                                                            const Spacer(),
-                                                            // Mini note preview bars
-                                                            Row(
-                                                              children: List.generate(6, (i) {
-                                                                return Expanded(
-                                                                  child: Container(
-                                                                    height: 3,
-                                                                    margin: const EdgeInsets.symmetric(horizontal: 1),
-                                                                    decoration: BoxDecoration(
-                                                                      color: DawTheme.backgroundDark.withOpacity(0.6),
-                                                                      borderRadius: BorderRadius.circular(1),
-                                                                    ),
-                                                                  ),
-                                                                );
-                                                              }),
-                                                            ),
-                                                          ],
-                                                        ),
-                                                      ),
-
-                                                      // Right Edge Drag Handle to Resize Clip Length
-                                                      GestureDetector(
-                                                        behavior: HitTestBehavior.opaque,
-                                                        onHorizontalDragStart: (_) {
-                                                          _resizeDragDxAccumulator = 0.0;
-                                                        },
-                                                        onHorizontalDragUpdate: (details) {
-                                                          _resizeDragDxAccumulator += details.delta.dx;
-                                                          if (_resizeDragDxAccumulator.abs() >= barWidth * 0.5) {
-                                                            final shiftBars = (_resizeDragDxAccumulator / barWidth).round();
-                                                            if (shiftBars != 0) {
-                                                              setState(() {
-                                                                clip.barLength = (clip.barLength + shiftBars).clamp(1, totalBars - clip.startBar);
-                                                              });
-                                                              _resizeDragDxAccumulator -= shiftBars * barWidth;
-                                                            }
-                                                          }
-                                                        },
-                                                        child: Container(
-                                                          width: 18,
-                                                          height: double.infinity,
-                                                          margin: const EdgeInsets.only(left: 4),
-                                                          decoration: BoxDecoration(
-                                                            color: DawTheme.backgroundDark.withOpacity(0.35),
-                                                            borderRadius: const BorderRadius.only(
-                                                              topRight: Radius.circular(4),
-                                                              bottomRight: Radius.circular(4),
+                                                  child: ClipRRect(
+                                                    borderRadius: BorderRadius.circular(5),
+                                                    child: Stack(
+                                                      children: [
+                                                        // Full Dimensions Note Content Preview Canvas
+                                                        Positioned.fill(
+                                                          child: CustomPaint(
+                                                            painter: PatternClipNotePainter(
+                                                              clip: clip,
+                                                              track: track,
+                                                              isSelected: isClipSelected,
                                                             ),
                                                           ),
-                                                          child: Icon(Icons.code, size: 11, color: DawTheme.primaryCyan),
                                                         ),
-                                                      ),
-                                                    ],
+
+                                                         // 2. Top-Left Clip Title Badge with Background Container
+                                                         Positioned(
+                                                           left: 4,
+                                                           top: 3,
+                                                           child: Container(
+                                                             padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                                                             decoration: BoxDecoration(
+                                                               color: DawTheme.backgroundDark.withOpacity(0.72),
+                                                               borderRadius: BorderRadius.circular(3),
+                                                               border: Border.all(
+                                                                 color: isClipSelected ? DawTheme.highlightColor.withOpacity(0.8) : Colors.white12,
+                                                                 width: 0.8,
+                                                               ),
+                                                             ),
+                                                             child: Row(
+                                                               mainAxisSize: MainAxisSize.min,
+                                                               children: [
+                                                                 if (isClipSelected) ...[
+                                                                   Container(
+                                                                     width: 5,
+                                                                     height: 5,
+                                                                     margin: const EdgeInsets.only(right: 4),
+                                                                     decoration: BoxDecoration(
+                                                                       color: DawTheme.highlightColor,
+                                                                       shape: BoxShape.circle,
+                                                                     ),
+                                                                   ),
+                                                                 ],
+                                                                 Text(
+                                                                   clip.name,
+                                                                   style: TextStyle(
+                                                                     color: isClipSelected ? DawTheme.highlightColor : Colors.white,
+                                                                     fontWeight: FontWeight.bold,
+                                                                     fontSize: 9,
+                                                                   ),
+                                                                 ),
+                                                               ],
+                                                             ),
+                                                           ),
+                                                         ),
+
+                                                         // 3. Right Edge Drag Handle to Resize Clip Length (Transparent Background)
+                                                         Positioned(
+                                                           right: 0,
+                                                           top: 0,
+                                                           bottom: 0,
+                                                           width: 18,
+                                                           child: GestureDetector(
+                                                             behavior: HitTestBehavior.opaque,
+                                                             onHorizontalDragStart: (_) {
+                                                               _resizeDragDxAccumulator = 0.0;
+                                                             },
+                                                             onHorizontalDragUpdate: (details) {
+                                                               _resizeDragDxAccumulator += details.delta.dx;
+                                                               if (_resizeDragDxAccumulator.abs() >= barWidth * 0.5) {
+                                                                 final shiftBars = (_resizeDragDxAccumulator / barWidth).round();
+                                                                 if (shiftBars != 0) {
+                                                                   setState(() {
+                                                                     clip.barLength = (clip.barLength + shiftBars).clamp(1, totalBars - clip.startBar);
+                                                                   });
+                                                                   _resizeDragDxAccumulator -= shiftBars * barWidth;
+                                                                 }
+                                                               }
+                                                             },
+                                                             child: Container(
+                                                               color: Colors.transparent,
+                                                               alignment: Alignment.center,
+                                                               child: Icon(
+                                                                 Icons.code,
+                                                                 size: 11,
+                                                                 color: isClipSelected ? DawTheme.highlightColor : DawTheme.backgroundDark.withOpacity(0.8),
+                                                               ),
+                                                             ),
+                                                           ),
+                                                         ),
+                                                      ],
+                                                    ),
                                                   ),
                                                 ),
                                               ),
@@ -534,3 +568,98 @@ class _ArrangerViewState extends State<ArrangerView> {
     );
   }
 }
+
+class PatternClipNotePainter extends CustomPainter {
+  final TrackClip clip;
+  final TrackChannel track;
+  final bool isSelected;
+
+  PatternClipNotePainter({
+    required this.clip,
+    required this.track,
+    required this.isSelected,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+
+    List<Note> notesToDraw = clip.notes.isNotEmpty ? clip.notes : track.notes;
+
+    if (notesToDraw.isEmpty) {
+      final stepNotes = <Note>[];
+      for (int i = 0; i < track.steps.length; i++) {
+        if (track.steps[i].active) {
+          stepNotes.add(Note(
+            id: 'step_$i',
+            pitch: track.steps[i].pitch,
+            startStep: i.toDouble(),
+            durationSteps: 1.0,
+            velocity: track.steps[i].velocity,
+          ));
+        }
+      }
+      notesToDraw = stepNotes;
+    }
+
+    if (notesToDraw.isEmpty) return;
+
+    final double totalSteps = (clip.barLength * 16).toDouble();
+
+    int minPitch = 127;
+    int maxPitch = 0;
+    for (final note in notesToDraw) {
+      if (note.pitch < minPitch) minPitch = note.pitch;
+      if (note.pitch > maxPitch) maxPitch = note.pitch;
+    }
+
+    if (maxPitch - minPitch < 12) {
+      final center = (minPitch + maxPitch) ~/ 2;
+      minPitch = center - 6;
+      maxPitch = center + 6;
+    }
+    final int pitchSpan = math.max(1, maxPitch - minPitch);
+
+    final notePaint = Paint()..style = PaintingStyle.fill;
+    final noteBorderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5;
+
+    for (final note in notesToDraw) {
+      final double startStep = note.startStep;
+      if (startStep >= totalSteps) continue;
+
+      final double x = (startStep / totalSteps) * size.width;
+      final double width = (note.durationSteps / totalSteps) * size.width;
+      final double clampedWidth = math.max(2.5, width);
+
+      final double normalizedPitch = ((note.pitch - minPitch) / pitchSpan).clamp(0.0, 1.0);
+      const double minNoteHeight = 3.0;
+      final double maxNoteHeight = math.min(10.0, size.height * 0.32);
+      final double noteHeight = (maxNoteHeight * (note.velocity / 1.0)).clamp(minNoteHeight, maxNoteHeight);
+      final double y = (1.0 - normalizedPitch) * (size.height - noteHeight);
+
+      final rect = RRect.fromRectAndRadius(
+        Rect.fromLTWH(x, y, clampedWidth, noteHeight),
+        const Radius.circular(1.0),
+      );
+
+      notePaint.color = DawTheme.backgroundDark.withOpacity(0.60);
+      noteBorderPaint.color = Colors.white.withOpacity(0.20);
+
+      canvas.drawRRect(rect, notePaint);
+      canvas.drawRRect(rect, noteBorderPaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant PatternClipNotePainter oldDelegate) {
+    return oldDelegate.clip != clip ||
+        oldDelegate.track != track ||
+        oldDelegate.isSelected != isSelected ||
+        oldDelegate.clip.notes.length != clip.notes.length ||
+        oldDelegate.track.notes.length != track.notes.length ||
+        oldDelegate.track.steps != track.steps;
+  }
+}
+
