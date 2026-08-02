@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/daw_theme.dart';
+import '../../theme/eats_theme.dart';
 
 /// A realistic inset glass-encased stereo audio meter readout featuring Left and Right
 /// stereo LED bars with a printed central decibel scale (-inf to -60 dB) and glossy glass reflections.
@@ -43,7 +43,7 @@ class StereoMeterWidget extends StatelessWidget {
                 painter: _GlassMeterPainter(
                   leftLevel: leftLevel.clamp(0.0, 1.2),
                   rightLevel: rightLevel.clamp(0.0, 1.2),
-                  accentColor: accentColor ?? DawTheme.accentGreen,
+                  accentColor: accentColor ?? EatsTheme.accentGreen,
                 ),
               ),
             ),

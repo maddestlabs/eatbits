@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
-import '../theme/daw_theme.dart';
+import '../theme/eats_theme.dart';
 import 'widgets/compact_value_dialog.dart';
 
 class PianoRollView extends StatefulWidget {
@@ -260,7 +260,7 @@ class _PianoRollViewState extends State<PianoRollView> {
       title: 'EDIT NOTE DURATION (STEPS)',
       initialValue: note.durationSteps.toStringAsFixed(2),
       minMaxHint: 'Min: 0.25 steps, Max: ${(totalSteps - note.startStep).toStringAsFixed(1)} steps',
-      accentColor: DawTheme.primaryCyan,
+      accentColor: EatsTheme.primaryCyan,
       onSubmit: (val) {
         final parsed = double.tryParse(val);
         if (parsed != null && parsed > 0) {
@@ -277,7 +277,7 @@ class _PianoRollViewState extends State<PianoRollView> {
       title: 'EDIT NOTE VELOCITY (%)',
       initialValue: '$velPercent',
       minMaxHint: 'Range: 5% to 100%',
-      accentColor: DawTheme.accentGold,
+      accentColor: EatsTheme.accentGold,
       onSubmit: (val) {
         final parsed = double.tryParse(val);
         if (parsed != null) {
@@ -300,13 +300,13 @@ class _PianoRollViewState extends State<PianoRollView> {
         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
         margin: const EdgeInsets.symmetric(horizontal: 1),
         decoration: BoxDecoration(
-          color: DawTheme.controlBackground,
+          color: EatsTheme.controlBackground,
           borderRadius: BorderRadius.circular(3),
-          border: Border.all(color: DawTheme.textMuted.withOpacity(0.35)),
+          border: Border.all(color: EatsTheme.textMuted.withOpacity(0.35)),
         ),
         child: Text(
           label,
-          style: TextStyle(color: DawTheme.textPrimary, fontSize: 10, fontWeight: FontWeight.bold),
+          style: TextStyle(color: EatsTheme.textPrimary, fontSize: 10, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -342,9 +342,9 @@ class _PianoRollViewState extends State<PianoRollView> {
         color: Colors.transparent,
         child: Container(
           decoration: BoxDecoration(
-            color: DawTheme.panelBackground.withOpacity(0.96),
+            color: EatsTheme.panelBackground.withOpacity(0.96),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: DawTheme.primaryCyan, width: 1.5),
+            border: Border.all(color: EatsTheme.primaryCyan, width: 1.5),
             boxShadow: [
               BoxShadow(color: Colors.black.withOpacity(0.6), blurRadius: 10, spreadRadius: 2),
             ],
@@ -366,7 +366,7 @@ class _PianoRollViewState extends State<PianoRollView> {
                     child: Text(
                       '${_getNoteName(note.pitch)} @ Step ${note.startStep.toStringAsFixed(note.startStep % 1 == 0 ? 0 : 1)}',
                       style: TextStyle(
-                        color: DawTheme.backgroundDark,
+                        color: EatsTheme.backgroundDark,
                         fontSize: 11,
                         fontWeight: FontWeight.bold,
                       ),
@@ -407,7 +407,7 @@ class _PianoRollViewState extends State<PianoRollView> {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.close, size: 16, color: DawTheme.textMuted),
+                    icon: Icon(Icons.close, size: 16, color: EatsTheme.textMuted),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                     tooltip: 'Close Menu',
@@ -420,7 +420,7 @@ class _PianoRollViewState extends State<PianoRollView> {
               // Row 2: Pitch Transpose Buttons
               Row(
                 children: [
-                  Text('PITCH:', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                  Text('PITCH:', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
                   const Spacer(),
                   _buildCompactButton('-12', () => _transposeSelectedNote(track, note, -12), tooltip: '-1 Octave'),
                   _buildCompactButton('-1', () => _transposeSelectedNote(track, note, -1), tooltip: '-1 Semitone'),
@@ -428,7 +428,7 @@ class _PianoRollViewState extends State<PianoRollView> {
                     padding: const EdgeInsets.symmetric(horizontal: 4),
                     child: Text(
                       _getNoteName(note.pitch),
-                      style: TextStyle(color: DawTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: EatsTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                   ),
                   _buildCompactButton('+1', () => _transposeSelectedNote(track, note, 1), tooltip: '+1 Semitone'),
@@ -447,16 +447,16 @@ class _PianoRollViewState extends State<PianoRollView> {
                       message: 'Long-press for manual numeric input',
                       child: Row(
                         children: [
-                          Text('SIZE: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                          Text('SIZE: ', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
                           Text(
                             '${note.durationSteps.toStringAsFixed(2)} st',
-                            style: TextStyle(color: DawTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: EatsTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  Text('(Hold for text input)', style: TextStyle(color: DawTheme.textMuted.withOpacity(0.6), fontSize: 8)),
+                  Text('(Hold for text input)', style: TextStyle(color: EatsTheme.textMuted.withOpacity(0.6), fontSize: 8)),
                 ],
               ),
               SizedBox(
@@ -465,9 +465,9 @@ class _PianoRollViewState extends State<PianoRollView> {
                   data: SliderThemeData(
                     trackHeight: 3,
                     thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    activeTrackColor: DawTheme.primaryCyan,
-                    inactiveTrackColor: DawTheme.controlBackground,
-                    thumbColor: DawTheme.primaryCyan,
+                    activeTrackColor: EatsTheme.primaryCyan,
+                    inactiveTrackColor: EatsTheme.controlBackground,
+                    thumbColor: EatsTheme.primaryCyan,
                   ),
                   child: Slider(
                     value: note.durationSteps.clamp(minDur, 16.0),
@@ -489,16 +489,16 @@ class _PianoRollViewState extends State<PianoRollView> {
                       message: 'Long-press for manual numeric input',
                       child: Row(
                         children: [
-                          Text('VELOCITY: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                          Text('VELOCITY: ', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
                           Text(
                             '$velPercent%',
-                            style: TextStyle(color: DawTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
+                            style: TextStyle(color: EatsTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
                           ),
                         ],
                       ),
                     ),
                   ),
-                  Text('(Hold for text input)', style: TextStyle(color: DawTheme.textMuted.withOpacity(0.6), fontSize: 8)),
+                  Text('(Hold for text input)', style: TextStyle(color: EatsTheme.textMuted.withOpacity(0.6), fontSize: 8)),
                 ],
               ),
               SizedBox(
@@ -507,9 +507,9 @@ class _PianoRollViewState extends State<PianoRollView> {
                   data: SliderThemeData(
                     trackHeight: 3,
                     thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6),
-                    activeTrackColor: DawTheme.primaryCyan,
-                    inactiveTrackColor: DawTheme.controlBackground,
-                    thumbColor: DawTheme.primaryCyan,
+                    activeTrackColor: EatsTheme.primaryCyan,
+                    inactiveTrackColor: EatsTheme.controlBackground,
+                    thumbColor: EatsTheme.primaryCyan,
                   ),
                   child: Slider(
                     value: note.velocity.clamp(0.05, 1.0),
@@ -564,14 +564,14 @@ class _PianoRollViewState extends State<PianoRollView> {
         // Sub-toolbar for Piano Roll (Note Stepper, Snap & Zoom Controls)
         Container(
           height: 32,
-          color: DawTheme.panelBackground,
+          color: EatsTheme.panelBackground,
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           child: Row(
             children: [
               Text(
                 'PIANO ROLL',
-                style: DawTheme.getPrimaryFontStyle(
-                  color: DawTheme.textMuted,
+                style: EatsTheme.getPrimaryFontStyle(
+                  color: EatsTheme.textMuted,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -579,11 +579,11 @@ class _PianoRollViewState extends State<PianoRollView> {
               const SizedBox(width: 8),
 
               // Note Stepper Buttons
-              Text('NOTES:', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+              Text('NOTES:', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
               const SizedBox(width: 2),
               IconButton(
                 icon: const Icon(Icons.arrow_back_ios, size: 12),
-                color: DawTheme.primaryCyan,
+                color: EatsTheme.primaryCyan,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                 tooltip: 'Select Previous Note',
@@ -591,7 +591,7 @@ class _PianoRollViewState extends State<PianoRollView> {
               ),
               IconButton(
                 icon: const Icon(Icons.arrow_forward_ios, size: 12),
-                color: DawTheme.primaryCyan,
+                color: EatsTheme.primaryCyan,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                 tooltip: 'Select Next Note',
@@ -600,14 +600,14 @@ class _PianoRollViewState extends State<PianoRollView> {
               const Spacer(),
 
               // Snap Quantize Dropdown
-              Text('SNAP:', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+              Text('SNAP:', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
               const SizedBox(width: 2),
               DropdownButton<double>(
                 value: widget.dawState.quantizeSnap,
-                dropdownColor: DawTheme.panelBackground,
+                dropdownColor: EatsTheme.panelBackground,
                 underline: const SizedBox(),
                 isDense: true,
-                style: TextStyle(color: DawTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
+                style: TextStyle(color: EatsTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
                 items: const [
                   DropdownMenuItem(value: 0.5, child: Text('1/32')),
                   DropdownMenuItem(value: 1.0, child: Text('1/16')),
@@ -622,11 +622,11 @@ class _PianoRollViewState extends State<PianoRollView> {
               const SizedBox(width: 8),
 
               // Zoom Controls
-              Text('ZOOM:', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+              Text('ZOOM:', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
               const SizedBox(width: 2),
               IconButton(
                 icon: const Icon(Icons.zoom_out, size: 15),
-                color: DawTheme.textSecondary,
+                color: EatsTheme.textSecondary,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                 tooltip: 'Zoom Out',
@@ -634,7 +634,7 @@ class _PianoRollViewState extends State<PianoRollView> {
               ),
               IconButton(
                 icon: const Icon(Icons.aspect_ratio, size: 13),
-                color: DawTheme.textMuted,
+                color: EatsTheme.textMuted,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                 tooltip: 'Reset Zoom',
@@ -642,7 +642,7 @@ class _PianoRollViewState extends State<PianoRollView> {
               ),
               IconButton(
                 icon: const Icon(Icons.zoom_in, size: 15),
-                color: DawTheme.textSecondary,
+                color: EatsTheme.textSecondary,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                 tooltip: 'Zoom In',
@@ -808,7 +808,7 @@ class _PianoRollViewState extends State<PianoRollView> {
                             },
                             child: Container(
                               height: totalKeys * _keyHeight,
-                              color: DawTheme.backgroundDark,
+                              color: EatsTheme.backgroundDark,
                               child: Stack(
                                 children: [
                                   // Background Grid Lines & Piano Rows
@@ -821,11 +821,11 @@ class _PianoRollViewState extends State<PianoRollView> {
                                         height: _keyHeight,
                                         decoration: BoxDecoration(
                                           color: isBlackKey
-                                              ? (DawTheme.isLight ? Colors.black.withOpacity(0.04) : Colors.white.withOpacity(0.02))
+                                              ? (EatsTheme.isLight ? Colors.black.withOpacity(0.04) : Colors.white.withOpacity(0.02))
                                               : Colors.transparent,
                                           border: Border(
                                             bottom: BorderSide(
-                                              color: DawTheme.isLight ? Colors.black.withOpacity(0.12) : Colors.white.withOpacity(0.04),
+                                              color: EatsTheme.isLight ? Colors.black.withOpacity(0.12) : Colors.white.withOpacity(0.04),
                                               width: 1.0,
                                             ),
                                           ),
@@ -845,12 +845,12 @@ class _PianoRollViewState extends State<PianoRollView> {
                                           border: Border(
                                             left: BorderSide(
                                               color: isBarHeader
-                                                  ? DawTheme.primaryCyan.withOpacity(0.45)
-                                                  : (DawTheme.isLight ? Colors.black.withOpacity(0.12) : Colors.white.withOpacity(0.04)),
+                                                  ? EatsTheme.primaryCyan.withOpacity(0.45)
+                                                  : (EatsTheme.isLight ? Colors.black.withOpacity(0.12) : Colors.white.withOpacity(0.04)),
                                               width: isBarHeader ? 1.5 : 1.0,
                                             ),
                                             right: BorderSide(
-                                              color: DawTheme.isLight ? Colors.black.withOpacity(0.08) : Colors.white.withOpacity(0.04),
+                                              color: EatsTheme.isLight ? Colors.black.withOpacity(0.08) : Colors.white.withOpacity(0.04),
                                               width: 1.0,
                                             ),
                                           ),
@@ -866,7 +866,7 @@ class _PianoRollViewState extends State<PianoRollView> {
                                     bottom: 0,
                                     child: Container(
                                       width: 2,
-                                      color: DawTheme.primaryCyan,
+                                      color: EatsTheme.primaryCyan,
                                     ),
                                   ),
 
@@ -953,11 +953,11 @@ class _PianoRollViewState extends State<PianoRollView> {
                                             color: track.color,
                                             borderRadius: BorderRadius.circular(4),
                                             border: isSelected
-                                                ? Border.all(color: DawTheme.primaryCyan, width: 2.0)
+                                                ? Border.all(color: EatsTheme.primaryCyan, width: 2.0)
                                                 : Border.all(color: Colors.black38, width: 0.5),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: isSelected ? DawTheme.primaryCyan.withOpacity(0.8) : track.color.withOpacity(0.4),
+                                                color: isSelected ? EatsTheme.primaryCyan.withOpacity(0.8) : track.color.withOpacity(0.4),
                                                 blurRadius: isSelected ? 6 : 3,
                                               ),
                                             ],
@@ -967,7 +967,7 @@ class _PianoRollViewState extends State<PianoRollView> {
                                               _getNoteName(note.pitch),
                                               overflow: TextOverflow.ellipsis,
                                               style: TextStyle(
-                                                color: isSelected ? DawTheme.backgroundDark : DawTheme.backgroundDark.withOpacity(0.85),
+                                                color: isSelected ? EatsTheme.backgroundDark : EatsTheme.backgroundDark.withOpacity(0.85),
                                                 fontSize: (_keyHeight * 0.38).clamp(8.0, 11.0),
                                                 fontWeight: FontWeight.bold,
                                               ),
@@ -1022,20 +1022,20 @@ class _PianoRollViewState extends State<PianoRollView> {
                                           message: 'Drag to resize note',
                                           child: Container(
                                             decoration: BoxDecoration(
-                                              color: DawTheme.primaryCyan,
+                                              color: EatsTheme.primaryCyan,
                                               borderRadius: const BorderRadius.only(
                                                 topRight: Radius.circular(4),
                                                 bottomRight: Radius.circular(4),
                                               ),
                                               boxShadow: [
-                                                BoxShadow(color: DawTheme.primaryCyan.withOpacity(0.6), blurRadius: 4),
+                                                BoxShadow(color: EatsTheme.primaryCyan.withOpacity(0.6), blurRadius: 4),
                                               ],
                                             ),
                                             child: Center(
                                               child: Text(
                                                 '<>',
                                                 style: TextStyle(
-                                                  color: DawTheme.isLight ? Colors.white : Colors.black,
+                                                  color: EatsTheme.isLight ? Colors.white : Colors.black,
                                                   fontSize: 10,
                                                   fontWeight: FontWeight.w900,
                                                 ),

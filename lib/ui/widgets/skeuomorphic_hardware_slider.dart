@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../theme/daw_theme.dart';
+import '../../theme/eats_theme.dart';
 import 'compact_value_dialog.dart';
 
 /// A realistic skeuomorphic console mixer fader slider control.
@@ -53,9 +53,9 @@ class _SkeuomorphicHardwareSliderState extends State<SkeuomorphicHardwareSlider>
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = widget.activeColor ?? DawTheme.primaryCyan;
+    final activeColor = widget.activeColor ?? EatsTheme.primaryCyan;
     final normalized = ((widget.value - widget.min) / (widget.max - widget.min)).clamp(0.0, 1.0);
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
+    final isGrungy = EatsTheme.currentPreset == EatsThemePreset.ateTrack;
     final isHoriz = widget.orientation == Axis.horizontal;
 
     return LayoutBuilder(
@@ -96,7 +96,7 @@ class _SkeuomorphicHardwareSliderState extends State<SkeuomorphicHardwareSlider>
 
   void _showManualEditDialog(BuildContext context) {
     final displayVal = widget.formatValue != null ? widget.formatValue!(widget.value) : widget.value.toStringAsFixed(2);
-    final accent = widget.activeColor ?? DawTheme.primaryCyan;
+    final accent = widget.activeColor ?? EatsTheme.primaryCyan;
 
     showCompactValueEditDialog(
       context: context,
@@ -279,7 +279,7 @@ class _FaderPainter extends CustomPainter {
     }
 
     // Center Illuminated Neon Indicator Bar
-    final neonColor = accentColor == DawTheme.primaryCyan ? const Color(0xFFFF007A) : accentColor;
+    final neonColor = accentColor == EatsTheme.primaryCyan ? const Color(0xFFFF007A) : accentColor;
     final stripeGlowPaint = Paint()
       ..color = neonColor
       ..strokeWidth = 4.0

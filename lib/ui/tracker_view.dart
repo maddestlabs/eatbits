@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
-import '../theme/daw_theme.dart';
+import '../theme/eats_theme.dart';
 import 'widgets/eatsbits_slider.dart';
 
 class TrackerView extends StatefulWidget {
@@ -77,7 +77,7 @@ class _TrackerViewState extends State<TrackerView> {
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
 
-    final totalSteps = widget.dawState.activePattern.lengthSteps;
+    final totalSteps = widget.dawState.activeTrackClip.barLength * 16;
     final totalColumns = widget.dawState.activeTrack.trackerColumns;
     final key = event.logicalKey;
 
@@ -209,7 +209,7 @@ class _TrackerViewState extends State<TrackerView> {
   @override
   Widget build(BuildContext context) {
     final track = widget.dawState.activeTrack;
-    final totalSteps = widget.dawState.activePattern.lengthSteps;
+    final totalSteps = widget.dawState.activeTrackClip.barLength * 16;
     final totalColumns = track.trackerColumns;
 
     final noteMap = <String, Note>{};
@@ -228,16 +228,16 @@ class _TrackerViewState extends State<TrackerView> {
         children: [
           // Sub-channel Column Titles Header & Desktop Octave Display
           Container(
-            color: DawTheme.controlBackground,
+            color: EatsTheme.controlBackground,
             padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
             child: Row(
               children: [
-                Icon(Icons.view_column, size: 16, color: DawTheme.primaryCyan),
+                Icon(Icons.view_column, size: 16, color: EatsTheme.primaryCyan),
                 const SizedBox(width: 6),
                 Text(
                   'TRACKER MATRIX',
                   style: TextStyle(
-                    color: DawTheme.textSecondary,
+                    color: EatsTheme.textSecondary,
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                     letterSpacing: 1.0,
@@ -246,9 +246,9 @@ class _TrackerViewState extends State<TrackerView> {
                 const Spacer(),
 
                 // Tracker Column Controls
-                Text('COLS: ', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                Text('COLS: ', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
                 IconButton(
-                  icon: Icon(Icons.remove_circle_outline, color: DawTheme.textSecondary, size: 16),
+                  icon: Icon(Icons.remove_circle_outline, color: EatsTheme.textSecondary, size: 16),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                   tooltip: 'Remove Tracker Column',
@@ -258,11 +258,11 @@ class _TrackerViewState extends State<TrackerView> {
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
                     '${track.trackerColumns}',
-                    style: DawTheme.getDisplayFontStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 11),
+                    style: EatsTheme.getDisplayFontStyle(color: EatsTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 11),
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.add_circle_outline, color: DawTheme.primaryCyan, size: 16),
+                  icon: Icon(Icons.add_circle_outline, color: EatsTheme.primaryCyan, size: 16),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
                   tooltip: 'Add Tracker Column',
@@ -274,14 +274,14 @@ class _TrackerViewState extends State<TrackerView> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: DawTheme.panelBackground,
+                    color: EatsTheme.panelBackground,
                     borderRadius: BorderRadius.circular(4),
-                    border: Border.all(color: DawTheme.panelHeader),
+                    border: Border.all(color: EatsTheme.panelHeader),
                   ),
                   child: Text(
                     'OCT: C$_qwertyBaseOctave',
                     style: TextStyle(
-                      color: DawTheme.primaryCyan,
+                      color: EatsTheme.primaryCyan,
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
                     ),
@@ -304,7 +304,7 @@ class _TrackerViewState extends State<TrackerView> {
                     children: [
                       // Sub-channel Column Header Row
                       Container(
-                        color: DawTheme.controlBackground,
+                        color: EatsTheme.controlBackground,
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
                           children: [
@@ -314,7 +314,7 @@ class _TrackerViewState extends State<TrackerView> {
                                 'ROW',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  color: DawTheme.textMuted,
+                                  color: EatsTheme.textMuted,
                                   fontSize: 10,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -329,8 +329,8 @@ class _TrackerViewState extends State<TrackerView> {
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: isSelectedCol
-                                        ? DawTheme.accentGold
-                                        : (colIdx % 2 == 0 ? DawTheme.primaryCyan : DawTheme.secondaryMagenta),
+                                        ? EatsTheme.accentGold
+                                        : (colIdx % 2 == 0 ? EatsTheme.primaryCyan : EatsTheme.secondaryMagenta),
                                     fontSize: 10,
                                     fontWeight: isSelectedCol ? FontWeight.bold : FontWeight.normal,
                                   ),
@@ -355,15 +355,15 @@ class _TrackerViewState extends State<TrackerView> {
                               height: 32,
                               decoration: BoxDecoration(
                                 color: isCurrentStep
-                                    ? DawTheme.primaryCyan.withOpacity(0.30)
+                                    ? EatsTheme.primaryCyan.withOpacity(0.30)
                                     : (isSelectedLine
-                                        ? DawTheme.secondaryMagenta.withOpacity(0.20)
-                                        : (isBeatFour ? DawTheme.panelBackground : DawTheme.backgroundDark)),
+                                        ? EatsTheme.highlightColor.withOpacity(0.20)
+                                        : (isBeatFour ? EatsTheme.panelBackground : EatsTheme.backgroundDark)),
                                 border: Border(
                                   bottom: BorderSide(
                                     color: isSelectedLine
-                                        ? DawTheme.secondaryMagenta.withOpacity(0.8)
-                                        : (isBeatFour ? DawTheme.panelHeader : DawTheme.controlBackground.withOpacity(0.4)),
+                                        ? EatsTheme.highlightColor.withOpacity(0.8)
+                                        : (isBeatFour ? EatsTheme.panelHeader : EatsTheme.controlBackground.withOpacity(0.4)),
                                     width: isSelectedLine ? 1.5 : (isBeatFour ? 1.5 : 0.5),
                                   ),
                                 ),
@@ -378,10 +378,10 @@ class _TrackerViewState extends State<TrackerView> {
                                         stepIdx.toString().padLeft(2, '0'),
                                         style: TextStyle(
                                           color: isCurrentStep
-                                              ? DawTheme.accentGreen
+                                              ? EatsTheme.accentGreen
                                               : (isSelectedLine
-                                                  ? DawTheme.secondaryMagenta
-                                                  : (isBeatFour ? DawTheme.accentGold : DawTheme.textMuted)),
+                                                  ? EatsTheme.highlightColor
+                                                  : (isBeatFour ? EatsTheme.accentGold : EatsTheme.textMuted)),
                                           fontFamily: 'monospace',
                                           fontWeight: (isCurrentStep || isSelectedLine) ? FontWeight.bold : FontWeight.normal,
                                           fontSize: 11,
@@ -412,21 +412,21 @@ class _TrackerViewState extends State<TrackerView> {
                                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                         decoration: BoxDecoration(
                                           color: isSelectedCell
-                                              ? DawTheme.secondaryMagenta.withOpacity(0.40)
+                                              ? EatsTheme.highlightColor.withOpacity(0.40)
                                               : (hasNote
                                                   ? track.color.withOpacity(0.25)
-                                                  : DawTheme.controlBackground.withOpacity(0.3)),
+                                                  : EatsTheme.controlBackground.withOpacity(0.3)),
                                           borderRadius: BorderRadius.circular(4),
                                           border: Border.all(
                                             color: isSelectedCell
-                                                ? DawTheme.secondaryMagenta
+                                                ? EatsTheme.highlightColor
                                                 : (hasNote ? track.color.withOpacity(0.6) : Colors.transparent),
                                             width: isSelectedCell ? 2.0 : 1.0,
                                           ),
                                           boxShadow: isSelectedCell
                                               ? [
                                                   BoxShadow(
-                                                    color: DawTheme.secondaryMagenta.withOpacity(0.4),
+                                                    color: EatsTheme.highlightColor.withOpacity(0.4),
                                                     blurRadius: 4,
                                                     spreadRadius: 1,
                                                   )
@@ -435,10 +435,10 @@ class _TrackerViewState extends State<TrackerView> {
                                         ),
                                         child: Text(
                                           '$noteStr  $volStr  $fxStr',
-                                          style: DawTheme.getDisplayFontStyle(
+                                          style: EatsTheme.getDisplayFontStyle(
                                             color: isSelectedCell
                                                 ? Colors.white
-                                                : (hasNote ? DawTheme.textPrimary : DawTheme.textMuted),
+                                                : (hasNote ? EatsTheme.textPrimary : EatsTheme.textMuted),
                                             fontSize: 11,
                                             fontWeight: (hasNote || isSelectedCell) ? FontWeight.bold : FontWeight.normal,
                                           ),
@@ -486,10 +486,10 @@ class _TrackerViewState extends State<TrackerView> {
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return AlertDialog(
-              backgroundColor: DawTheme.panelBackground,
+              backgroundColor: EatsTheme.panelBackground,
               title: Text(
                 'ROW ${stepIdx.toString().padLeft(2, '0')} - COL 0${colIdx + 1}',
-                style: TextStyle(color: DawTheme.primaryCyan, fontSize: 14),
+                style: TextStyle(color: EatsTheme.primaryCyan, fontSize: 14),
               ),
               content: SizedBox(
                 width: 280,
@@ -499,8 +499,8 @@ class _TrackerViewState extends State<TrackerView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('NOTE PITCH:', style: TextStyle(color: DawTheme.textSecondary, fontSize: 12)),
-                        Text(_formatTrackerNote(selectedPitch), style: const TextStyle(color: DawTheme.accentGold, fontWeight: FontWeight.bold)),
+                        Text('NOTE PITCH:', style: TextStyle(color: EatsTheme.textSecondary, fontSize: 12)),
+                        Text(_formatTrackerNote(selectedPitch), style: const TextStyle(color: EatsTheme.accentGold, fontWeight: FontWeight.bold)),
                       ],
                     ),
                     EatsBitsSlider(
@@ -523,8 +523,8 @@ class _TrackerViewState extends State<TrackerView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('VELOCITY:', style: TextStyle(color: DawTheme.textSecondary, fontSize: 12)),
-                        Text('${(selectedVol * 100).toInt()}%', style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold)),
+                        Text('VELOCITY:', style: TextStyle(color: EatsTheme.textSecondary, fontSize: 12)),
+                        Text('${(selectedVol * 100).toInt()}%', style: TextStyle(color: EatsTheme.primaryCyan, fontWeight: FontWeight.bold)),
                       ],
                     ),
                     EatsBitsSlider(
@@ -533,7 +533,7 @@ class _TrackerViewState extends State<TrackerView> {
                       max: 1.0,
                       defaultValue: 0.9,
                       label: 'Note Velocity',
-                      activeColor: DawTheme.primaryCyan,
+                      activeColor: EatsTheme.primaryCyan,
                       onChanged: (val) {
                         setDialogState(() => selectedVol = val);
                       },
@@ -548,7 +548,7 @@ class _TrackerViewState extends State<TrackerView> {
                       widget.dawState.removeNote(track, existingNote.id);
                       Navigator.pop(context);
                     },
-                    child: const Text('DELETE', style: TextStyle(color: DawTheme.muteColor)),
+                    child: const Text('DELETE', style: TextStyle(color: EatsTheme.muteColor)),
                   ),
                 TextButton(
                   onPressed: () {
@@ -568,7 +568,7 @@ class _TrackerViewState extends State<TrackerView> {
                     );
                     Navigator.pop(context);
                   },
-                  child: Text('SET NOTE', style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold)),
+                  child: Text('SET NOTE', style: TextStyle(color: EatsTheme.primaryCyan, fontWeight: FontWeight.bold)),
                 ),
               ],
             );

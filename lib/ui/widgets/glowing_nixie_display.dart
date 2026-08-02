@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/daw_theme.dart';
+import '../../theme/eats_theme.dart';
 
 /// A vintage dark glass readout display with glowing amber Nixie/LED text digits,
 /// optical bloom, and recessed bevel frame.
@@ -21,8 +21,8 @@ class GlowingNixieDisplay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
-    final amberGlow = glowColor ?? (isGrungy ? const Color(0xFFFF8C00) : DawTheme.primaryCyan);
+    final isGrungy = EatsTheme.currentPreset == EatsThemePreset.ateTrack;
+    final amberGlow = glowColor ?? (isGrungy ? const Color(0xFFFF8C00) : EatsTheme.primaryCyan);
 
     final hasLabel = label.trim().isNotEmpty;
     final displayBox = Container(
@@ -49,7 +49,7 @@ class GlowingNixieDisplay extends StatelessWidget {
           // Optical Bloom Glow Backdrop
           Text(
             valueText + (unit != null ? ' $unit' : ''),
-            style: DawTheme.getDisplayFontStyle(
+            style: EatsTheme.getDisplayFontStyle(
               fontSize: fontSize,
               fontWeight: FontWeight.bold,
               color: amberGlow,
@@ -69,7 +69,7 @@ class GlowingNixieDisplay extends StatelessWidget {
           // Crisp Sharp Text Foreground
           Text(
             valueText + (unit != null ? ' $unit' : ''),
-            style: DawTheme.getDisplayFontStyle(
+            style: EatsTheme.getDisplayFontStyle(
               fontSize: fontSize,
               fontWeight: FontWeight.bold,
               color: isGrungy ? const Color(0xFFFFF2D6) : Colors.white,
@@ -79,8 +79,15 @@ class GlowingNixieDisplay extends StatelessWidget {
       ),
     );
 
+    final content = EatsTheme.enableGlassGlares
+        ? CustomPaint(
+            foregroundPainter: _LcdGlassReflectionPainter(),
+            child: displayBox,
+          )
+        : displayBox;
+
     if (!hasLabel) {
-      return displayBox;
+      return content;
     }
 
     return Column(
@@ -89,15 +96,53 @@ class GlowingNixieDisplay extends StatelessWidget {
       children: [
         Text(
           label.toUpperCase(),
-          style: DawTheme.getDisplayFontStyle(
+          style: EatsTheme.getDisplayFontStyle(
             fontSize: 9,
             fontWeight: FontWeight.bold,
-            color: isGrungy ? const Color(0xFF9E9284) : DawTheme.textMuted,
+            color: isGrungy ? const Color(0xFF9E9284) : EatsTheme.textMuted,
           ),
         ),
         const SizedBox(height: 3),
-        displayBox,
+        content,
       ],
     );
   }
+}
+
+class _LcdGlassReflectionPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // 1. Curved Glass Specular Glare Streak Reflection
+    final glarePath = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width * 0.75, 0)
+      ..lineTo(0, size.height * 0.85)
+      ..close();
+    canvas.drawPath(
+      glarePath,
+      Paint()..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [Colors.white.withOpacity(0.18), Colors.transparent],
+      ).createShader(Offset.zero & size),
+    );
+
+    // 2. CRT Micro-Scanlines
+    final scanlinePaint = Paint()
+      ..color = Colors.black.withOpacity(0.12)
+      ..strokeWidth = 1.0;
+    for (double y = 1; y < size.height; y += 2.5) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), scanlinePaint);
+    }
+
+    // 3. Dark Recessed Glass Inner Bezel Border Shadow
+    final bezelPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5
+      ..color = Colors.black.withOpacity(0.65);
+    canvas.drawRRect(RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(4)), bezelPaint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

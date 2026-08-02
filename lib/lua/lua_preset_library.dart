@@ -507,5 +507,82 @@ end
 return TubeDistortion
 ''',
     ),
+
+    // 11. Eatsbits Sampler Instrument (Melodic / One-Shot)
+    LuaPreset(
+      id: 'sampler_instrument',
+      name: 'Sampler (Melodic / One-Shot)',
+      category: 'synth',
+      description: 'Pitch-shifted sample player with ADSR envelope, filter cutoff, and root key tuning.',
+      code: '''
+-- --- Eatsbits Sampler Instrument (Melodic / One-Shot) ---
+local SamplerInstrument = {}
+
+function SamplerInstrument.init()
+  Param.add("RootKey", 36.0, 84.0, 60.0)
+  Param.add("AttackSec", 0.0, 1.0, 0.005)
+  Param.add("ReleaseSec", 0.01, 2.0, 0.4)
+  Param.add("FilterCutoff", 200.0, 12000.0, 8000.0)
+end
+
+function SamplerInstrument.process(time, freq, note, params)
+  local rootKey = params["RootKey"] or 60.0
+  local pitchOffset = note - rootKey
+
+  local rawSample = Sampler.read(note, time, pitchOffset)
+  local attack = params["AttackSec"] or 0.005
+  local release = params["ReleaseSec"] or 0.4
+  local cutoff = params["FilterCutoff"] or 8000.0
+
+  local env = DSP.env(time, attack, release)
+  local filtered = DSP.lowpass(rawSample, cutoff, 1.0)
+  return filtered * env
+end
+
+return SamplerInstrument
+''',
+    ),
+
+    // 12. Eatsbits Multi-Slot Drum Kit Sampler
+    LuaPreset(
+      id: 'drum_kit_sampler',
+      name: 'Eats Multi-Slot Drum Sampler',
+      category: 'drum',
+      description: 'Multi-slot drum sampler mapping notes (36=Kick, 38=Snare, 42=Hat, 39=Clap) to distinct audio sample slots.',
+      code: '''
+-- --- Eatsbits Multi-Slot Drum Kit Sampler ---
+local DrumKitSampler = {}
+
+function DrumKitSampler.init()
+  Param.add("KickTune", -12.0, 12.0, 0.0)
+  Param.add("SnareTune", -12.0, 12.0, 0.0)
+  Param.add("Drive", 0.0, 1.0, 0.1)
+end
+
+function DrumKitSampler.process(time, freq, note, params)
+  local sampleOut = 0.0
+  if note == 36 then
+    sampleOut = Sampler.readSample("kick", time, params["KickTune"] or 0.0)
+  elseif note == 38 then
+    sampleOut = Sampler.readSample("snare", time, params["SnareTune"] or 0.0)
+  elseif note == 42 or note == 46 then
+    sampleOut = Sampler.readSample("hihat", time, 0.0)
+  elseif note == 39 then
+    sampleOut = Sampler.readSample("clap", time, 0.0)
+  else
+    sampleOut = Sampler.read(note, time, 0.0)
+  end
+
+  local drive = params["Drive"] or 0.1
+  if drive > 0.01 then
+    sampleOut = math.tanh(sampleOut * (1.0 + drive * 4.0))
+  end
+
+  return sampleOut
+end
+
+return DrumKitSampler
+''',
+    ),
   ];
 }

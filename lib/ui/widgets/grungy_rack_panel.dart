@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/daw_theme.dart';
+import '../../theme/eats_theme.dart';
 
 /// A grungy, weathered metallic rack panel container with corner mounting screws,
 /// bevel shadows, and industrial faceplate styling.
@@ -25,38 +25,36 @@ class GrungyRackPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
-    final baseAccent = accentColor ?? DawTheme.primaryCyan;
-    final basePanel = panelColor ?? (isGrungy ? const Color(0xFF26221D) : DawTheme.panelBackground);
+    final isGrungy = EatsTheme.currentPreset == EatsThemePreset.ateTrack;
+    final baseAccent = accentColor ?? EatsTheme.primaryCyan;
+    final basePanel = panelColor ?? (isGrungy ? const Color(0xFF26221D) : EatsTheme.panelBackground);
 
-    return CustomPaint(
-      painter: _RackPanelBorderPainter(isGrungy: isGrungy, accentColor: baseAccent),
-      child: Container(
-        margin: const EdgeInsets.all(4.0),
-        decoration: BoxDecoration(
-          color: basePanel,
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(
-            color: isGrungy ? const Color(0xFF423B33) : Colors.white10,
-            width: 1.2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.4),
-              blurRadius: 6,
-              offset: const Offset(0, 3),
-            ),
-          ],
+    final panelContent = Container(
+      margin: EatsTheme.enableSkeuomorphism ? const EdgeInsets.all(4.0) : EdgeInsets.zero,
+      decoration: BoxDecoration(
+        color: basePanel,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: isGrungy ? const Color(0xFF423B33) : EatsTheme.panelHeader,
+          width: 1.0,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
+        boxShadow: EatsTheme.enablePanelShadows ? [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ] : null,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
             // Faceplate Header Strip
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isGrungy ? const Color(0xFF1E1A16) : DawTheme.panelHeader,
+                color: isGrungy ? const Color(0xFF1E1A16) : EatsTheme.panelHeader,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(5),
                   topRight: Radius.circular(5),
@@ -93,19 +91,19 @@ class GrungyRackPanel extends StatelessWidget {
                       children: [
                         Text(
                           title.toUpperCase(),
-                          style: DawTheme.getDisplayFontStyle(
+                          style: EatsTheme.getDisplayFontStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
-                            color: isGrungy ? const Color(0xFFDCD2C5) : DawTheme.textPrimary,
+                            color: isGrungy ? const Color(0xFFDCD2C5) : EatsTheme.textPrimary,
                           ),
                         ),
                         if (subtitle != null) ...[
                           const SizedBox(height: 1),
                           Text(
                             subtitle!,
-                            style: DawTheme.getPrimaryFontStyle(
+                            style: EatsTheme.getPrimaryFontStyle(
                               fontSize: 9,
-                              color: isGrungy ? const Color(0xFF8C8275) : DawTheme.textMuted,
+                              color: isGrungy ? const Color(0xFF8C8275) : EatsTheme.textMuted,
                             ),
                           ),
                         ],
@@ -123,8 +121,15 @@ class GrungyRackPanel extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
+      );
+
+    if (EatsTheme.enableSkeuomorphism) {
+      return CustomPaint(
+        painter: _RackPanelBorderPainter(isGrungy: isGrungy, accentColor: baseAccent),
+        child: panelContent,
+      );
+    }
+    return panelContent;
   }
 }
 
@@ -138,7 +143,24 @@ class _RackPanelBorderPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (!isGrungy) return;
 
-    // Draw Corner Mounting Bolts/Screws
+    // 1. Native Brushed Metal Grain Hatching
+    final grainPaint = Paint()
+      ..color = const Color(0xFFFFFFFF).withOpacity(0.035)
+      ..strokeWidth = 1.0;
+    for (double y = 6; y < size.height - 6; y += 4) {
+      canvas.drawLine(Offset(6, y), Offset(size.width - 6, y + 0.8), grainPaint);
+    }
+
+    // 2. Chassis Corner & Perimeter Vignette
+    final vignettePaint = Paint()
+      ..shader = RadialGradient(
+        center: Alignment.center,
+        radius: 0.85,
+        colors: [Colors.transparent, Colors.black.withOpacity(0.30)],
+      ).createShader(Offset.zero & size);
+    canvas.drawRRect(RRect.fromRectAndRadius(Offset.zero & size, const Radius.circular(6)), vignettePaint);
+
+    // 3. Draw Corner Mounting Bolts/Screws
     const screwRadius = 3.5;
     const inset = 7.0;
 

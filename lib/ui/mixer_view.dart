@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
-import '../theme/daw_theme.dart';
+import '../theme/eats_theme.dart';
 import 'widgets/lcd_display_widget.dart';
 import 'widgets/skeuomorphic_hardware_button.dart';
 import 'widgets/skeuomorphic_hardware_knob.dart';
 import 'widgets/skeuomorphic_hardware_slider.dart';
 import 'widgets/stereo_meter_widget.dart';
+import 'widgets/rename_track_dialog.dart';
 
 class MixerView extends StatefulWidget {
   final DawState dawState;
@@ -33,7 +34,7 @@ class _MixerViewState extends State<MixerView> {
         children: [
           // Master Channel Strip
           _buildMasterChannelStrip(widget.dawState),
-          VerticalDivider(color: DawTheme.panelHeader, width: 24, thickness: 1.5),
+          VerticalDivider(color: EatsTheme.panelHeader, width: 24, thickness: 1.5),
 
           // Individual Track Strips
           ...List.generate(pattern.tracks.length, (tIdx) {
@@ -49,9 +50,9 @@ class _MixerViewState extends State<MixerView> {
       width: 140,
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: DawTheme.panelBackground,
+        color: EatsTheme.panelBackground,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: DawTheme.primaryCyan.withOpacity(0.6), width: 1.5),
+        border: Border.all(color: EatsTheme.primaryCyan.withOpacity(0.6), width: 1.5),
         boxShadow: const [
           BoxShadow(color: Colors.black45, offset: Offset(0, 2), blurRadius: 4),
         ],
@@ -80,7 +81,7 @@ class _MixerViewState extends State<MixerView> {
                   max: 1.0,
                   defaultValue: 0.0,
                   size: 36.0,
-                  accentColor: DawTheme.primaryCyan,
+                  accentColor: EatsTheme.primaryCyan,
                   onChanged: (_) {},
                   formatValue: (v) => 'C',
                 ),
@@ -93,7 +94,7 @@ class _MixerViewState extends State<MixerView> {
                   max: 1.5,
                   defaultValue: 0.85,
                   size: 36.0,
-                  accentColor: DawTheme.primaryCyan,
+                  accentColor: EatsTheme.primaryCyan,
                   onChanged: (val) => dawState.setMasterVolume(val),
                   formatValue: (v) => '${(v * 100).toInt()}%',
                 ),
@@ -116,7 +117,7 @@ class _MixerViewState extends State<MixerView> {
                     max: 1.5,
                     defaultValue: 0.85,
                     label: 'Master Volume',
-                    activeColor: DawTheme.primaryCyan,
+                    activeColor: EatsTheme.primaryCyan,
                     orientation: Axis.vertical,
                     length: 160.0,
                     showLevelMarkings: true,
@@ -129,7 +130,7 @@ class _MixerViewState extends State<MixerView> {
                 StereoMeterWidget(
                   leftLevel: dawState.audioEngine.leftPeak,
                   rightLevel: dawState.audioEngine.rightPeak,
-                  accentColor: DawTheme.primaryCyan,
+                  accentColor: EatsTheme.primaryCyan,
                   width: 38.0,
                   height: double.infinity,
                 ),
@@ -147,6 +148,7 @@ class _MixerViewState extends State<MixerView> {
     final rightPeak = dawState.audioEngine.getTrackRightPeak(track.id);
 
     return GestureDetector(
+      onLongPress: () => showRenameTrackDialog(context, dawState, track),
       onTapDown: (_) {
         final now = DateTime.now();
         final isDoubleTap = _lastTapTrackIdx == trackIdx &&
@@ -165,7 +167,7 @@ class _MixerViewState extends State<MixerView> {
         margin: const EdgeInsets.only(right: 10),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: isSelected ? DawTheme.controlBackground : DawTheme.panelBackground,
+          color: isSelected ? EatsTheme.controlBackground : EatsTheme.panelBackground,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: isSelected ? track.color : Colors.transparent, width: 1.5),
           boxShadow: const [
@@ -210,7 +212,7 @@ class _MixerViewState extends State<MixerView> {
                     max: 10000.0,
                     defaultValue: 3000.0,
                     size: 34.0,
-                    accentColor: DawTheme.accentGold,
+                    accentColor: EatsTheme.accentGold,
                     onChanged: (val) {
                       track.cutoff = val;
                       dawState.notifyState();
@@ -262,7 +264,7 @@ class _MixerViewState extends State<MixerView> {
                       SkeuomorphicHardwareButton(
                         label: 'm',
                         isActive: track.isMuted,
-                        activeColor: DawTheme.muteColor,
+                        activeColor: EatsTheme.muteColor,
                         onTap: () => dawState.toggleMute(track),
                         height: 26,
                         width: 26,
@@ -273,7 +275,7 @@ class _MixerViewState extends State<MixerView> {
                       SkeuomorphicHardwareButton(
                         label: 's',
                         isActive: track.isSoloed,
-                        activeColor: DawTheme.soloColor,
+                        activeColor: EatsTheme.soloColor,
                         onTap: () => dawState.toggleSolo(track),
                         height: 26,
                         width: 26,
@@ -284,7 +286,7 @@ class _MixerViewState extends State<MixerView> {
                       SkeuomorphicHardwareButton(
                         label: 'FX',
                         isActive: track.fxRack.any((f) => f.enabled),
-                        activeColor: DawTheme.primaryCyan,
+                        activeColor: EatsTheme.primaryCyan,
                         onTap: () => _showFXRackDialog(context, dawState, track),
                         height: 26,
                         width: 26,
@@ -308,24 +310,24 @@ class _MixerViewState extends State<MixerView> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: DawTheme.panelBackground,
-          title: Text('FX INSERT RACK: ${track.name}', style: TextStyle(color: DawTheme.primaryCyan)),
+          backgroundColor: EatsTheme.panelBackground,
+          title: Text('FX INSERT RACK: ${track.name}', style: TextStyle(color: EatsTheme.primaryCyan)),
           content: SizedBox(
             width: 320,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  title: Text('Bitcrusher 8-Bit', style: TextStyle(color: DawTheme.textPrimary, fontSize: 13)),
-                  subtitle: Text('Sample reduction & bit depth', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
+                  title: Text('Bitcrusher 8-Bit', style: TextStyle(color: EatsTheme.textPrimary, fontSize: 13)),
+                  subtitle: Text('Sample reduction & bit depth', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10)),
                   trailing: Switch(
                     value: track.fxRack.any((f) => f.name == 'Bitcrusher'),
                     onChanged: (val) => dawState.toggleBitcrusher(track, val),
                   ),
                 ),
                 ListTile(
-                  title: Text('Tube Distortion', style: TextStyle(color: DawTheme.textPrimary, fontSize: 13)),
-                  subtitle: Text('Soft clipping warmth', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
+                  title: Text('Tube Distortion', style: TextStyle(color: EatsTheme.textPrimary, fontSize: 13)),
+                  subtitle: Text('Soft clipping warmth', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10)),
                   trailing: Switch(
                     value: track.fxRack.any((f) => f.name == 'TubeDistortion'),
                     onChanged: (val) => dawState.toggleDistortion(track, val),
@@ -337,7 +339,7 @@ class _MixerViewState extends State<MixerView> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('CLOSE', style: TextStyle(color: DawTheme.primaryCyan)),
+              child: Text('CLOSE', style: TextStyle(color: EatsTheme.primaryCyan)),
             ),
           ],
         );

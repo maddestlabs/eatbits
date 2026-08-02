@@ -1,7 +1,7 @@
 import 'dart:ui';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
-import '../theme/daw_theme.dart';
+import '../theme/eats_theme.dart';
 
 class EatsLuaParser {
   /// Parses a `.eats.lua` project string and updates/populates [DawState].
@@ -28,7 +28,7 @@ class EatsLuaParser {
     final isSongMode = (meta['isSongMode'] as bool?) ?? false;
     final isLooping = (meta['isLooping'] as bool?) ?? true;
     final loopStartBar = (meta['loopStartBar'] as int?) ?? 0;
-    final loopEndBar = (meta['loopEndBar'] as int?) ?? 8;
+    final loopEndBar = (meta['loopEndBar'] as int?) ?? 2;
     final themeName = meta['theme'] as String?;
 
     dawState.setProjectDetails(title, author);
@@ -39,8 +39,8 @@ class EatsLuaParser {
     dawState.setLooping(isLooping);
 
     if (themeName != null) {
-      DawThemePreset? matchingPreset;
-      for (final p in DawThemePreset.values) {
+      EatsThemePreset? matchingPreset;
+      for (final p in EatsThemePreset.values) {
         if (p.name == themeName) {
           matchingPreset = p;
           break;
@@ -48,16 +48,16 @@ class EatsLuaParser {
       }
       if (matchingPreset == null) {
         if (themeName == 'grungyHardware') {
-          matchingPreset = DawThemePreset.ateTrack;
+          matchingPreset = EatsThemePreset.ateTrack;
         } else if (themeName == 'studioLight') {
-          matchingPreset = DawThemePreset.lightSnack;
+          matchingPreset = EatsThemePreset.lightSnack;
         } else if (themeName == 'midnightOled') {
-          matchingPreset = DawThemePreset.midnightBites;
+          matchingPreset = EatsThemePreset.midnightBites;
         } else if (themeName == 'cyberpunkCyan') {
-          matchingPreset = DawThemePreset.cyanCrunch;
+          matchingPreset = EatsThemePreset.midnightBites;
         }
       }
-      dawState.setThemePreset(matchingPreset ?? DawThemePreset.ateTrack);
+      dawState.setThemePreset(matchingPreset ?? EatsThemePreset.ateTrack);
     }
 
     // 2. Patterns & Tracks
@@ -225,7 +225,7 @@ class EatsLuaParser {
             name: cMap['name'] ?? 'Clip ${clips.length + 1}',
             trackId: cMap['trackId'] ?? (map['id'] ?? ''),
             startBar: cMap['startBar'] ?? 0,
-            barLength: cMap['barLength'] ?? 4,
+            barLength: cMap['barLength'] ?? 2,
             notes: cNotes,
             luaScriptCode: cMap['luaScriptCode'] ?? '',
             luaParams: cMap['luaParams'] is Map ? Map<String, double>.from(
@@ -243,7 +243,7 @@ class EatsLuaParser {
         name: '${map['name'] ?? 'Track'} Clip',
         trackId: map['id'] ?? '',
         startBar: 0,
-        barLength: 4,
+        barLength: 2,
         notes: notes,
         luaScriptCode: map['luaScriptCode'] ?? '',
         luaParams: map['luaParams'] is Map ? Map<String, double>.from(

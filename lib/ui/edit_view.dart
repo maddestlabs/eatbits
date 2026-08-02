@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
-import '../theme/daw_theme.dart';
+import '../theme/eats_theme.dart';
 import 'piano_roll_view.dart';
 import 'tracker_view.dart';
 import 'script_view.dart';
@@ -22,7 +22,7 @@ class EditView extends StatelessWidget {
         // Editor Header View Switcher
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          color: DawTheme.panelHeader,
+          color: EatsTheme.panelHeader,
           child: Row(
             children: [
               Container(
@@ -34,7 +34,7 @@ class EditView extends StatelessWidget {
               Flexible(
                 child: Text(
                   isMobile ? track.name.toUpperCase() : 'EDITING: ${track.name.toUpperCase()}',
-                  style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
+                  style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 12),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
@@ -45,7 +45,7 @@ class EditView extends StatelessWidget {
                 label: isMobile ? null : 'PIANO ROLL',
                 icon: Icons.piano,
                 isActive: track.activeView == MusicViewType.pianoRoll,
-                activeColor: DawTheme.primaryCyan,
+                activeColor: EatsTheme.primaryCyan,
                 onTap: () => dawState.setTrackActiveView(track, MusicViewType.pianoRoll),
                 height: 32,
               ),
@@ -54,7 +54,7 @@ class EditView extends StatelessWidget {
                 label: isMobile ? null : 'TRACKER',
                 icon: Icons.view_column,
                 isActive: track.activeView == MusicViewType.tracker,
-                activeColor: DawTheme.secondaryMagenta,
+                activeColor: EatsTheme.secondaryMagenta,
                 onTap: () => dawState.setTrackActiveView(track, MusicViewType.tracker),
                 height: 32,
               ),
@@ -63,7 +63,7 @@ class EditView extends StatelessWidget {
                 label: isMobile ? null : 'SCRIPT',
                 icon: Icons.code,
                 isActive: track.activeView == MusicViewType.script,
-                activeColor: DawTheme.primaryCyan,
+                activeColor: EatsTheme.primaryCyan,
                 onTap: () => dawState.setTrackActiveView(track, MusicViewType.script),
                 height: 32,
               ),

@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/daw_state.dart';
-import '../theme/daw_theme.dart';
+import '../theme/eats_theme.dart';
 import '../utils/eats_file_helper.dart';
 import 'widgets/skeuomorphic_hardware_button.dart';
 import 'widgets/glowing_nixie_display.dart';
@@ -15,13 +15,13 @@ class TransportHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
+    final isGrungy = EatsTheme.currentPreset == EatsThemePreset.ateTrack;
 
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isGrungy ? const Color(0xFF24201C) : DawTheme.panelHeader,
+        color: isGrungy ? const Color(0xFF24201C) : EatsTheme.panelHeader,
         border: Border(
           bottom: BorderSide(
             color: isGrungy ? const Color(0xFF4A423A) : const Color(0xFF2B3245),
@@ -65,7 +65,7 @@ class TransportHeader extends StatelessWidget {
                     symbol: dawState.isPlaying ? TransportSymbol.pause : TransportSymbol.play,
                     color: dawState.isPlaying
                         ? const Color(0xFF0B0E14)
-                        : (DawTheme.isLight ? const Color(0xFF0F172A) : DawTheme.textSecondary),
+                        : (EatsTheme.isLight ? const Color(0xFF0F172A) : EatsTheme.textSecondary),
                     size: 13,
                   ),
                   isActive: dawState.isPlaying,
@@ -85,11 +85,11 @@ class TransportHeader extends StatelessWidget {
                 child: SkeuomorphicHardwareButton(
                   customChild: TransportSymbolWidget(
                     symbol: TransportSymbol.stop,
-                    color: DawTheme.isLight ? const Color(0xFF0F172A) : DawTheme.textSecondary,
+                    color: EatsTheme.isLight ? const Color(0xFF0F172A) : EatsTheme.textSecondary,
                     size: 12,
                   ),
                   isActive: false,
-                  activeColor: DawTheme.primaryCyan,
+                  activeColor: EatsTheme.primaryCyan,
                   onTap: dawState.stop,
                   height: 34,
                   width: 34,
@@ -107,7 +107,7 @@ class TransportHeader extends StatelessWidget {
                     symbol: TransportSymbol.record,
                     color: dawState.isRecording
                         ? const Color(0xFF0B0E14)
-                        : (DawTheme.isLight ? const Color(0xFF0F172A) : const Color(0xFFFF3B30)),
+                        : (EatsTheme.isLight ? const Color(0xFF0F172A) : const Color(0xFFFF3B30)),
                     size: 12,
                   ),
                   isActive: dawState.isRecording,
@@ -137,7 +137,7 @@ class TransportHeader extends StatelessWidget {
                 valueText: dawState.bpm.toStringAsFixed(0),
                 unit: 'BPM',
                 fontSize: 14,
-                glowColor: DawTheme.accentGold,
+                glowColor: EatsTheme.accentGold,
               ),
             ),
           ),
@@ -155,7 +155,7 @@ class TransportHeader extends StatelessWidget {
             child: SkeuomorphicHardwareButton(
               icon: Icons.save,
               isActive: false,
-              activeColor: DawTheme.accentGold,
+              activeColor: EatsTheme.accentGold,
               onTap: () => _showProjectHubDialog(context),
               height: 34,
               width: 36,
@@ -169,13 +169,13 @@ class TransportHeader extends StatelessWidget {
   }
 
   void _handleSave(BuildContext context) {
-    final code = dawState.exportToEatsLua();
-    final fileName = '${dawState.projectName.toLowerCase().replaceAll(' ', '_')}.eats.lua';
-    EatsFileHelper.saveEatsLuaFile(code, fileName);
+    final zipBytes = dawState.exportToEatsZip();
+    final fileName = '${dawState.projectName.toLowerCase().replaceAll(' ', '_')}.eats.zip';
+    EatsFileHelper.saveEatsZipFile(zipBytes, fileName);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Saved project as "$fileName"'),
-        backgroundColor: DawTheme.panelBackground,
+        backgroundColor: EatsTheme.panelBackground,
         duration: const Duration(seconds: 2),
       ),
     );
@@ -183,12 +183,12 @@ class TransportHeader extends StatelessWidget {
 
   void _handleLoad(BuildContext context) {
     if (kIsWeb) {
-      EatsFileHelper.pickEatsLuaFileWeb((content, fileName) {
-        dawState.loadFromEatsLua(content);
+      EatsFileHelper.pickEatsFileWeb((zipBytes, textContent, fileName) {
+        dawState.loadFromEatsZipOrLua(zipBytes: zipBytes, luaContent: textContent);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Loaded project "$fileName"'),
-            backgroundColor: DawTheme.panelBackground,
+            backgroundColor: EatsTheme.panelBackground,
             duration: const Duration(seconds: 2),
           ),
         );
@@ -204,15 +204,15 @@ class TransportHeader extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: DawTheme.panelBackground,
+          backgroundColor: EatsTheme.panelBackground,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Row(
             children: [
-              Icon(Icons.code, color: DawTheme.primaryCyan),
+              Icon(Icons.code, color: EatsTheme.primaryCyan),
               const SizedBox(width: 8),
               Text(
                 'EATS.LUA SCRIPT',
-                style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(color: EatsTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ],
           ),
@@ -223,9 +223,9 @@ class TransportHeader extends StatelessWidget {
               controller: controller,
               maxLines: null,
               expands: true,
-              style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: DawTheme.textPrimary),
+              style: TextStyle(fontFamily: 'monospace', fontSize: 12, color: EatsTheme.textPrimary),
               decoration: InputDecoration(
-                fillColor: DawTheme.controlBackground,
+                fillColor: EatsTheme.controlBackground,
                 filled: true,
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
               ),
@@ -239,10 +239,10 @@ class TransportHeader extends StatelessWidget {
                   const SnackBar(content: Text('Copied .eats.lua to clipboard!')),
                 );
               },
-              child: Text('COPY CODE', style: TextStyle(color: DawTheme.accentGold)),
+              child: Text('COPY CODE', style: TextStyle(color: EatsTheme.accentGold)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: DawTheme.primaryCyan),
+              style: ElevatedButton.styleFrom(backgroundColor: EatsTheme.primaryCyan),
               onPressed: () {
                 if (controller.text.isNotEmpty) {
                   dawState.loadFromEatsLua(controller.text);
@@ -256,7 +256,7 @@ class TransportHeader extends StatelessWidget {
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('CLOSE', style: TextStyle(color: DawTheme.textMuted)),
+              child: Text('CLOSE', style: TextStyle(color: EatsTheme.textMuted)),
             ),
           ],
         );
@@ -269,7 +269,7 @@ class TransportHeader extends StatelessWidget {
       context: context,
       builder: (context) {
         return AlertDialog(
-          backgroundColor: DawTheme.panelBackground,
+          backgroundColor: EatsTheme.panelBackground,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Row(
             children: [
@@ -277,7 +277,7 @@ class TransportHeader extends StatelessWidget {
               const SizedBox(width: 10),
               Text(
                 'EATSBITS SETTINGS',
-                style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 16),
+                style: TextStyle(color: EatsTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 16),
               ),
             ],
           ),
@@ -288,32 +288,32 @@ class TransportHeader extends StatelessWidget {
               children: [
                 Text(
                   'COLOR SCHEME & THEME PRESET',
-                  style: TextStyle(color: DawTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0),
+                  style: TextStyle(color: EatsTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0),
                 ),
                 const SizedBox(height: 10),
 
                 // Theme Presets Selector
-                ...DawThemePreset.values.map((preset) {
-                  final isSelected = DawTheme.currentPreset == preset;
+                ...EatsThemePreset.values.map((preset) {
+                  final isSelected = EatsTheme.currentPreset == preset;
 
                   String title = 'Ate Track (Default)';
-                  if (preset == DawThemePreset.cyanCrunch) title = 'Cyan Crunch';
-                  if (preset == DawThemePreset.midnightBites) title = 'Midnight Bites';
-                  if (preset == DawThemePreset.lightSnack) title = 'Light Snack';
+                  if (preset == EatsThemePreset.midnightBites) title = 'Midnight Bites';
+                  if (preset == EatsThemePreset.lightSnack) title = 'Light Snack';
+                  if (preset == EatsThemePreset.flatMinimal) title = 'Flat Minimal (Stock UI)';
 
                   return Container(
                     margin: const EdgeInsets.only(bottom: 6),
                     decoration: BoxDecoration(
-                      color: isSelected ? DawTheme.controlBackground : Colors.transparent,
+                      color: isSelected ? EatsTheme.controlBackground : Colors.transparent,
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: isSelected ? DawTheme.primaryCyan : DawTheme.textMuted.withOpacity(0.2)),
+                      border: Border.all(color: isSelected ? EatsTheme.primaryCyan : EatsTheme.textMuted.withOpacity(0.2)),
                     ),
                     child: ListTile(
-                      title: Text(title, style: TextStyle(color: isSelected ? DawTheme.primaryCyan : DawTheme.textPrimary, fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-                      leading: Radio<DawThemePreset>(
+                      title: Text(title, style: TextStyle(color: isSelected ? EatsTheme.primaryCyan : EatsTheme.textPrimary, fontSize: 12, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+                      leading: Radio<EatsThemePreset>(
                         value: preset,
-                        groupValue: DawTheme.currentPreset,
-                        activeColor: DawTheme.primaryCyan,
+                        groupValue: EatsTheme.currentPreset,
+                        activeColor: EatsTheme.primaryCyan,
                         onChanged: (val) {
                           if (val != null) {
                             dawState.setThemePreset(val);
@@ -329,14 +329,75 @@ class TransportHeader extends StatelessWidget {
                   );
                 }).toList(),
 
+                const SizedBox(height: 12),
+
+                Text(
+                  'VISUAL DECORATION FLAGS',
+                  style: TextStyle(color: EatsTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0),
+                ),
+                const SizedBox(height: 6),
+                StatefulBuilder(
+                  builder: (context, setDialogState) {
+                    return Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: EatsTheme.controlBackground,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: EatsTheme.panelHeader),
+                      ),
+                      child: Column(
+                        children: [
+                          SwitchListTile(
+                            dense: true,
+                            title: const Text('Skeuomorphic Hardware Styling', style: TextStyle(fontSize: 11)),
+                            value: EatsTheme.enableSkeuomorphism,
+                            activeColor: EatsTheme.primaryCyan,
+                            onChanged: (val) {
+                              setDialogState(() {
+                                EatsTheme.enableSkeuomorphism = val;
+                                dawState.notifyState();
+                              });
+                            },
+                          ),
+                          SwitchListTile(
+                            dense: true,
+                            title: const Text('Glass Display Glares & CRT Highlights', style: TextStyle(fontSize: 11)),
+                            value: EatsTheme.enableGlassGlares,
+                            activeColor: EatsTheme.primaryCyan,
+                            onChanged: (val) {
+                              setDialogState(() {
+                                EatsTheme.enableGlassGlares = val;
+                                dawState.notifyState();
+                              });
+                            },
+                          ),
+                          SwitchListTile(
+                            dense: true,
+                            title: const Text('3D Panel Drop Shadows', style: TextStyle(fontSize: 11)),
+                            value: EatsTheme.enablePanelShadows,
+                            activeColor: EatsTheme.primaryCyan,
+                            onChanged: (val) {
+                              setDialogState(() {
+                                EatsTheme.enablePanelShadows = val;
+                                dawState.notifyState();
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+
                 Text(
                   'PROJECT MANAGEMENT (.EATS.LUA)',
-                  style: TextStyle(color: DawTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0),
+                  style: TextStyle(color: EatsTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0),
                 ),
                 const SizedBox(height: 8),
                 ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: DawTheme.primaryCyan,
+                    backgroundColor: EatsTheme.primaryCyan,
                     foregroundColor: Colors.black,
                     padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
@@ -352,21 +413,21 @@ class TransportHeader extends StatelessWidget {
 
                 Text(
                   'AUDIO ENGINE CONFIG',
-                  style: TextStyle(color: DawTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0),
+                  style: TextStyle(color: EatsTheme.textSecondary, fontWeight: FontWeight.bold, fontSize: 11, letterSpacing: 1.0),
                 ),
 
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(color: DawTheme.controlBackground, borderRadius: BorderRadius.circular(6)),
+                  decoration: BoxDecoration(color: EatsTheme.controlBackground, borderRadius: BorderRadius.circular(6)),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('• Clock: WebAudio Hardware Scheduler (Look-Ahead 120ms)', style: TextStyle(color: DawTheme.textPrimary, fontSize: 10)),
+                      Text('• Clock: WebAudio Hardware Scheduler (Look-Ahead 120ms)', style: TextStyle(color: EatsTheme.textPrimary, fontSize: 10)),
                       const SizedBox(height: 4),
-                      Text('• Sample Rate: 44.1 kHz / 48.0 kHz Hardware Native', style: TextStyle(color: DawTheme.textPrimary, fontSize: 10)),
+                      Text('• Sample Rate: 44.1 kHz / 48.0 kHz Hardware Native', style: TextStyle(color: EatsTheme.textPrimary, fontSize: 10)),
                       const SizedBox(height: 4),
-                      Text('• Script Compiler: Embedded Lua 5.4 / LuaJIT Live Engine', style: TextStyle(color: DawTheme.textPrimary, fontSize: 10)),
+                      Text('• Script Compiler: Embedded Lua 5.4 / LuaJIT Live Engine', style: TextStyle(color: EatsTheme.textPrimary, fontSize: 10)),
                     ],
                   ),
                 ),
@@ -376,7 +437,7 @@ class TransportHeader extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text('CLOSE', style: TextStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold)),
+              child: Text('CLOSE', style: TextStyle(color: EatsTheme.primaryCyan, fontWeight: FontWeight.bold)),
             ),
           ],
         );
@@ -390,7 +451,7 @@ class TransportHeader extends StatelessWidget {
       title: 'Tempo (BPM)',
       initialValue: dawState.bpm.toStringAsFixed(0),
       minMaxHint: 'Range: 40 - 240 BPM',
-      accentColor: DawTheme.primaryCyan,
+      accentColor: EatsTheme.primaryCyan,
       onResetDefault: () => dawState.setBpm(120.0),
       onSubmit: (text) {
         final val = double.tryParse(text);
@@ -410,7 +471,7 @@ class TransportHeader extends StatelessWidget {
         color: const Color(0xFF090A0D),
         borderRadius: BorderRadius.circular(4),
         border: Border.all(
-          color: DawTheme.isLight ? Colors.black26 : const Color(0xFF2E3445),
+          color: EatsTheme.isLight ? Colors.black26 : const Color(0xFF2E3445),
           width: 1.2,
         ),
         boxShadow: [
@@ -455,10 +516,10 @@ class TransportHeader extends StatelessWidget {
       context: context,
       builder: (context) {
         return Dialog(
-          backgroundColor: DawTheme.panelBackground,
+          backgroundColor: EatsTheme.panelBackground,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: DawTheme.primaryCyan.withOpacity(0.5), width: 1.5),
+            side: BorderSide(color: EatsTheme.primaryCyan.withOpacity(0.5), width: 1.5),
           ),
           child: Container(
             width: 440,
@@ -470,12 +531,12 @@ class TransportHeader extends StatelessWidget {
                 // Header Title
                 Row(
                   children: [
-                    Icon(Icons.folder_special, color: DawTheme.primaryCyan, size: 22),
+                    Icon(Icons.folder_special, color: EatsTheme.primaryCyan, size: 22),
                     const SizedBox(width: 8),
                     Text(
                       'PROJECT & COMPOSITION HUB',
-                      style: DawTheme.getPrimaryFontStyle(
-                        color: DawTheme.primaryCyan,
+                      style: EatsTheme.getPrimaryFontStyle(
+                        color: EatsTheme.primaryCyan,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
@@ -488,23 +549,23 @@ class TransportHeader extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: DawTheme.controlBackground,
+                    color: EatsTheme.controlBackground,
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: DawTheme.panelHeader),
+                    border: Border.all(color: EatsTheme.panelHeader),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('COMPOSITION DETAILS', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                      Text('COMPOSITION DETAILS', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 8),
 
                       // Title input
                       TextField(
                         controller: titleController,
-                        style: TextStyle(color: DawTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: EatsTheme.textPrimary, fontSize: 13, fontWeight: FontWeight.bold),
                         decoration: InputDecoration(
                           labelText: 'Title / Song Name',
-                          labelStyle: TextStyle(color: DawTheme.textMuted, fontSize: 11),
+                          labelStyle: TextStyle(color: EatsTheme.textMuted, fontSize: 11),
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
@@ -516,10 +577,10 @@ class TransportHeader extends StatelessWidget {
                       // Author input
                       TextField(
                         controller: authorController,
-                        style: TextStyle(color: DawTheme.textPrimary, fontSize: 13),
+                        style: TextStyle(color: EatsTheme.textPrimary, fontSize: 13),
                         decoration: InputDecoration(
                           labelText: 'Author / Creator',
-                          labelStyle: TextStyle(color: DawTheme.textMuted, fontSize: 11),
+                          labelStyle: TextStyle(color: EatsTheme.textMuted, fontSize: 11),
                           isDense: true,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
@@ -532,13 +593,13 @@ class TransportHeader extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: DawTheme.primaryCyan.withOpacity(0.15),
+                              color: EatsTheme.primaryCyan.withOpacity(0.15),
                               borderRadius: BorderRadius.circular(4),
                             ),
-                            child: Text('AUDIO COMPOSITION', style: TextStyle(color: DawTheme.primaryCyan, fontSize: 9, fontWeight: FontWeight.bold)),
+                            child: Text('AUDIO COMPOSITION', style: TextStyle(color: EatsTheme.primaryCyan, fontSize: 9, fontWeight: FontWeight.bold)),
                           ),
                           const SizedBox(width: 6),
-                          Text('• WebAudio / Lua Live Scripting', style: TextStyle(color: DawTheme.textMuted, fontSize: 10)),
+                          Text('• WebAudio / Lua Live Scripting', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10)),
                         ],
                       ),
                     ],
@@ -546,7 +607,7 @@ class TransportHeader extends StatelessWidget {
                 ),
 
                 const SizedBox(height: 14),
-                Text('IMPORT / EXPORT & ACTIONS', style: TextStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
+                Text('IMPORT / EXPORT & ACTIONS', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
 
                 // 2x2 Grid of Actions
@@ -556,7 +617,7 @@ class TransportHeader extends StatelessWidget {
                       child: _buildHubActionButton(
                         icon: Icons.save,
                         label: 'SAVE (.eats.lua)',
-                        color: DawTheme.accentGold,
+                        color: EatsTheme.accentGold,
                         onTap: () {
                           Navigator.of(context).pop();
                           _handleSave(context);
@@ -568,7 +629,7 @@ class TransportHeader extends StatelessWidget {
                       child: _buildHubActionButton(
                         icon: Icons.folder_open,
                         label: 'LOAD (.eats.lua)',
-                        color: DawTheme.primaryCyan,
+                        color: EatsTheme.primaryCyan,
                         onTap: () {
                           Navigator.of(context).pop();
                           _handleLoad(context);
@@ -584,7 +645,7 @@ class TransportHeader extends StatelessWidget {
                       child: _buildHubActionButton(
                         icon: Icons.code,
                         label: 'LUA CODE SCRIPT',
-                        color: DawTheme.secondaryMagenta,
+                        color: EatsTheme.secondaryMagenta,
                         onTap: () {
                           Navigator.of(context).pop();
                           _showCodeViewDialog(context);
@@ -596,7 +657,7 @@ class TransportHeader extends StatelessWidget {
                       child: _buildHubActionButton(
                         icon: Icons.download,
                         label: 'EXPORT WAV',
-                        color: DawTheme.accentGreen,
+                        color: EatsTheme.accentGreen,
                         onTap: () {
                           Navigator.of(context).pop();
                           dawState.exportWavSong();
@@ -612,7 +673,7 @@ class TransportHeader extends StatelessWidget {
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () => Navigator.of(context).pop(),
-                    child: Text('CLOSE', style: TextStyle(color: DawTheme.textMuted)),
+                    child: Text('CLOSE', style: TextStyle(color: EatsTheme.textMuted)),
                   ),
                 ),
               ],
@@ -656,15 +717,15 @@ class TransportHeader extends StatelessWidget {
   Widget _buildMeterBar(String label, double level) {
     return Row(
       children: [
-        Text(label, style: TextStyle(color: DawTheme.textMuted, fontSize: 8)),
+        Text(label, style: TextStyle(color: EatsTheme.textMuted, fontSize: 8)),
         const SizedBox(width: 4),
         Expanded(
           child: ClipRRect(
             borderRadius: BorderRadius.circular(2),
             child: LinearProgressIndicator(
               value: level,
-              backgroundColor: DawTheme.controlBackground,
-              color: level > 0.85 ? DawTheme.muteColor : (level > 0.6 ? DawTheme.accentGold : DawTheme.accentGreen),
+              backgroundColor: EatsTheme.controlBackground,
+              color: level > 0.85 ? EatsTheme.muteColor : (level > 0.6 ? EatsTheme.accentGold : EatsTheme.accentGreen),
               minHeight: 6,
             ),
           ),
@@ -713,7 +774,7 @@ class EatsBitsMonsterIcon extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: DawTheme.primaryCyan,
+        color: EatsTheme.primaryCyan,
         borderRadius: BorderRadius.circular(4),
       ),
       child: Center(
@@ -747,7 +808,7 @@ class _EatsBitsMonsterPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     // Eye
-    final eyePaint = Paint()..color = DawTheme.primaryCyan;
+    final eyePaint = Paint()..color = EatsTheme.primaryCyan;
     canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.28), size.width * 0.08, eyePaint);
 
     // Eating bits

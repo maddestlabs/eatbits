@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/daw_theme.dart';
+import '../../theme/eats_theme.dart';
 import 'skeuomorphic_hardware_slider.dart';
 
 class EatsBitsSlider extends StatelessWidget {
@@ -37,7 +37,7 @@ class EatsBitsSlider extends StatelessWidget {
       defaultValue: defaultValue,
       label: label,
       onChanged: onChanged,
-      activeColor: activeColor ?? DawTheme.primaryCyan,
+      activeColor: activeColor ?? EatsTheme.primaryCyan,
       formatValue: formatValue,
     );
   }

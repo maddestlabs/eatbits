@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/daw_theme.dart';
+import '../../theme/eats_theme.dart';
 
 /// Shows a small, compact dialog for entering numeric or parameter values manually.
 void showCompactValueEditDialog({
@@ -11,14 +11,14 @@ void showCompactValueEditDialog({
   required ValueChanged<String> onSubmit,
   VoidCallback? onResetDefault,
 }) {
-  final effectiveAccent = accentColor ?? DawTheme.primaryCyan;
+  final effectiveAccent = accentColor ?? EatsTheme.primaryCyan;
   final controller = TextEditingController(text: initialValue);
 
   showDialog(
     context: context,
     builder: (context) {
       return Dialog(
-        backgroundColor: DawTheme.panelBackground,
+        backgroundColor: EatsTheme.panelBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
           side: BorderSide(color: effectiveAccent.withOpacity(0.6), width: 1.5),
@@ -40,7 +40,7 @@ void showCompactValueEditDialog({
                       title.toUpperCase(),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: DawTheme.getPrimaryFontStyle(
+                      style: EatsTheme.getPrimaryFontStyle(
                         color: effectiveAccent,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
@@ -71,7 +71,7 @@ void showCompactValueEditDialog({
                 const SizedBox(height: 2),
                 Text(
                   minMaxHint,
-                  style: TextStyle(color: DawTheme.textMuted, fontSize: 10),
+                  style: TextStyle(color: EatsTheme.textMuted, fontSize: 10),
                 ),
               ],
               const SizedBox(height: 10),
@@ -81,7 +81,7 @@ void showCompactValueEditDialog({
                 controller: controller,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
                 autofocus: true,
-                style: DawTheme.getDisplayFontStyle(
+                style: EatsTheme.getDisplayFontStyle(
                   color: effectiveAccent,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -89,7 +89,7 @@ void showCompactValueEditDialog({
                 decoration: InputDecoration(
                   isDense: true,
                   filled: true,
-                  fillColor: DawTheme.controlBackground,
+                  fillColor: EatsTheme.controlBackground,
                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
@@ -118,7 +118,7 @@ void showCompactValueEditDialog({
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    child: Text('CANCEL', style: TextStyle(color: DawTheme.textMuted, fontSize: 11)),
+                    child: Text('CANCEL', style: TextStyle(color: EatsTheme.textMuted, fontSize: 11)),
                   ),
                   const SizedBox(width: 8),
                   ElevatedButton(
@@ -128,7 +128,7 @@ void showCompactValueEditDialog({
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: effectiveAccent,
-                      foregroundColor: DawTheme.isLight ? Colors.white : Colors.black,
+                      foregroundColor: EatsTheme.isLight ? Colors.white : Colors.black,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,

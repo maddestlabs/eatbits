@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'models/daw_state.dart';
-import 'theme/daw_theme.dart';
+import 'theme/eats_theme.dart';
 import 'ui/arranger_view.dart';
 import 'ui/eatsbits_loading_screen.dart';
 import 'ui/edit_view.dart';
@@ -43,7 +43,7 @@ class _WrenDawAppState extends State<WrenDawApp> {
         return MaterialApp(
           title: 'Eatsbits',
           debugShowCheckedModeBanner: false,
-          theme: DawTheme.themeData,
+          theme: EatsTheme.themeData,
           home: AnimatedSwitcher(
             duration: const Duration(milliseconds: 350),
             child: _isInitialized
@@ -75,7 +75,7 @@ class DawMainShell extends StatefulWidget {
 class _DawMainShellState extends State<DawMainShell> {
   @override
   Widget build(BuildContext context) {
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
+    final isGrungy = EatsTheme.currentPreset == EatsThemePreset.ateTrack;
 
     return CallbackShortcuts(
       bindings: {
@@ -91,67 +91,67 @@ class _DawMainShellState extends State<DawMainShell> {
         },
       },
       child: Scaffold(
-      backgroundColor: DawTheme.backgroundDark,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Transport Header (Always Visible)
-            TransportHeader(dawState: widget.dawState),
+        backgroundColor: EatsTheme.backgroundDark,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Top Transport Header (Always Visible)
+              TransportHeader(dawState: widget.dawState),
 
-            // Main Studio Workbench Body
-            Expanded(
-              child: Container(
-                color: DawTheme.backgroundDark,
-                child: IndexedStack(
-                  index: widget.dawState.activeTabIndex,
-                  children: [
-                    ArrangerView(dawState: widget.dawState),
-                    EditView(dawState: widget.dawState),
-                    TrackInspectorView(dawState: widget.dawState),
-                    MixerView(dawState: widget.dawState),
-                    LuaWorkbenchView(dawState: widget.dawState),
-                  ],
+              // Main Studio Workbench Body
+              Expanded(
+                child: Container(
+                  color: EatsTheme.backgroundDark,
+                  child: IndexedStack(
+                    index: widget.dawState.activeTabIndex,
+                    children: [
+                      ArrangerView(dawState: widget.dawState),
+                      EditView(dawState: widget.dawState),
+                      TrackInspectorView(dawState: widget.dawState),
+                      MixerView(dawState: widget.dawState),
+                      LuaWorkbenchView(dawState: widget.dawState),
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // Virtual Piano Keyboard Drawer (Pull tab right above bottom panel)
-            VirtualPianoKeyboard(dawState: widget.dawState),
-          ],
-        ),
-      ),
-
-      // Hardware Mechanical Navigation Control Strip
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-        decoration: BoxDecoration(
-          color: isGrungy ? const Color(0xFF24201C) : DawTheme.panelHeader,
-          border: Border(
-            top: BorderSide(
-              color: isGrungy ? const Color(0xFF4A423A) : DawTheme.panelHeader,
-              width: 1.5,
-            ),
+              // Virtual Piano Keyboard Drawer (Pull tab right above bottom panel)
+              VirtualPianoKeyboard(dawState: widget.dawState),
+            ],
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.5),
-              blurRadius: 6,
-              offset: const Offset(0, -2),
-            ),
-          ],
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavButton(context, 0, 'ARRANGER', Icons.view_timeline),
-            _buildNavButton(context, 1, 'EDIT', Icons.edit_note),
-            _buildNavButton(context, 2, 'TRACK', Icons.settings_input_component),
-            _buildNavButton(context, 3, 'MIXER', Icons.equalizer),
-            _buildNavButton(context, 4, 'SCRIPTS', Icons.code),
-          ],
+
+        // Hardware Mechanical Navigation Control Strip
+        bottomNavigationBar: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          decoration: BoxDecoration(
+            color: isGrungy ? const Color(0xFF24201C) : EatsTheme.panelHeader,
+            border: Border(
+              top: BorderSide(
+                color: isGrungy ? const Color(0xFF4A423A) : EatsTheme.panelHeader,
+                width: 1.5,
+              ),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.5),
+                blurRadius: 6,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildNavButton(context, 0, 'ARRANGER', Icons.view_timeline),
+              _buildNavButton(context, 1, 'EDIT', Icons.edit_note),
+              _buildNavButton(context, 2, 'TRACK', Icons.settings_input_component),
+              _buildNavButton(context, 3, 'MIXER', Icons.equalizer),
+              _buildNavButton(context, 4, 'SCRIPTS', Icons.code),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
@@ -166,7 +166,7 @@ class _DawMainShellState extends State<DawMainShell> {
           label: isMobile ? null : label,
           icon: icon,
           isActive: isSelected,
-          activeColor: DawTheme.primaryCyan,
+          activeColor: EatsTheme.primaryCyan,
           onTap: () => setState(() => widget.dawState.activeTabIndex = index),
           height: 40,
           padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),

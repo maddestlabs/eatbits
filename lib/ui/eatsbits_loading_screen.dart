@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-import '../theme/daw_theme.dart';
+import '../theme/eats_theme.dart';
 import '../utils/html_preloader_helper.dart';
 
 /// Skeuomorphic vintage rack panel loading screen for Eatsbits startup.
@@ -84,12 +84,12 @@ class _EatsbitsLoadingScreenState extends State<EatsbitsLoadingScreen> with Sing
 
   @override
   Widget build(BuildContext context) {
-    final isAmberTheme = DawTheme.currentPreset == DawThemePreset.ateTrack;
-    final primaryColor = DawTheme.primaryCyan;
+    final isAmberTheme = EatsTheme.currentPreset == EatsThemePreset.ateTrack;
+    final primaryColor = EatsTheme.primaryCyan;
     const accentAmber = Color(0xFFFF8C00);
 
     return Scaffold(
-      backgroundColor: DawTheme.backgroundDark,
+      backgroundColor: EatsTheme.backgroundDark,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -97,10 +97,10 @@ class _EatsbitsLoadingScreenState extends State<EatsbitsLoadingScreen> with Sing
             child: Container(
               constraints: const BoxConstraints(maxWidth: 540),
               decoration: BoxDecoration(
-                color: DawTheme.panelBackground,
+                color: EatsTheme.panelBackground,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: isAmberTheme ? const Color(0xFF4A423A) : DawTheme.panelHeader,
+                  color: isAmberTheme ? const Color(0xFF4A423A) : EatsTheme.panelHeader,
                   width: 2.0,
                 ),
                 boxShadow: [
@@ -153,7 +153,7 @@ class _EatsbitsLoadingScreenState extends State<EatsbitsLoadingScreen> with Sing
                               children: [
                                 Text(
                                   'EATSBITS',
-                                  style: DawTheme.getDisplayFontStyle(
+                                  style: EatsTheme.getDisplayFontStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.w900,
                                     color: accentAmber,
@@ -161,10 +161,10 @@ class _EatsbitsLoadingScreenState extends State<EatsbitsLoadingScreen> with Sing
                                 ),
                                 Text(
                                   'MODEL 808-LUA // HARDWARE RACK SYSTEM',
-                                  style: DawTheme.getPrimaryFontStyle(
+                                  style: EatsTheme.getPrimaryFontStyle(
                                     fontSize: 9,
                                     fontWeight: FontWeight.bold,
-                                    color: DawTheme.textSecondary,
+                                    color: EatsTheme.textSecondary,
                                   ),
                                 ),
                               ],
@@ -261,7 +261,7 @@ class _EatsbitsLoadingScreenState extends State<EatsbitsLoadingScreen> with Sing
                             children: [
                               Text(
                                 '> ',
-                                style: DawTheme.getDisplayFontStyle(
+                                style: EatsTheme.getDisplayFontStyle(
                                   fontSize: 12,
                                   color: accentAmber,
                                   fontWeight: FontWeight.bold,
@@ -270,16 +270,16 @@ class _EatsbitsLoadingScreenState extends State<EatsbitsLoadingScreen> with Sing
                               Expanded(
                                 child: Text(
                                   _initSteps[_currentStepIndex],
-                                  style: DawTheme.getDisplayFontStyle(
+                                  style: EatsTheme.getDisplayFontStyle(
                                     fontSize: 11,
-                                    color: DawTheme.textPrimary,
+                                    color: EatsTheme.textPrimary,
                                   ),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               Text(
                                 '${(_progress * 100).toInt()}%',
-                                style: DawTheme.getDisplayFontStyle(
+                                style: EatsTheme.getDisplayFontStyle(
                                   fontSize: 11,
                                   color: primaryColor,
                                   fontWeight: FontWeight.bold,
@@ -350,10 +350,10 @@ class _EatsbitsLoadingScreenState extends State<EatsbitsLoadingScreen> with Sing
         const SizedBox(height: 6),
         Text(
           label,
-          style: DawTheme.getDisplayFontStyle(
+          style: EatsTheme.getDisplayFontStyle(
             fontSize: 8,
             fontWeight: FontWeight.bold,
-            color: isOn ? DawTheme.textPrimary : DawTheme.textMuted,
+            color: isOn ? EatsTheme.textPrimary : EatsTheme.textMuted,
           ),
         ),
       ],

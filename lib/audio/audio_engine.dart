@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import '../models/track_model.dart';
 import '../lua/lua_engine.dart';
 import 'poly_synth.dart';
+import 'sampler_engine.dart';
 
 import 'audio_engine_stub.dart'
     if (dart.library.js_interop) 'audio_engine_web.dart';
@@ -177,24 +178,32 @@ class AudioEngine {
     List<double> pcmBuffer;
 
     if (track.type == TrackType.sampler) {
-      switch (track.sampleName.toLowerCase()) {
-        case 'snare':
-          pcmBuffer = PolySynth.generateSnareBuffer();
-          break;
-        case 'hihat':
-        case 'hi-hat':
-          pcmBuffer = PolySynth.generateHiHatBuffer(open: false);
-          break;
-        case 'openhat':
-          pcmBuffer = PolySynth.generateHiHatBuffer(open: true);
-          break;
-        case 'clap':
-          pcmBuffer = PolySynth.generateClapBuffer();
-          break;
-        case 'kick':
-        default:
-          pcmBuffer = PolySynth.generateKickBuffer();
-          break;
+      final customBuffer = SamplerEngine.instance.getPitchShiftedPcm(
+        track.sampleName,
+        (midiNote - 60).toDouble(),
+      );
+      if (customBuffer.isNotEmpty) {
+        pcmBuffer = customBuffer;
+      } else {
+        switch (track.sampleName.toLowerCase()) {
+          case 'snare':
+            pcmBuffer = PolySynth.generateSnareBuffer();
+            break;
+          case 'hihat':
+          case 'hi-hat':
+            pcmBuffer = PolySynth.generateHiHatBuffer(open: false);
+            break;
+          case 'openhat':
+            pcmBuffer = PolySynth.generateHiHatBuffer(open: true);
+            break;
+          case 'clap':
+            pcmBuffer = PolySynth.generateClapBuffer();
+            break;
+          case 'kick':
+          default:
+            pcmBuffer = PolySynth.generateKickBuffer();
+            break;
+        }
       }
     } else if (track.type == TrackType.luaScript) {
       pcmBuffer = List<double>.filled((44100 * durationSec).toInt(), 0.0);

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Eatsbits - Mobile-First, Web-First Audio Workstation (DAW) with Lua Scripting and WebAudio.">
+  <meta name="description"
+    content="Eatsbits - Mobile-First, Web-First Audio Workstation (DAW) with Lua Scripting and WebAudio.">
 
   <!-- Mobile & iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -19,11 +21,12 @@
   <link rel="shortcut icon" type="image/png" href="favicon.png">
   <link rel="icon" type="image/svg+xml" href="app_icon.svg">
 
-  <title>Eatsbits DAW</title>
+  <title>Eatsbits</title>
   <link rel="manifest" href="manifest.json">
 
   <style>
-    html, body {
+    html,
+    body {
       margin: 0;
       padding: 0;
       width: 100%;
@@ -59,7 +62,7 @@
       border: 2px solid #332F2A;
       border-radius: 12px;
       padding: 32px 48px;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.08);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.08);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -116,21 +119,39 @@
       animation: vuPulse 1.2s infinite ease-in-out;
     }
 
-    .vu-segment:nth-child(1) { animation-delay: 0.0s; }
-    .vu-segment:nth-child(2) { animation-delay: 0.15s; }
-    .vu-segment:nth-child(3) { animation-delay: 0.3s; }
-    .vu-segment:nth-child(4) { animation-delay: 0.45s; }
-    .vu-segment:nth-child(5) { animation-delay: 0.6s; }
+    .vu-segment:nth-child(1) {
+      animation-delay: 0.0s;
+    }
+
+    .vu-segment:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .vu-segment:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .vu-segment:nth-child(4) {
+      animation-delay: 0.45s;
+    }
+
+    .vu-segment:nth-child(5) {
+      animation-delay: 0.6s;
+    }
 
     @keyframes vuPulse {
-      0%, 100% {
+
+      0%,
+      100% {
         background-color: #26221D;
         box-shadow: none;
       }
+
       40% {
         background-color: #21F4E8;
         box-shadow: 0 0 10px #21F4E8;
       }
+
       70% {
         background-color: #FF8C00;
         box-shadow: 0 0 10px #FF8C00;
@@ -145,11 +166,19 @@
     }
 
     @keyframes textBlink {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 1.0; }
+
+      0%,
+      100% {
+        opacity: 0.4;
+      }
+
+      50% {
+        opacity: 1.0;
+      }
     }
   </style>
 </head>
+
 <body>
   <div id="app-loading-screen">
     <div class="eatsbits-loader-box">
@@ -172,11 +201,11 @@
   </div>
 
   <script>
-    window.hideAppLoadingScreen = function() {
+    window.hideAppLoadingScreen = function () {
       var loader = document.getElementById('app-loading-screen');
       if (loader && !loader.classList.contains('fade-out')) {
         loader.classList.add('fade-out');
-        setTimeout(function() {
+        setTimeout(function () {
           if (loader.parentNode) {
             loader.parentNode.removeChild(loader);
           }
@@ -186,5 +215,5 @@
   </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
-</html>
 
+</html>

@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import '../../theme/daw_theme.dart';
+import '../../theme/eats_theme.dart';
 import 'compact_value_dialog.dart';
 
 /// A realistic skeuomorphic metallic hardware knob control.
@@ -40,7 +40,7 @@ class _SkeuomorphicHardwareKnobState extends State<SkeuomorphicHardwareKnob> {
 
   @override
   Widget build(BuildContext context) {
-    final activeColor = widget.accentColor ?? DawTheme.primaryCyan;
+    final activeColor = widget.accentColor ?? EatsTheme.primaryCyan;
     final normalized = ((widget.value - widget.min) / (widget.max - widget.min)).clamp(0.0, 1.0);
     final displayVal = widget.formatValue != null
         ? widget.formatValue!(widget.value)
@@ -52,10 +52,10 @@ class _SkeuomorphicHardwareKnobState extends State<SkeuomorphicHardwareKnob> {
         if (widget.label != null) ...[
           Text(
             widget.label!.toUpperCase(),
-            style: DawTheme.getDisplayFontStyle(
+            style: EatsTheme.getDisplayFontStyle(
               fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: DawTheme.textSecondary,
+              color: EatsTheme.textSecondary,
             ),
           ),
           const SizedBox(height: 4),
@@ -84,7 +84,7 @@ class _SkeuomorphicHardwareKnobState extends State<SkeuomorphicHardwareKnob> {
                 painter: _KnobPainter(
                   normalizedValue: normalized,
                   accentColor: activeColor,
-                  isGrungyTheme: DawTheme.currentPreset == DawThemePreset.ateTrack,
+                  isGrungyTheme: EatsTheme.currentPreset == EatsThemePreset.ateTrack,
                 ),
               ),
             ),
@@ -100,7 +100,7 @@ class _SkeuomorphicHardwareKnobState extends State<SkeuomorphicHardwareKnob> {
           ),
           child: Text(
             displayVal,
-            style: DawTheme.getDisplayFontStyle(
+            style: EatsTheme.getDisplayFontStyle(
               fontSize: 9,
               fontWeight: FontWeight.bold,
               color: activeColor,
@@ -113,7 +113,7 @@ class _SkeuomorphicHardwareKnobState extends State<SkeuomorphicHardwareKnob> {
 
   void _showManualEditDialog(BuildContext context) {
     final displayVal = widget.formatValue != null ? widget.formatValue!(widget.value) : widget.value.toStringAsFixed(2);
-    final accent = widget.accentColor ?? DawTheme.primaryCyan;
+    final accent = widget.accentColor ?? EatsTheme.primaryCyan;
 
     showCompactValueEditDialog(
       context: context,
@@ -152,6 +152,31 @@ class _KnobPainter extends CustomPainter {
     const startAngle = 0.75 * math.pi;
     const totalAngleRange = 1.5 * math.pi;
     final currentAngle = startAngle + (normalizedValue.clamp(0.0, 1.0) * totalAngleRange);
+
+    // Stock Minimalist Flat Knob Path (Zero visual cruft)
+    if (!EatsTheme.enableSkeuomorphism) {
+      final knobRadius = outerRadius * 0.75;
+      final flatBgPaint = Paint()
+        ..color = EatsTheme.controlBackground
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(center, knobRadius, flatBgPaint);
+
+      final flatBorderPaint = Paint()
+        ..color = accentColor.withOpacity(0.5)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5;
+      canvas.drawCircle(center, knobRadius, flatBorderPaint);
+
+      final p1 = center + Offset(math.cos(currentAngle) * (knobRadius * 0.20), math.sin(currentAngle) * (knobRadius * 0.20));
+      final p2 = center + Offset(math.cos(currentAngle) * (knobRadius * 0.75), math.sin(currentAngle) * (knobRadius * 0.75));
+
+      final indicatorPaint = Paint()
+        ..color = accentColor
+        ..strokeWidth = 2.5
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(p1, p2, indicatorPaint);
+      return;
+    }
 
     // ----------------------------------------------------
     // 1. Outer Arc Value Track (Arc Meter around Perimeter)

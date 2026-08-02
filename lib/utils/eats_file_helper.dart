@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 
@@ -5,20 +6,38 @@ import 'eats_file_helper_stub.dart'
     if (dart.library.html) 'eats_file_helper_web.dart';
 
 class EatsFileHelper {
-  /// Save/Download `.eats.lua` file.
+  /// Save/Download `.eats.zip` binary archive.
+  static void saveEatsZipFile(Uint8List zipBytes, String fileName) {
+    if (kIsWeb) {
+      downloadWebZipImpl(zipBytes, fileName);
+    } else {
+      debugPrint('Desktop/Mobile zip file saving fallback');
+    }
+  }
+
+  /// Save/Download legacy `.eats.lua` file.
   static void saveEatsLuaFile(String content, String fileName) {
     if (kIsWeb) {
       downloadWebFileImpl(content, fileName);
     } else {
-      // On desktop/mobile, copy to clipboard as immediate fallback
       Clipboard.setData(ClipboardData(text: content));
     }
   }
 
-  /// Triggers a web file input dialog for picking a `.eats.lua` file.
-  static void pickEatsLuaFileWeb(Function(String content, String fileName) onFileLoaded) {
+  /// Triggers a web file input dialog for picking `.eats.zip`, `.zip`, `.eats.lua`, or `.txt` files.
+  static void pickEatsFileWeb(
+      Function(Uint8List? zipBytes, String? textContent, String fileName) onFileLoaded) {
     if (kIsWeb) {
-      pickEatsLuaFileWebImpl(onFileLoaded);
+      pickEatsFileWebImpl(onFileLoaded);
     }
+  }
+
+  /// Backward compatibility for text-only picking.
+  static void pickEatsLuaFileWeb(Function(String content, String fileName) onFileLoaded) {
+    pickEatsFileWeb((zipBytes, textContent, fileName) {
+      if (textContent != null) {
+        onFileLoaded(textContent, fileName);
+      }
+    });
   }
 }

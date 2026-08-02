@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../theme/daw_theme.dart';
+import '../../theme/eats_theme.dart';
 
 /// A realistic skeuomorphic mechanical push button with 3D bevels,
 /// tactile pressed state animation, and glowing LED backlight.
@@ -40,16 +40,16 @@ class _SkeuomorphicHardwareButtonState extends State<SkeuomorphicHardwareButton>
 
   @override
   Widget build(BuildContext context) {
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
-    final ledColor = widget.activeColor ?? (isGrungy ? const Color(0xFFFF8C00) : DawTheme.primaryCyan);
+    final isGrungy = EatsTheme.currentPreset == EatsThemePreset.ateTrack;
+    final ledColor = widget.activeColor ?? (isGrungy ? const Color(0xFFFF8C00) : EatsTheme.primaryCyan);
     final btnColor = widget.isActive
         ? Color.alphaBlend(
             ledColor.withOpacity(isGrungy ? 0.45 : 0.35),
-            isGrungy ? const Color(0xFF38322B) : DawTheme.panelHeader,
+            isGrungy ? const Color(0xFF38322B) : EatsTheme.panelHeader,
           )
         : (isGrungy
             ? (_isPressed ? const Color(0xFF1E1B18) : const Color(0xFF38322B))
-            : (_isPressed ? DawTheme.controlBackground : DawTheme.panelHeader));
+            : (_isPressed ? EatsTheme.controlBackground : EatsTheme.panelHeader));
 
     return GestureDetector(
       onTapDown: (_) => setState(() => _isPressed = true),
@@ -63,17 +63,29 @@ class _SkeuomorphicHardwareButtonState extends State<SkeuomorphicHardwareButton>
         height: widget.height,
         width: widget.width,
         padding: widget.padding,
-        transform: Matrix4.translationValues(0, _isPressed ? 2.0 : 0.0, 0),
+        transform: EatsTheme.enableSkeuomorphism ? Matrix4.translationValues(0, _isPressed ? 2.0 : 0.0, 0) : null,
         decoration: BoxDecoration(
           borderRadius: widget.borderRadius ?? BorderRadius.circular(4),
           color: btnColor,
+          gradient: EatsTheme.enableSkeuomorphism
+              ? LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withOpacity(isGrungy ? 0.15 : 0.10),
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.15),
+                  ],
+                  stops: const [0.0, 0.45, 1.0],
+                )
+              : null,
           border: Border.all(
             color: widget.isActive
                 ? ledColor
-                : (isGrungy ? const Color(0xFF594F45) : (DawTheme.isLight ? Colors.black26 : Colors.white24)),
+                : (isGrungy ? const Color(0xFF594F45) : (EatsTheme.isLight ? Colors.black26 : Colors.white24)),
             width: widget.isActive ? 1.5 : 1.0,
           ),
-          boxShadow: _isPressed
+          boxShadow: EatsTheme.enablePanelShadows ? (_isPressed
               ? [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.4),
@@ -83,7 +95,7 @@ class _SkeuomorphicHardwareButtonState extends State<SkeuomorphicHardwareButton>
                 ]
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(DawTheme.isLight ? 0.15 : 0.4),
+                    color: Colors.black.withOpacity(EatsTheme.isLight ? 0.15 : 0.4),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -93,7 +105,7 @@ class _SkeuomorphicHardwareButtonState extends State<SkeuomorphicHardwareButton>
                       blurRadius: 10,
                       spreadRadius: 1,
                     ),
-                ],
+                ]) : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -127,10 +139,10 @@ class _SkeuomorphicHardwareButtonState extends State<SkeuomorphicHardwareButton>
               () {
                 final activeContentColor = (widget.activeColor != null)
                     ? (widget.activeColor!.computeLuminance() > 0.35 ? const Color(0xFF0B0E14) : Colors.white)
-                    : (isGrungy ? const Color(0xFFFFF8E7) : (DawTheme.isLight ? const Color(0xFF0F172A) : Colors.white));
+                    : (isGrungy ? const Color(0xFFFFF8E7) : (EatsTheme.isLight ? const Color(0xFF0F172A) : Colors.white));
                 final inactiveContentColor = widget.activeColor != null
-                    ? (DawTheme.isLight && widget.activeColor == DawTheme.primaryCyan ? const Color(0xFF006680) : widget.activeColor!.withOpacity(0.95))
-                    : (isGrungy ? const Color(0xFFA89C8C) : DawTheme.textSecondary);
+                    ? (EatsTheme.isLight && widget.activeColor == EatsTheme.primaryCyan ? const Color(0xFF006680) : widget.activeColor!.withOpacity(0.95))
+                    : (isGrungy ? const Color(0xFFA89C8C) : EatsTheme.textSecondary);
                 final finalColor = widget.isActive ? activeContentColor : inactiveContentColor;
 
                 return Row(
@@ -147,7 +159,7 @@ class _SkeuomorphicHardwareButtonState extends State<SkeuomorphicHardwareButton>
                     if (widget.label != null && widget.label!.isNotEmpty)
                       Text(
                         widget.label!.toUpperCase(),
-                        style: DawTheme.getDisplayFontStyle(
+                        style: EatsTheme.getDisplayFontStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                           color: finalColor,

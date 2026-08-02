@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
-import '../theme/daw_theme.dart';
+import '../theme/eats_theme.dart';
 import '../lua/lua_preset_library.dart';
 import 'widgets/eatsbits_slider.dart';
 import 'widgets/skeuomorphic_hardware_button.dart';
@@ -57,7 +57,7 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
           // Header Bar with Track Selector & Presets
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: DawTheme.panelHeader,
+            color: EatsTheme.panelHeader,
             child: Wrap(
               spacing: 8,
               runSpacing: 8,
@@ -67,12 +67,12 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.code, color: DawTheme.accentGreen, size: 20),
+                    Icon(Icons.code, color: EatsTheme.accentGreen, size: 20),
                     const SizedBox(width: 8),
                     Text(
                       'LUA SCRIPT EDITOR',
-                      style: DawTheme.getPrimaryFontStyle(
-                        color: DawTheme.textPrimary,
+                      style: EatsTheme.getPrimaryFontStyle(
+                        color: EatsTheme.textPrimary,
                         fontWeight: FontWeight.bold,
                         fontSize: 13,
                       ),
@@ -87,19 +87,19 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
-                        color: DawTheme.controlBackground,
+                        color: EatsTheme.controlBackground,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton<LuaPreset>(
-                          hint: Text('LOAD PRESET', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textSecondary, fontSize: 11)),
-                          dropdownColor: DawTheme.panelBackground,
+                          hint: Text('LOAD PRESET', style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textSecondary, fontSize: 11)),
+                          dropdownColor: EatsTheme.panelBackground,
                           items: LuaPresetLibrary.presets.map((preset) {
                             return DropdownMenuItem<LuaPreset>(
                               value: preset,
                               child: Text(
                                 preset.name,
-                                style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontSize: 11),
+                                style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textPrimary, fontSize: 11),
                               ),
                             );
                           }).toList(),
@@ -123,7 +123,7 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                       label: 'COMPILE LUA DSP',
                       icon: Icons.play_arrow,
                       isActive: true,
-                      activeColor: DawTheme.accentGreen,
+                      activeColor: EatsTheme.accentGreen,
                       onTap: () {
                         activeTrack.luaScriptCode = _codeController.text;
                         activeTrack.type = TrackType.luaScript;
@@ -197,7 +197,7 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                 // Code Editor Container
                 Container(
                   decoration: BoxDecoration(
-                    color: DawTheme.panelBackground,
+                    color: EatsTheme.panelBackground,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFF2B3245)),
                   ),
@@ -205,14 +205,14 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                     children: [
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        color: DawTheme.panelHeader,
+                        color: EatsTheme.panelHeader,
                         child: Row(
                           children: [
-                            Icon(Icons.terminal, size: 14, color: DawTheme.textMuted),
+                            Icon(Icons.terminal, size: 14, color: EatsTheme.textMuted),
                             const SizedBox(width: 6),
                             Text(
                               'LUA SOURCE: ${activeTrack.name.toUpperCase()}',
-                              style: DawTheme.getPrimaryFontStyle(color: DawTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
+                              style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.primaryCyan, fontSize: 11, fontWeight: FontWeight.bold),
                             ),
                           ],
                         ),
@@ -220,8 +220,8 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                       TextField(
                         controller: _codeController,
                         maxLines: 14,
-                        style: DawTheme.getDisplayFontStyle(
-                          color: DawTheme.textPrimary,
+                        style: EatsTheme.getDisplayFontStyle(
+                          color: EatsTheme.textPrimary,
                           fontSize: 12,
                         ).copyWith(height: 1.4),
 
@@ -240,25 +240,25 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: result.isSuccess ? DawTheme.accentGreen.withOpacity(0.1) : DawTheme.muteColor.withOpacity(0.15),
+                    color: result.isSuccess ? EatsTheme.accentGreen.withOpacity(0.1) : EatsTheme.muteColor.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: result.isSuccess ? DawTheme.accentGreen.withOpacity(0.5) : DawTheme.muteColor,
+                      color: result.isSuccess ? EatsTheme.accentGreen.withOpacity(0.5) : EatsTheme.muteColor,
                     ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         result.isSuccess ? Icons.check_circle : Icons.error_outline,
-                        color: result.isSuccess ? DawTheme.accentGreen : DawTheme.muteColor,
+                        color: result.isSuccess ? EatsTheme.accentGreen : EatsTheme.muteColor,
                         size: 18,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           result.errorMessage,
-                          style: DawTheme.getDisplayFontStyle(
-                            color: result.isSuccess ? DawTheme.accentGreen : DawTheme.muteColor,
+                          style: EatsTheme.getDisplayFontStyle(
+                            color: result.isSuccess ? EatsTheme.accentGreen : EatsTheme.muteColor,
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
                           ),
@@ -274,7 +274,7 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                 if (result.params.isNotEmpty) ...[
                   Text(
                     'LIVE SCRIPT PARAMETERS (${activeTrack.name})',
-                    style: DawTheme.getPrimaryFontStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 12),
+                    style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                   const SizedBox(height: 8),
                   Wrap(
@@ -287,9 +287,9 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                         width: 170,
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: DawTheme.panelBackground,
+                          color: EatsTheme.panelBackground,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: DawTheme.primaryCyan.withOpacity(0.3)),
+                          border: Border.all(color: EatsTheme.primaryCyan.withOpacity(0.3)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,11 +299,11 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                               children: [
                                 Text(
                                   param.name,
-                                  style: DawTheme.getPrimaryFontStyle(color: DawTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11),
+                                  style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textPrimary, fontWeight: FontWeight.bold, fontSize: 11),
                                 ),
                                 Text(
                                   currentVal.toStringAsFixed(1),
-                                  style: DawTheme.getDisplayFontStyle(color: DawTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 11),
+                                  style: EatsTheme.getDisplayFontStyle(color: EatsTheme.primaryCyan, fontWeight: FontWeight.bold, fontSize: 11),
                                 ),
                               ],
                             ),
@@ -314,7 +314,7 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                               max: param.max,
                               defaultValue: param.defaultValue,
                               label: param.name,
-                              activeColor: DawTheme.primaryCyan,
+                              activeColor: EatsTheme.primaryCyan,
                               onChanged: (val) {
                                 widget.dawState.updateLuaParam(param.name, val);
                               },

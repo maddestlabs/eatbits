@@ -1,22 +1,41 @@
 import 'package:flutter/material.dart';
 
-enum DawThemePreset {
-  ateTrack,      // Ate Track (Default)
-  cyanCrunch,    // Cyan Crunch
+enum EatsThemePreset {
+  ateTrack,      // Ate Track (Default Vintage Gear)
   midnightBites, // Midnight Bites
-  lightSnack     // Light Snack
+  lightSnack,    // Light Snack
+  flatMinimal,   // Flat Minimal (Stock UI)
 }
 
-class DawTheme {
-  static DawThemePreset currentPreset = DawThemePreset.ateTrack;
+/// Central Theme Engine for Eatsbits.
+/// Manages color tokens, typography styles, visual decoration flags,
+/// and provides the foundation for Lua-scripted custom themes.
+class EatsTheme {
+  static EatsThemePreset _currentPreset = EatsThemePreset.ateTrack;
+  static EatsThemePreset get currentPreset => _currentPreset;
 
-  static bool get isLight => currentPreset == DawThemePreset.lightSnack;
+  static set currentPreset(EatsThemePreset preset) {
+    _currentPreset = preset;
+    if (preset == EatsThemePreset.flatMinimal) {
+      enableSkeuomorphism = false;
+      enableGlassGlares = false;
+      enablePanelShadows = false;
+    } else {
+      enableSkeuomorphism = true;
+      enableGlassGlares = true;
+      enablePanelShadows = true;
+    }
+  }
+
+  static bool get isLight => currentPreset == EatsThemePreset.lightSnack;
+
+  // --- Visual Enhancement & Performance Flags (Scriptable via Lua) ---
+  static bool enableSkeuomorphism = true;
+  static bool enableGlassGlares = true;
+  static bool enablePanelShadows = true;
 
   // --- Dual-Context Font Settings ---
-  // Context 1: Primary UI Font (App Headers, Navigation, Track Titles, Buttons, Menus)
   static String primaryFontName = 'Sans Serif';
-
-  // Context 2: Display & Technical Font (BPM, Timecode, Meters, Parameters, Lua Code Workbench)
   static String displayFontName = 'Monospace';
 
   static const String _primaryFontFamily = 'sans-serif';
@@ -34,70 +53,72 @@ class DawTheme {
     return baseStyle.copyWith(fontFamily: _displayFontFamily);
   }
 
+  // --- Color Palette Tokens ---
   static Color get backgroundDark {
     switch (currentPreset) {
-      case DawThemePreset.midnightBites:
+      case EatsThemePreset.flatMinimal:
+        return const Color(0xFF121214); // Pure flat dark background
+      case EatsThemePreset.midnightBites:
         return const Color(0xFF000000);
-      case DawThemePreset.lightSnack:
+      case EatsThemePreset.lightSnack:
         return const Color(0xFFF4F6F9); // Crisp clean light background
-      case DawThemePreset.ateTrack:
-        return const Color(0xFF141210); // Weathered vintage rack dark background
-      case DawThemePreset.cyanCrunch:
+      case EatsThemePreset.ateTrack:
       default:
-        return const Color(0xFF0B0E14);
+        return const Color(0xFF141210); // Weathered vintage rack dark background
     }
   }
 
   static Color get panelBackground {
     switch (currentPreset) {
-      case DawThemePreset.midnightBites:
+      case EatsThemePreset.flatMinimal:
+        return const Color(0xFF1A1A1E); // Flat card background
+      case EatsThemePreset.midnightBites:
         return const Color(0xFF101010);
-      case DawThemePreset.lightSnack:
+      case EatsThemePreset.lightSnack:
         return const Color(0xFFFFFFFF); // Pure white panel
-      case DawThemePreset.ateTrack:
-        return const Color(0xFF24211D); // Aged metal chassis surface
-      case DawThemePreset.cyanCrunch:
+      case EatsThemePreset.ateTrack:
       default:
-        return const Color(0xFF131822);
+        return const Color(0xFF24211D); // Aged metal chassis surface
     }
   }
 
   static Color get panelHeader {
     switch (currentPreset) {
-      case DawThemePreset.midnightBites:
+      case EatsThemePreset.flatMinimal:
+        return const Color(0xFF24242A); // Minimal flat header fill
+      case EatsThemePreset.midnightBites:
         return const Color(0xFF181818);
-      case DawThemePreset.lightSnack:
+      case EatsThemePreset.lightSnack:
         return const Color(0xFFE2E8F0); // Light grey header
-      case DawThemePreset.ateTrack:
-        return const Color(0xFF332F2A); // Dark brushed metallic header
-      case DawThemePreset.cyanCrunch:
+      case EatsThemePreset.ateTrack:
       default:
-        return const Color(0xFF1A212F);
+        return const Color(0xFF332F2A); // Dark brushed metallic header
     }
   }
 
   static Color get controlBackground {
     switch (currentPreset) {
-      case DawThemePreset.midnightBites:
+      case EatsThemePreset.flatMinimal:
+        return const Color(0xFF2A2A32); // Flat control fill
+      case EatsThemePreset.midnightBites:
         return const Color(0xFF222222);
-      case DawThemePreset.lightSnack:
+      case EatsThemePreset.lightSnack:
         return const Color(0xFFCBD5E1); // Soft control fill
-      case DawThemePreset.ateTrack:
-        return const Color(0xFF181614); // Recessed control well background
-      case DawThemePreset.cyanCrunch:
+      case EatsThemePreset.ateTrack:
       default:
-        return const Color(0xFF242E42);
+        return const Color(0xFF181614); // Recessed control well background
     }
   }
 
   static Color get primaryCyan {
     switch (currentPreset) {
-      case DawThemePreset.lightSnack:
+      case EatsThemePreset.flatMinimal:
+        return const Color(0xFF00E5FF); // Vibrant flat neon cyan
+      case EatsThemePreset.lightSnack:
         return const Color(0xFF007799); // Deep Teal for high contrast
-      case DawThemePreset.ateTrack:
+      case EatsThemePreset.ateTrack:
         return const Color(0xFFFF8C00); // Warm Amber / Vintage Nixie Glow
-      case DawThemePreset.midnightBites:
-      case DawThemePreset.cyanCrunch:
+      case EatsThemePreset.midnightBites:
       default:
         return const Color(0xFF21F4E8); // EatsBits Signature Cyan
     }
@@ -105,13 +126,13 @@ class DawTheme {
 
   static Color get highlightColor {
     switch (currentPreset) {
-      case DawThemePreset.lightSnack:
+      case EatsThemePreset.flatMinimal:
+        return const Color(0xFF00E5FF);
+      case EatsThemePreset.lightSnack:
         return const Color(0xFF0284C7);
-      case DawThemePreset.ateTrack:
+      case EatsThemePreset.ateTrack:
         return const Color(0xFFFF8C00);
-      case DawThemePreset.midnightBites:
-        return const Color(0xFF21F4E8);
-      case DawThemePreset.cyanCrunch:
+      case EatsThemePreset.midnightBites:
       default:
         return const Color(0xFF21F4E8);
     }
@@ -127,19 +148,32 @@ class DawTheme {
   static const Color soloColor = Color(0xFFFFCC00);
 
   static Color get textPrimary {
-    return currentPreset == DawThemePreset.lightSnack ? const Color(0xFF0F172A) : const Color(0xFFF0F4F8);
+    return currentPreset == EatsThemePreset.lightSnack ? const Color(0xFF0F172A) : const Color(0xFFF0F4F8);
   }
 
   static Color get textSecondary {
-    return currentPreset == DawThemePreset.lightSnack ? const Color(0xFF334155) : const Color(0xFF8E9BAE);
+    return currentPreset == EatsThemePreset.lightSnack ? const Color(0xFF334155) : const Color(0xFF8E9BAE);
   }
 
   static Color get textMuted {
-    return currentPreset == DawThemePreset.lightSnack ? const Color(0xFF64748B) : const Color(0xFF535D6E);
+    return currentPreset == EatsThemePreset.lightSnack ? const Color(0xFF64748B) : const Color(0xFF535D6E);
+  }
+
+  /// Apply custom theme parameters dynamically from a Lua script dictionary
+  static void applyLuaThemeMap(Map<String, dynamic> config) {
+    if (config.containsKey('enable_skeuomorphism')) {
+      enableSkeuomorphism = config['enable_skeuomorphism'] == true;
+    }
+    if (config.containsKey('enable_glass_glares')) {
+      enableGlassGlares = config['enable_glass_glares'] == true;
+    }
+    if (config.containsKey('enable_panel_shadows')) {
+      enablePanelShadows = config['enable_panel_shadows'] == true;
+    }
   }
 
   static ThemeData get themeData {
-    final isLight = currentPreset == DawThemePreset.lightSnack;
+    final isLight = currentPreset == EatsThemePreset.lightSnack;
     final baseTheme = isLight ? ThemeData.light() : ThemeData.dark();
 
     return baseTheme.copyWith(
@@ -177,6 +211,3 @@ class DawTheme {
     );
   }
 }
-
-
-

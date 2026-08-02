@@ -1,9 +1,11 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import '../audio/sampler_engine.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
-import '../theme/daw_theme.dart';
+import '../theme/eats_theme.dart';
 import 'widgets/eatsbits_slider.dart';
+import 'widgets/rename_track_dialog.dart';
 
 class ArrangerView extends StatefulWidget {
   final DawState dawState;
@@ -62,11 +64,11 @@ class _ArrangerViewState extends State<ArrangerView> {
                     // Top Left Track Header & Loop Toggle Button
                     Container(
                       height: 24,
-                      color: DawTheme.panelHeader,
+                      color: EatsTheme.panelHeader,
                       padding: const EdgeInsets.symmetric(horizontal: 4),
                       child: Row(
                         children: [
-                          Text('TRACKS', style: DawTheme.getPrimaryFontStyle(color: DawTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
+                          Text('TRACKS', style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
                           const Spacer(),
                           InkWell(
                             onTap: widget.dawState.toggleLoop,
@@ -77,13 +79,13 @@ class _ArrangerViewState extends State<ArrangerView> {
                                   Icon(
                                     Icons.repeat,
                                     size: 13,
-                                    color: widget.dawState.isLooping ? DawTheme.accentGold : DawTheme.textMuted,
+                                    color: widget.dawState.isLooping ? EatsTheme.accentGold : EatsTheme.textMuted,
                                   ),
                                   const SizedBox(width: 2),
                                   Text(
                                     widget.dawState.isLooping ? 'LOOP' : 'OFF',
                                     style: TextStyle(
-                                      color: widget.dawState.isLooping ? DawTheme.accentGold : DawTheme.textMuted,
+                                      color: widget.dawState.isLooping ? EatsTheme.accentGold : EatsTheme.textMuted,
                                       fontSize: 8,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -116,6 +118,7 @@ class _ArrangerViewState extends State<ArrangerView> {
                             final isSelected = trackIdx == widget.dawState.activeTrackIndex;
 
                             return GestureDetector(
+                              onLongPress: () => showRenameTrackDialog(context, widget.dawState, track),
                               onTapDown: (_) {
                                 final now = DateTime.now();
                                 final isDoubleTap = _lastHeaderTapTrackIdx == trackIdx &&
@@ -135,10 +138,10 @@ class _ArrangerViewState extends State<ArrangerView> {
                                 margin: const EdgeInsets.only(bottom: 2),
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? DawTheme.controlBackground : DawTheme.panelBackground,
+                                  color: isSelected ? EatsTheme.controlBackground : EatsTheme.panelBackground,
                                   border: Border(
                                     left: BorderSide(color: track.color, width: 4),
-                                    bottom: BorderSide(color: DawTheme.panelHeader, width: 1),
+                                    bottom: BorderSide(color: EatsTheme.panelHeader, width: 1),
                                   ),
                                 ),
                                 child: Column(
@@ -149,8 +152,8 @@ class _ArrangerViewState extends State<ArrangerView> {
                                       track.name,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: DawTheme.getPrimaryFontStyle(
-                                        color: isSelected ? DawTheme.primaryCyan : DawTheme.textPrimary,
+                                      style: EatsTheme.getPrimaryFontStyle(
+                                        color: isSelected ? EatsTheme.primaryCyan : EatsTheme.textPrimary,
                                         fontWeight: FontWeight.bold,
                                         fontSize: 11,
                                       ),
@@ -227,7 +230,7 @@ class _ArrangerViewState extends State<ArrangerView> {
                           },
                           child: Container(
                             height: 24,
-                            color: DawTheme.panelHeader,
+                            color: EatsTheme.panelHeader,
                             child: Stack(
                               children: [
                                 Row(
@@ -242,7 +245,7 @@ class _ArrangerViewState extends State<ArrangerView> {
                                       padding: const EdgeInsets.only(left: 4),
                                       child: Text(
                                         '${barIdx + 1}',
-                                        style: DawTheme.getDisplayFontStyle(color: DawTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
+                                        style: EatsTheme.getDisplayFontStyle(color: EatsTheme.textMuted, fontSize: 10, fontWeight: FontWeight.bold),
                                       ),
                                     );
                                   }),
@@ -257,17 +260,17 @@ class _ArrangerViewState extends State<ArrangerView> {
                                     bottom: 0,
                                     child: Container(
                                       decoration: BoxDecoration(
-                                        color: DawTheme.accentGold.withOpacity(0.2),
+                                        color: EatsTheme.accentGold.withOpacity(0.2),
                                         border: Border(
-                                          left: BorderSide(color: DawTheme.accentGold, width: 2),
-                                          right: BorderSide(color: DawTheme.accentGold, width: 2),
+                                          left: BorderSide(color: EatsTheme.accentGold, width: 2),
+                                          right: BorderSide(color: EatsTheme.accentGold, width: 2),
                                         ),
                                       ),
                                       alignment: Alignment.topCenter,
                                       child: Text(
                                         'LOOP',
                                         style: TextStyle(
-                                          color: DawTheme.accentGold,
+                                          color: EatsTheme.accentGold,
                                           fontSize: 8,
                                           fontWeight: FontWeight.bold,
                                         ),
@@ -283,7 +286,7 @@ class _ArrangerViewState extends State<ArrangerView> {
                                     width: 12,
                                     height: 20,
                                     decoration: BoxDecoration(
-                                      color: DawTheme.primaryCyan,
+                                      color: EatsTheme.primaryCyan,
                                       borderRadius: BorderRadius.circular(3),
                                     ),
                                     child: const Icon(Icons.arrow_drop_down, size: 12, color: Colors.black),
@@ -320,8 +323,8 @@ class _ArrangerViewState extends State<ArrangerView> {
                                       height: trackRowHeight,
                                       margin: const EdgeInsets.only(bottom: 2),
                                       decoration: BoxDecoration(
-                                        color: DawTheme.backgroundDark,
-                                        border: Border(bottom: BorderSide(color: DawTheme.panelHeader, width: 1)),
+                                        color: EatsTheme.backgroundDark,
+                                        border: Border(bottom: BorderSide(color: EatsTheme.panelHeader, width: 1)),
                                       ),
                                       child: Stack(
                                         children: [
@@ -393,13 +396,13 @@ class _ArrangerViewState extends State<ArrangerView> {
                                                         : track.color,
                                                     borderRadius: BorderRadius.circular(6),
                                                     border: Border.all(
-                                                      color: isClipSelected ? DawTheme.highlightColor : Colors.white.withOpacity(0.15),
+                                                      color: isClipSelected ? EatsTheme.highlightColor : Colors.white.withOpacity(0.15),
                                                       width: isClipSelected ? 2.0 : 1.0,
                                                     ),
                                                     boxShadow: [
                                                       if (isClipSelected)
                                                         BoxShadow(
-                                                          color: DawTheme.highlightColor.withOpacity(0.6),
+                                                          color: EatsTheme.highlightColor.withOpacity(0.6),
                                                           blurRadius: 10,
                                                           spreadRadius: 1,
                                                         ),
@@ -428,10 +431,10 @@ class _ArrangerViewState extends State<ArrangerView> {
                                                            child: Container(
                                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                                                              decoration: BoxDecoration(
-                                                               color: DawTheme.backgroundDark.withOpacity(0.72),
+                                                               color: EatsTheme.backgroundDark.withOpacity(0.72),
                                                                borderRadius: BorderRadius.circular(3),
                                                                border: Border.all(
-                                                                 color: isClipSelected ? DawTheme.highlightColor.withOpacity(0.8) : Colors.white12,
+                                                                 color: isClipSelected ? EatsTheme.highlightColor.withOpacity(0.8) : Colors.white12,
                                                                  width: 0.8,
                                                                ),
                                                              ),
@@ -444,7 +447,7 @@ class _ArrangerViewState extends State<ArrangerView> {
                                                                      height: 5,
                                                                      margin: const EdgeInsets.only(right: 4),
                                                                      decoration: BoxDecoration(
-                                                                       color: DawTheme.highlightColor,
+                                                                       color: EatsTheme.highlightColor,
                                                                        shape: BoxShape.circle,
                                                                      ),
                                                                    ),
@@ -452,7 +455,7 @@ class _ArrangerViewState extends State<ArrangerView> {
                                                                  Text(
                                                                    clip.name,
                                                                    style: TextStyle(
-                                                                     color: isClipSelected ? DawTheme.highlightColor : Colors.white,
+                                                                     color: isClipSelected ? EatsTheme.highlightColor : Colors.white,
                                                                      fontWeight: FontWeight.bold,
                                                                      fontSize: 9,
                                                                    ),
@@ -491,7 +494,7 @@ class _ArrangerViewState extends State<ArrangerView> {
                                                                child: Icon(
                                                                  Icons.code,
                                                                  size: 11,
-                                                                 color: isClipSelected ? DawTheme.highlightColor : DawTheme.backgroundDark.withOpacity(0.8),
+                                                                 color: isClipSelected ? EatsTheme.highlightColor : EatsTheme.backgroundDark.withOpacity(0.8),
                                                                ),
                                                              ),
                                                            ),
@@ -518,9 +521,9 @@ class _ArrangerViewState extends State<ArrangerView> {
                                 child: Container(
                                   width: 2,
                                   decoration: BoxDecoration(
-                                    color: DawTheme.primaryCyan,
+                                    color: EatsTheme.primaryCyan,
                                     boxShadow: [
-                                      BoxShadow(color: DawTheme.primaryCyan.withOpacity(0.8), blurRadius: 4),
+                                      BoxShadow(color: EatsTheme.primaryCyan.withOpacity(0.8), blurRadius: 4),
                                     ],
                                   ),
                                 ),
@@ -546,10 +549,10 @@ class _ArrangerViewState extends State<ArrangerView> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
         decoration: BoxDecoration(
-          color: track.isMuted ? DawTheme.muteColor : DawTheme.panelHeader,
+          color: track.isMuted ? EatsTheme.muteColor : EatsTheme.panelHeader,
           borderRadius: BorderRadius.circular(3),
         ),
-        child: Text('M', style: TextStyle(color: track.isMuted ? Colors.white : DawTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
+        child: Text('M', style: TextStyle(color: track.isMuted ? Colors.white : EatsTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -560,10 +563,10 @@ class _ArrangerViewState extends State<ArrangerView> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
         decoration: BoxDecoration(
-          color: track.isSoloed ? DawTheme.soloColor : DawTheme.panelHeader,
+          color: track.isSoloed ? EatsTheme.soloColor : EatsTheme.panelHeader,
           borderRadius: BorderRadius.circular(3),
         ),
-        child: Text('S', style: TextStyle(color: track.isSoloed ? Colors.black : DawTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
+        child: Text('S', style: TextStyle(color: track.isSoloed ? Colors.black : EatsTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
       ),
     );
   }
@@ -583,6 +586,14 @@ class PatternClipNotePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     if (size.width <= 0 || size.height <= 0) return;
+
+    final overview = SamplerEngine.instance.getWaveformOverview(track.sampleName);
+    if (track.type == TrackType.sampler || overview != null) {
+      if (overview != null) {
+        _drawWaveformOverview(canvas, size, overview);
+        return;
+      }
+    }
 
     List<Note> notesToDraw = clip.notes.isNotEmpty ? clip.notes : track.notes;
 
@@ -644,11 +655,42 @@ class PatternClipNotePainter extends CustomPainter {
         const Radius.circular(1.0),
       );
 
-      notePaint.color = DawTheme.backgroundDark.withOpacity(0.60);
-      noteBorderPaint.color = Colors.white.withOpacity(0.20);
+      notePaint.color = EatsTheme.backgroundDark.withOpacity(0.40);
+      noteBorderPaint.color = Colors.white.withOpacity(0.40);
 
       canvas.drawRRect(rect, notePaint);
       canvas.drawRRect(rect, noteBorderPaint);
+    }
+  }
+
+  void _drawWaveformOverview(Canvas canvas, Size size, WaveformOverview overview) {
+    if (overview.maxPeaks.isEmpty) return;
+
+    final centerY = size.height / 2.0;
+    final totalPoints = overview.maxPeaks.length;
+    final dx = size.width / (totalPoints - 1);
+
+    final linePaint = Paint()
+      ..color = isSelected ? EatsTheme.highlightColor : EatsTheme.primaryCyan
+      ..strokeWidth = 1.2
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    final centerLinePaint = Paint()
+      ..color = Colors.white.withOpacity(0.25)
+      ..strokeWidth = 1.0;
+
+    canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), centerLinePaint);
+
+    for (int i = 0; i < totalPoints; i++) {
+      final x = i * dx;
+      final maxVal = overview.maxPeaks[i].clamp(0.0, 1.0);
+      final minVal = overview.minPeaks[i].clamp(-1.0, 0.0);
+
+      final yTop = centerY - (maxVal * (centerY * 0.85));
+      final yBottom = centerY - (minVal * (centerY * 0.85));
+
+      canvas.drawLine(Offset(x, yTop), Offset(x, yBottom), linePaint);
     }
   }
 

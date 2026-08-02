@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/daw_state.dart';
-import '../theme/daw_theme.dart';
+import '../theme/eats_theme.dart';
 import '../lua/lua_engine.dart';
 import '../lua/midi_pipeline_engine.dart';
 
@@ -144,7 +144,7 @@ end''',
   @override
   Widget build(BuildContext context) {
     final clip = widget.dawState.activeTrackClip;
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
+    final isGrungy = EatsTheme.currentPreset == EatsThemePreset.ateTrack;
 
     return CallbackShortcuts(
       bindings: {
@@ -158,23 +158,23 @@ end''',
             // Top Toolbar: Presets & Execute Button
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              color: isGrungy ? const Color(0xFF28231D) : DawTheme.panelBackground,
+              color: isGrungy ? const Color(0xFF28231D) : EatsTheme.panelBackground,
               child: Row(
                 children: [
-                  Icon(Icons.code_off, size: 16, color: DawTheme.accentGold),
+                  Icon(Icons.code_off, size: 16, color: EatsTheme.accentGold),
                   const SizedBox(width: 6),
                   Text(
                     'SCRIPT PRESETS:',
-                    style: DawTheme.getDisplayFontStyle(fontSize: 10, fontWeight: FontWeight.bold, color: DawTheme.textMuted),
+                    style: EatsTheme.getDisplayFontStyle(fontSize: 10, fontWeight: FontWeight.bold, color: EatsTheme.textMuted),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: DropdownButton<String>(
                       isDense: true,
                       isExpanded: true,
-                      dropdownColor: isGrungy ? const Color(0xFF1E1B18) : DawTheme.panelBackground,
+                      dropdownColor: isGrungy ? const Color(0xFF1E1B18) : EatsTheme.panelBackground,
                       underline: const SizedBox(),
-                      hint: Text('Select Template...', style: TextStyle(fontSize: 11, color: DawTheme.textSecondary)),
+                      hint: Text('Select Template...', style: TextStyle(fontSize: 11, color: EatsTheme.textSecondary)),
                       items: _presetTemplates.map((t) {
                         return DropdownMenuItem<String>(
                           value: t['code'],
@@ -192,7 +192,7 @@ end''',
                     icon: const Icon(Icons.play_arrow, size: 14),
                     label: const Text('RUN SCRIPT (Ctrl+Enter)', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: DawTheme.primaryCyan,
+                      backgroundColor: EatsTheme.primaryCyan,
                       foregroundColor: Colors.black,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       minimumSize: const Size(0, 32),
@@ -206,7 +206,7 @@ end''',
             if (_compilationResult.params.isNotEmpty) ...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                color: isGrungy ? const Color(0xFF1F1C18) : DawTheme.controlBackground,
+                color: isGrungy ? const Color(0xFF1F1C18) : EatsTheme.controlBackground,
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
@@ -218,7 +218,7 @@ end''',
                           children: [
                             Text(
                               '${p.name.toUpperCase()}: ${currentVal.toStringAsFixed(2)}',
-                              style: DawTheme.getDisplayFontStyle(fontSize: 10, color: DawTheme.accentGold, fontWeight: FontWeight.bold),
+                              style: EatsTheme.getDisplayFontStyle(fontSize: 10, color: EatsTheme.accentGold, fontWeight: FontWeight.bold),
                             ),
                             SizedBox(
                               width: 110,
@@ -226,8 +226,8 @@ end''',
                                 value: currentVal.clamp(p.min, p.max),
                                 min: p.min,
                                 max: p.max,
-                                activeColor: DawTheme.secondaryMagenta,
-                                inactiveColor: DawTheme.controlBackground,
+                                activeColor: EatsTheme.secondaryMagenta,
+                                inactiveColor: EatsTheme.controlBackground,
                                 onChanged: (val) {
                                   setState(() {
                                     clip.luaParams[p.name] = val;
@@ -270,7 +270,7 @@ end''',
                                 fontSize: 11,
                                 color: (i + 1 == _compilationResult.errorLine)
                                     ? Colors.redAccent
-                                    : DawTheme.textMuted,
+                                    : EatsTheme.textMuted,
                               ),
                             ),
                           ),
@@ -297,7 +297,7 @@ end''',
                           decoration: InputDecoration(
                             border: InputBorder.none,
                             hintText: '-- Write Lua clip generator script here...',
-                            hintStyle: TextStyle(color: DawTheme.textMuted, fontFamily: 'monospace'),
+                            hintStyle: TextStyle(color: EatsTheme.textMuted, fontFamily: 'monospace'),
                           ),
                           onChanged: (val) {
                             _recompile(val);

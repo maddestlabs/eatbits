@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
-import '../theme/daw_theme.dart';
+import '../theme/eats_theme.dart';
 
 class VirtualPianoKeyboard extends StatefulWidget {
   final DawState dawState;
@@ -186,7 +186,7 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
 
   @override
   Widget build(BuildContext context) {
-    final isGrungy = DawTheme.currentPreset == DawThemePreset.ateTrack;
+    final isGrungy = EatsTheme.currentPreset == EatsThemePreset.ateTrack;
     final activeTrack = widget.dawState.activeTrack;
     final trackColor = activeTrack.color;
 
@@ -196,10 +196,10 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
       width: double.infinity,
       height: totalHeight,
       decoration: BoxDecoration(
-        color: isGrungy ? const Color(0xFF1B1815) : DawTheme.panelBackground,
+        color: isGrungy ? const Color(0xFF1B1815) : EatsTheme.panelBackground,
         border: Border(
           top: BorderSide(
-            color: isGrungy ? const Color(0xFF4A423A) : DawTheme.panelHeader,
+            color: isGrungy ? const Color(0xFF4A423A) : EatsTheme.panelHeader,
             width: 1.5,
           ),
         ),
@@ -228,7 +228,7 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
             child: Container(
               height: _pullTabHeight - 1.5,
               width: double.infinity,
-              color: isGrungy ? const Color(0xFF28231E) : DawTheme.panelHeader,
+              color: isGrungy ? const Color(0xFF28231E) : EatsTheme.panelHeader,
               child: Stack(
                 alignment: Alignment.center,
                 children: [
@@ -237,7 +237,7 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                     width: 70,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: isGrungy ? const Color(0xFF8C7A6B) : DawTheme.textMuted,
+                      color: isGrungy ? const Color(0xFF8C7A6B) : EatsTheme.textMuted,
                       borderRadius: BorderRadius.circular(3),
                     ),
                   ),
@@ -249,13 +249,13 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                         Icon(
                           Icons.piano,
                           size: 14,
-                          color: _isExpanded ? DawTheme.primaryCyan : DawTheme.textSecondary,
+                          color: _isExpanded ? EatsTheme.primaryCyan : EatsTheme.textSecondary,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           'PIANO KEYBOARD',
                           style: TextStyle(
-                            color: _isExpanded ? DawTheme.primaryCyan : DawTheme.textSecondary,
+                            color: _isExpanded ? EatsTheme.primaryCyan : EatsTheme.textSecondary,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1.1,
@@ -269,7 +269,7 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                     child: Icon(
                       _isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_up,
                       size: 16,
-                      color: DawTheme.textSecondary,
+                      color: EatsTheme.textSecondary,
                     ),
                   ),
                 ],
@@ -378,14 +378,14 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                             return Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: DawTheme.primaryCyan.withOpacity(0.2),
+                                color: EatsTheme.primaryCyan.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: DawTheme.primaryCyan, width: 1),
+                                border: Border.all(color: EatsTheme.primaryCyan, width: 1),
                               ),
                               child: Text(
                                 '$noteName | VEL: $velPercent%',
                                 style: TextStyle(
-                                  color: DawTheme.primaryCyan,
+                                  color: EatsTheme.primaryCyan,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -402,7 +402,7 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                             Text(
                               'OCT:',
                               style: TextStyle(
-                                color: DawTheme.textMuted,
+                                color: EatsTheme.textMuted,
                                 fontSize: 10,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -412,19 +412,19 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                               icon: const Icon(Icons.chevron_left, size: 18),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                              color: _baseOctave > 1 ? DawTheme.textPrimary : DawTheme.textMuted.withOpacity(0.5),
+                              color: _baseOctave > 1 ? EatsTheme.textPrimary : EatsTheme.textMuted.withOpacity(0.5),
                               onPressed: _baseOctave > 1 ? () => _shiftOctave(-1) : null,
                             ),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: DawTheme.controlBackground,
+                                color: EatsTheme.controlBackground,
                                 borderRadius: BorderRadius.circular(3),
                               ),
                               child: Text(
                                 'C$_baseOctave - C${_baseOctave + 2}',
                                 style: TextStyle(
-                                  color: DawTheme.primaryCyan,
+                                  color: EatsTheme.primaryCyan,
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -434,7 +434,7 @@ class _VirtualPianoKeyboardState extends State<VirtualPianoKeyboard>
                               icon: const Icon(Icons.chevron_right, size: 18),
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                              color: _baseOctave < 6 ? DawTheme.textPrimary : DawTheme.textMuted.withOpacity(0.5),
+                              color: _baseOctave < 6 ? EatsTheme.textPrimary : EatsTheme.textMuted.withOpacity(0.5),
                               onPressed: _baseOctave < 6 ? () => _shiftOctave(1) : null,
                             ),
                           ],
@@ -589,7 +589,7 @@ class _PianoKeyboardPainter extends CustomPainter {
               end: Alignment.topCenter,
               colors: [
                 trackColor.withOpacity(0.8),
-                DawTheme.primaryCyan.withOpacity(0.4),
+                EatsTheme.primaryCyan.withOpacity(0.4),
               ],
             ).createShader(velRect);
           canvas.drawRect(velRect, velPaint);
@@ -685,7 +685,7 @@ class _PianoKeyboardPainter extends CustomPainter {
               end: Alignment.topCenter,
               colors: [
                 trackColor.withOpacity(0.9),
-                DawTheme.primaryCyan.withOpacity(0.5),
+                EatsTheme.primaryCyan.withOpacity(0.5),
               ],
             ).createShader(velRect);
           canvas.drawRect(velRect, velPaint);

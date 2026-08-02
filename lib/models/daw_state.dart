@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
+import 'package:archive/archive.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../audio/audio_engine.dart';
+import '../audio/sampler_engine.dart';
 import '../audio/wav_exporter.dart';
-import '../theme/daw_theme.dart';
+import '../theme/eats_theme.dart';
 import '../lua/lua_engine.dart';
 import '../lua/eats_lua_serializer.dart';
 import '../lua/eats_lua_parser.dart';
@@ -41,7 +45,7 @@ class DawState extends ChangeNotifier {
         name: '${activeTrack.name} Clip',
         trackId: activeTrack.id,
         startBar: 0,
-        barLength: 4,
+        barLength: 2,
         notes: activeTrack.notes,
         luaScriptCode: activeTrack.luaScriptCode,
         luaParams: activeTrack.luaParams,
@@ -58,8 +62,13 @@ class DawState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setThemePreset(DawThemePreset preset) {
-    DawTheme.currentPreset = preset;
+  void setThemePreset(EatsThemePreset preset) {
+    EatsTheme.currentPreset = preset;
+    notifyListeners();
+  }
+
+  void applyLuaTheme(Map<String, dynamic> themeConfig) {
+    EatsTheme.applyLuaThemeMap(themeConfig);
     notifyListeners();
   }
 
@@ -155,8 +164,8 @@ class DawState extends ChangeNotifier {
 
   // Song Arrangement
   List<ArrangementItem> arrangement = [
-    ArrangementItem(patternId: 'p0', startBar: 0, barLength: 4),
-    ArrangementItem(patternId: 'p1', startBar: 4, barLength: 4),
+    ArrangementItem(patternId: 'p0', startBar: 0, barLength: 2),
+    ArrangementItem(patternId: 'p1', startBar: 2, barLength: 2),
   ];
 
   // Lua Editor Active Code & Logs
@@ -231,7 +240,7 @@ class DawState extends ChangeNotifier {
       name: '${track.name} Clip',
       trackId: track.id,
       startBar: startBar,
-      barLength: 4,
+      barLength: 2,
       notes: track.notes.map((n) => n.copyWith()).toList(),
       luaScriptCode: track.luaScriptCode,
       luaParams: Map.from(track.luaParams),
@@ -286,7 +295,7 @@ class DawState extends ChangeNotifier {
   int _loopStartBar = 0;
   int get loopStartBar => _loopStartBar;
 
-  int _loopEndBar = 8;
+  int _loopEndBar = 2;
   int get loopEndBar => _loopEndBar;
 
   bool _isLooping = true;
@@ -553,7 +562,61 @@ class DawState extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Project Serialization & .eats.zip Export / Import
+  Uint8List exportToEatsZip() {
+    final luaScript = exportToEatsLua();
+    final luaBytes = utf8.encode(luaScript);
 
+    final archive = Archive();
+    archive.addFile(ArchiveFile('project.eats.lua', luaBytes.length, luaBytes));
+
+    for (final entry in SamplerEngine.instance.loadedSamples.entries) {
+      final sampleId = entry.key;
+      final buffer = entry.value;
+      final wavBytes = WavExporter.encodeWav(
+        leftSamples: buffer.samples,
+        rightSamples: buffer.samples,
+        sampleRate: buffer.sampleRate,
+      );
+      final safeName = sampleId.endsWith('.wav') ? sampleId : '$sampleId.wav';
+      archive.addFile(ArchiveFile('samples/$safeName', wavBytes.length, wavBytes));
+    }
+
+    final zipData = ZipEncoder().encode(archive);
+    return Uint8List.fromList(zipData ?? []);
+  }
+
+  void loadFromEatsZipOrLua({Uint8List? zipBytes, String? luaContent}) {
+    if (zipBytes != null) {
+      try {
+        final archive = ZipDecoder().decodeBytes(zipBytes);
+        ArchiveFile? luaFile;
+        for (final file in archive) {
+          if (file.name.endsWith('.lua') || file.name.endsWith('.eats.lua')) {
+            luaFile = file;
+            break;
+          }
+        }
+
+        for (final file in archive) {
+          if (file.isFile && (file.name.endsWith('.wav') || file.name.endsWith('.mp3'))) {
+            final contentBytes = file.content as List<int>;
+            final sampleName = file.name.split('/').last;
+            SamplerEngine.instance.registerSampleBytes(sampleName, Uint8List.fromList(contentBytes));
+          }
+        }
+
+        if (luaFile != null) {
+          final content = utf8.decode(luaFile.content as List<int>);
+          loadFromEatsLua(content);
+        }
+      } catch (e) {
+        debugPrint('Error loading .eats.zip archive: $e');
+      }
+    } else if (luaContent != null) {
+      loadFromEatsLua(luaContent);
+    }
+  }
 
   void compileWrenCode(String code) => compileLuaCode(code);
 
