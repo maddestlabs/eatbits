@@ -7,10 +7,11 @@ void showCompactValueEditDialog({
   required String title,
   required String initialValue,
   String? minMaxHint,
-  required Color accentColor,
+  Color? accentColor,
   required ValueChanged<String> onSubmit,
   VoidCallback? onResetDefault,
 }) {
+  final effectiveAccent = accentColor ?? DawTheme.primaryCyan;
   final controller = TextEditingController(text: initialValue);
 
   showDialog(
@@ -20,7 +21,7 @@ void showCompactValueEditDialog({
         backgroundColor: DawTheme.panelBackground,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: BorderSide(color: accentColor.withOpacity(0.6), width: 1.5),
+          side: BorderSide(color: effectiveAccent.withOpacity(0.6), width: 1.5),
         ),
         insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Container(
@@ -40,7 +41,7 @@ void showCompactValueEditDialog({
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: DawTheme.getPrimaryFontStyle(
-                        color: accentColor,
+                        color: effectiveAccent,
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                       ),
@@ -57,7 +58,7 @@ void showCompactValueEditDialog({
                         child: Text(
                           'DEFAULT',
                           style: TextStyle(
-                            color: DawTheme.accentOrange,
+                            color: effectiveAccent,
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
                           ),
@@ -81,7 +82,7 @@ void showCompactValueEditDialog({
                 keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
                 autofocus: true,
                 style: DawTheme.getDisplayFontStyle(
-                  color: DawTheme.accentGold,
+                  color: effectiveAccent,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -92,11 +93,11 @@ void showCompactValueEditDialog({
                   contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(color: accentColor.withOpacity(0.4)),
+                    borderSide: BorderSide(color: effectiveAccent.withOpacity(0.4)),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(6),
-                    borderSide: BorderSide(color: accentColor, width: 1.5),
+                    borderSide: BorderSide(color: effectiveAccent, width: 1.5),
                   ),
                 ),
                 onSubmitted: (val) {
@@ -126,8 +127,8 @@ void showCompactValueEditDialog({
                       Navigator.of(context).pop();
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: accentColor,
-                      foregroundColor: Colors.black,
+                      backgroundColor: effectiveAccent,
+                      foregroundColor: DawTheme.isLight ? Colors.white : Colors.black,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -143,3 +144,4 @@ void showCompactValueEditDialog({
     },
   );
 }
+

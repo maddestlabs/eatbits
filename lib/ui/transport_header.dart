@@ -390,7 +390,7 @@ class TransportHeader extends StatelessWidget {
       title: 'Tempo (BPM)',
       initialValue: dawState.bpm.toStringAsFixed(0),
       minMaxHint: 'Range: 40 - 240 BPM',
-      accentColor: DawTheme.accentGold,
+      accentColor: DawTheme.primaryCyan,
       onResetDefault: () => dawState.setBpm(120.0),
       onSubmit: (text) {
         final val = double.tryParse(text);
