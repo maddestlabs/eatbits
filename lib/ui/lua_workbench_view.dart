@@ -95,14 +95,35 @@ class _LuaWorkbenchViewState extends State<LuaWorkbenchView> {
                           hint: Text('LOAD PRESET', style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textSecondary, fontSize: 11)),
                           dropdownColor: EatsTheme.panelBackground,
                           items: LuaPresetLibrary.presets.map((preset) {
+                            final catColor = preset.isAudioFx
+                                ? EatsTheme.secondaryMagenta
+                                : (preset.isMidiFx ? EatsTheme.accentGold : EatsTheme.primaryCyan);
                             return DropdownMenuItem<LuaPreset>(
                               value: preset,
-                              child: Text(
-                                preset.name,
-                                style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textPrimary, fontSize: 11),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: catColor,
+                                      borderRadius: BorderRadius.circular(3),
+                                    ),
+                                    child: Text(
+                                      preset.category.displayName,
+                                      style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 8),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    preset.name,
+                                    style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textPrimary, fontSize: 11),
+                                  ),
+                                ],
                               ),
                             );
                           }).toList(),
+
                           onChanged: (preset) {
                             if (preset != null) {
                               setState(() {

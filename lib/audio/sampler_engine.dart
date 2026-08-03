@@ -123,7 +123,7 @@ class SamplerEngine {
     if (buffer == null || buffer.samples.isEmpty) return const [];
 
     if (semitoneOffset.abs() < 0.01) {
-      return buffer.samples;
+      return List<double>.from(buffer.samples);
     }
 
     final playbackRate = math.pow(2.0, semitoneOffset / 12.0).toDouble();
@@ -146,7 +146,7 @@ class SamplerEngine {
     return result;
   }
 
-  /// Pure Dart RIFF/WAV PCM decoder (supports 8-bit, 16-bit, 24-bit, and 32-bit float/int WAV files).
+  /// Pure Dart RIFF/WAV PCM decoder (supports 8-bit, 16-bit, 24-bit, 32-bit float, and WAVE_FORMAT_EXTENSIBLE WAV files).
   static DecodedAudioBuffer? decodeWav(Uint8List bytes) {
     if (bytes.length < 44) return null;
 
@@ -179,6 +179,14 @@ class SamplerEngine {
         channels = byteData.getUint16(offset + 10, Endian.little);
         sampleRate = byteData.getUint32(offset + 12, Endian.little);
         bitsPerSample = byteData.getUint16(offset + 22, Endian.little);
+
+        // Handle WAVE_FORMAT_EXTENSIBLE (0xFFFE = 65534)
+        if (audioFormat == 65534 && chunkSize >= 40 && offset + 34 <= bytes.length) {
+          final subFormat = byteData.getUint16(offset + 32, Endian.little);
+          if (subFormat == 1 || subFormat == 3) {
+            audioFormat = subFormat;
+          }
+        }
       } else if (chunkId == 'data') {
         dataOffset = offset + 8;
         dataSize = chunkSize;
@@ -189,6 +197,7 @@ class SamplerEngine {
       if (chunkSize % 2 != 0) offset++; // Chunk padding alignment
     }
 
+
     if (dataOffset == -1 || dataOffset + dataSize > bytes.length) {
       return null;
     }
@@ -197,37 +206,66 @@ class SamplerEngine {
     final sampleCount = dataSize ~/ (channels * (bitsPerSample ~/ 8));
 
     for (int i = 0; i < sampleCount; i++) {
-      final pos = dataOffset + i * channels * (bitsPerSample ~/ 8);
+      final bytesPerSample = bitsPerSample ~/ 8;
+      final framePos = dataOffset + i * channels * bytesPerSample;
 
-      double sampleVal = 0.0;
+      double frameSum = 0.0;
+      for (int ch = 0; ch < channels; ch++) {
+        final pos = framePos + ch * bytesPerSample;
+        if (pos + bytesPerSample > bytes.length) break;
 
-      if (audioFormat == 3 && bitsPerSample == 32) {
-        // IEEE Float
-        sampleVal = byteData.getFloat32(pos, Endian.little).clamp(-1.0, 1.0);
-      } else if (bitsPerSample == 16) {
-        final int16 = byteData.getInt16(pos, Endian.little);
-        sampleVal = int16 / 32768.0;
-      } else if (bitsPerSample == 8) {
-        final uint8 = bytes[pos];
-        sampleVal = (uint8 - 128) / 128.0;
-      } else if (bitsPerSample == 24) {
-        final b0 = bytes[pos];
-        final b1 = bytes[pos + 1];
-        final b2 = bytes[pos + 2];
-        int val = (b2 << 16) | (b1 << 8) | b0;
-        if ((val & 0x800000) != 0) {
-          val |= 0xFF000000;
+        double sampleVal = 0.0;
+        if (audioFormat == 3 && bitsPerSample == 32) {
+          sampleVal = byteData.getFloat32(pos, Endian.little).clamp(-1.0, 1.0);
+        } else if (bitsPerSample == 16) {
+          final int16 = byteData.getInt16(pos, Endian.little);
+          sampleVal = int16 / 32768.0;
+        } else if (bitsPerSample == 8) {
+          final uint8 = bytes[pos];
+          sampleVal = (uint8 - 128) / 128.0;
+        } else if (bitsPerSample == 24) {
+          final b0 = bytes[pos];
+          final b1 = bytes[pos + 1];
+          final b2 = bytes[pos + 2];
+          int val = (b2 << 16) | (b1 << 8) | b0;
+          if ((val & 0x800000) != 0) {
+            val |= 0xFF000000;
+          }
+          sampleVal = val / 8388608.0;
         }
-        sampleVal = val / 8388608.0;
+        frameSum += sampleVal;
       }
 
-      pcmSamples.add(sampleVal);
+      pcmSamples.add(frameSum / channels);
+    }
+
+    // Normalize sample rate to 44100 Hz if different (e.g. 48000 Hz or 22050 Hz)
+    List<double> finalSamples = pcmSamples;
+    if (sampleRate != 44100 && pcmSamples.isNotEmpty) {
+      final rateRatio = 44100.0 / sampleRate;
+      final resampledCount = (pcmSamples.length * rateRatio).round();
+      final resampled = List<double>.filled(resampledCount, 0.0);
+
+      for (int i = 0; i < resampledCount; i++) {
+        final srcIdx = i / rateRatio;
+        final idx0 = srcIdx.floor();
+        final idx1 = (idx0 + 1).clamp(0, pcmSamples.length - 1);
+        final frac = srcIdx - idx0;
+
+        if (idx0 >= pcmSamples.length - 1) {
+          resampled[i] = pcmSamples.last;
+        } else {
+          resampled[i] = (1.0 - frac) * pcmSamples[idx0] + frac * pcmSamples[idx1];
+        }
+      }
+      finalSamples = resampled;
     }
 
     return DecodedAudioBuffer(
-      samples: pcmSamples,
-      sampleRate: sampleRate,
+      samples: finalSamples,
+      sampleRate: 44100,
       channels: channels,
     );
   }
 }
+

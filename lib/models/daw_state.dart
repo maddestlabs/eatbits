@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../audio/audio_engine.dart';
 import '../audio/sampler_engine.dart';
+import '../audio/soundfont_engine.dart';
 import '../audio/wav_exporter.dart';
 import '../theme/eats_theme.dart';
 import '../lua/lua_engine.dart';
@@ -562,6 +563,161 @@ class DawState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setTrackColor(TrackChannel track, Color color) {
+    track.color = color;
+    notifyListeners();
+  }
+
+  void deleteTrack(TrackChannel track) {
+    if (activePattern.tracks.length <= 1) return;
+    final index = activePattern.tracks.indexOf(track);
+    if (index != -1) {
+      activePattern.tracks.removeAt(index);
+      if (_activeTrackIndex >= activePattern.tracks.length) {
+        _activeTrackIndex = activePattern.tracks.length - 1;
+      }
+      notifyListeners();
+    }
+  }
+
+  void duplicateTrack(TrackChannel track) {
+    final newId = 't_${DateTime.now().millisecondsSinceEpoch}';
+    final duplicatedClips = track.clips.map((c) {
+      return TrackClip(
+        id: 'clip_${newId}_${c.id}',
+        name: '${c.name} Copy',
+        trackId: newId,
+        startBar: c.startBar,
+        barLength: c.barLength,
+        notes: c.notes.map((n) => n.copyWith()).toList(),
+        luaScriptCode: c.luaScriptCode,
+        luaParams: Map.from(c.luaParams),
+      );
+    }).toList();
+
+    final newTrack = TrackChannel(
+      id: newId,
+      name: '${track.name} (Copy)',
+      color: track.color,
+      type: track.type,
+      volume: track.volume,
+      pan: track.pan,
+      isMuted: track.isMuted,
+      isSoloed: track.isSoloed,
+      sampleName: track.sampleName,
+      synthWaveform: track.synthWaveform,
+      cutoff: track.cutoff,
+      resonance: track.resonance,
+      attack: track.attack,
+      release: track.release,
+      luaScriptCode: track.luaScriptCode,
+      luaParams: Map.from(track.luaParams),
+      steps: track.steps.map((s) => StepEvent(active: s.active, velocity: s.velocity, pitch: s.pitch, isSlide: s.isSlide, isAccent: s.isAccent)).toList(),
+      notes: track.notes.map((n) => n.copyWith()).toList(),
+      clips: duplicatedClips,
+      fxRack: track.fxRack.map((f) => FXInsert(id: f.id, name: f.name, type: f.type, enabled: f.enabled, mix: f.mix, params: Map.from(f.params))).toList(),
+      trackerColumns: track.trackerColumns,
+      activeView: track.activeView,
+      isMonophonic: track.isMonophonic,
+    );
+
+    final insertIdx = activePattern.tracks.indexOf(track) + 1;
+    if (insertIdx > 0 && insertIdx <= activePattern.tracks.length) {
+      activePattern.tracks.insert(insertIdx, newTrack);
+      activeTrackIndex = insertIdx;
+    } else {
+      activePattern.tracks.add(newTrack);
+      activeTrackIndex = activePattern.tracks.length - 1;
+    }
+    notifyListeners();
+  }
+
+  // Modular FX Insert Management
+  void addFXInsert(TrackChannel track, FXType type) {
+    track.fxRack.add(FXInsert.create(type));
+    notifyListeners();
+  }
+
+  void removeFXInsert(TrackChannel track, String fxId) {
+    track.fxRack.removeWhere((f) => f.id == fxId);
+    notifyListeners();
+  }
+
+  void reorderFXInsert(TrackChannel track, int oldIndex, int newIndex) {
+    if (oldIndex < newIndex) {
+      newIndex -= 1;
+    }
+    if (oldIndex >= 0 && oldIndex < track.fxRack.length && newIndex >= 0 && newIndex <= track.fxRack.length) {
+      final item = track.fxRack.removeAt(oldIndex);
+      track.fxRack.insert(newIndex, item);
+      notifyListeners();
+    }
+  }
+
+  void toggleFXInsert(TrackChannel track, String fxId, bool enabled) {
+    for (final f in track.fxRack) {
+      if (f.id == fxId) {
+        f.enabled = enabled;
+        notifyListeners();
+        break;
+      }
+    }
+  }
+
+  void updateFXMix(TrackChannel track, String fxId, double mix) {
+    for (final f in track.fxRack) {
+      if (f.id == fxId) {
+        f.mix = mix.clamp(0.0, 1.0);
+        notifyListeners();
+        break;
+      }
+    }
+  }
+
+  void updateFXParam(TrackChannel track, String fxId, String paramName, double val) {
+    for (final f in track.fxRack) {
+      if (f.id == fxId) {
+        f.params[paramName] = val;
+        notifyListeners();
+        break;
+      }
+    }
+  }
+
+  void updateFXIrSample(TrackChannel track, String fxId, String irName) {
+    for (final f in track.fxRack) {
+      if (f.id == fxId) {
+        f.irSampleName = irName;
+        notifyListeners();
+        break;
+      }
+    }
+  }
+
+  // Legacy compatibility methods
+  void toggleBitcrusher(TrackChannel track, bool enabled) {
+    if (enabled) {
+      if (!track.fxRack.any((f) => f.name == 'Bitcrusher')) {
+        addFXInsert(track, FXType.bitcrusher);
+      }
+    } else {
+      track.fxRack.removeWhere((f) => f.name == 'Bitcrusher');
+      notifyListeners();
+    }
+  }
+
+  void toggleDistortion(TrackChannel track, bool enabled) {
+    if (enabled) {
+      if (!track.fxRack.any((f) => f.name == 'TubeDistortion')) {
+        addFXInsert(track, FXType.distortion);
+      }
+    } else {
+      track.fxRack.removeWhere((f) => f.name == 'TubeDistortion');
+      notifyListeners();
+    }
+  }
+
+
   // Project Serialization & .eats.zip Export / Import
   Uint8List exportToEatsZip() {
     final luaScript = exportToEatsLua();
@@ -618,6 +774,125 @@ class DawState extends ChangeNotifier {
     }
   }
 
+  void addSampleTrackFromFile({
+    required String fileName,
+    required Uint8List fileBytes,
+    int startBar = 0,
+    int barLength = 4,
+  }) {
+    final cleanName = fileName.replaceAll('\\', '/').split('/').last;
+    final isLua = cleanName.toLowerCase().endsWith('.lua');
+
+    if (isLua) {
+      final luaCode = utf8.decode(fileBytes);
+      final preset = LuaPresetLibrary.parseFromLuaScript(
+        luaCode,
+        fallbackName: cleanName.replaceAll(RegExp(r'\.lua$', caseSensitive: false), ''),
+      );
+
+      if (preset.category == LuaPresetCategory.audioFx) {
+        addFXInsert(activeTrack, FXType.distortion);
+        final fx = activeTrack.fxRack.last;
+        fx.name = preset.name;
+        notifyListeners();
+        return;
+      }
+
+      final trackId = 'track_${DateTime.now().millisecondsSinceEpoch}';
+      final trackColors = [
+        const Color(0xFF21F4E8),
+        const Color(0xFFFF8C00),
+        const Color(0xFF00FF66),
+        const Color(0xFFFF0055),
+        const Color(0xFFBD00FF),
+      ];
+      final color = trackColors[activePattern.tracks.length % trackColors.length];
+
+      final newTrack = TrackChannel(
+        id: trackId,
+        name: preset.name,
+        type: TrackType.luaScript,
+        color: color,
+        luaScriptCode: preset.code,
+      );
+
+      final clip = TrackClip(
+        id: 'clip_${trackId}_0',
+        name: preset.name,
+        trackId: trackId,
+        startBar: startBar,
+        barLength: barLength,
+      );
+
+      newTrack.clips.add(clip);
+      activePattern.tracks.add(newTrack);
+      activeTrackIndex = activePattern.tracks.length - 1;
+      notifyListeners();
+      return;
+    }
+
+    final isSf2 = cleanName.toLowerCase().endsWith('.sf2');
+
+
+    if (isSf2) {
+      SoundFontEngine.instance.registerSoundFont(cleanName, fileBytes);
+    } else {
+      final registered = SamplerEngine.instance.registerSampleBytes(cleanName, fileBytes);
+      if (!registered) {
+        debugPrint('Failed to register sample bytes for $cleanName');
+      }
+    }
+
+    final trackId = 'track_${DateTime.now().millisecondsSinceEpoch}';
+    final trackName = cleanName
+        .replaceAll(RegExp(r'\.(wav|mp3|ogg|flac|sf2)$', caseSensitive: false), '')
+        .trim();
+
+    final trackColors = [
+      const Color(0xFF21F4E8),
+      const Color(0xFFFF8C00),
+      const Color(0xFF00FF66),
+      const Color(0xFFFF0055),
+      const Color(0xFFBD00FF),
+    ];
+    final color = trackColors[activePattern.tracks.length % trackColors.length];
+
+    final presetId = isSf2 ? 'soundfont_sampler' : 'sampler_instrument';
+
+    final newTrack = TrackChannel(
+      id: trackId,
+      name: trackName.isEmpty ? (isSf2 ? 'SoundFont Track' : 'Sample Track') : trackName,
+      type: TrackType.sampler,
+      sampleName: cleanName,
+      color: color,
+      luaScriptCode: LuaPresetLibrary.presets.firstWhere(
+        (p) => p.id == presetId,
+        orElse: () => LuaPresetLibrary.presets.first,
+      ).code,
+    );
+
+    final clip = TrackClip(
+      id: 'clip_${trackId}_0',
+      name: cleanName,
+      trackId: trackId,
+      startBar: startBar,
+      barLength: barLength,
+    );
+    clip.notes.add(Note(
+      id: 'note_${trackId}_0',
+      pitch: 60,
+      startStep: 0.0,
+      durationSteps: (barLength * 16).toDouble(),
+      velocity: 0.9,
+    ));
+    newTrack.clips.add(clip);
+
+    activePattern.tracks.add(newTrack);
+    activeTrackIndex = activePattern.tracks.length - 1;
+    notifyListeners();
+  }
+
+
   void compileWrenCode(String code) => compileLuaCode(code);
 
   void loadLuaPreset(LuaPreset preset) {
@@ -650,20 +925,6 @@ class DawState extends ChangeNotifier {
       arrangement.removeAt(index);
       notifyListeners();
     }
-  }
-
-  void toggleBitcrusher(TrackChannel track, bool enable) {
-    if (enable) {
-      track.fxRack.add(FXInsert(
-        id: 'fx_bc',
-        name: 'Bitcrusher',
-        type: FXType.bitcrusher,
-        params: {'Bits': 6.0, 'Downsample': 4.0, 'Mix': 0.8},
-      ));
-    } else {
-      track.fxRack.removeWhere((f) => f.name == 'Bitcrusher');
-    }
-    notifyListeners();
   }
 
   void setTrackActiveView(TrackChannel track, MusicViewType viewType) {
@@ -733,21 +994,9 @@ class DawState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleDistortion(TrackChannel track, bool enable) {
-    if (enable) {
-      track.fxRack.add(FXInsert(
-        id: 'fx_td',
-        name: 'TubeDistortion',
-        type: FXType.distortion,
-        params: {'Drive': 6.0, 'OutGain': 0.7},
-      ));
-    } else {
-      track.fxRack.removeWhere((f) => f.name == 'TubeDistortion');
-    }
-    notifyListeners();
-  }
-
   // WAV Song Export
+
+
   void exportWavSong() {
     final int totalSamples = (44100 * (60.0 / _bpm) * 16).toInt();
     final leftBuffer = List<double>.filled(totalSamples, 0.0);

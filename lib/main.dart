@@ -11,8 +11,8 @@ import 'ui/mixer_view.dart';
 import 'ui/track_inspector_view.dart';
 import 'ui/transport_header.dart';
 import 'ui/widgets/skeuomorphic_hardware_button.dart';
-
 import 'ui/virtual_piano_keyboard.dart';
+import 'utils/eats_file_helper.dart';
 
 void main() {
   runApp(const WrenDawApp());
@@ -28,6 +28,14 @@ class WrenDawApp extends StatefulWidget {
 class _WrenDawAppState extends State<WrenDawApp> {
   final DawState _dawState = DawState();
   bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    EatsFileHelper.initGlobalAudioDrop((fileName, fileBytes) {
+      _dawState.addSampleTrackFromFile(fileName: fileName, fileBytes: fileBytes);
+    });
+  }
 
   @override
   void dispose() {

@@ -130,7 +130,7 @@ class StepEvent {
   }
 }
 
-enum FXType { biquadFilter, delay, distortion, bitcrusher, luaFX }
+enum FXType { biquadFilter, delay, distortion, bitcrusher, convolutionReverb, luaFX }
 
 class FXInsert {
   String id;
@@ -139,6 +139,7 @@ class FXInsert {
   bool enabled;
   double mix; // Dry/Wet 0.0 - 1.0
   Map<String, double> params; // e.g. 'cutoff': 2000, 'resonance': 3.0
+  String? irSampleName; // Active Impulse Response name for convolutionReverb
 
   FXInsert({
     required this.id,
@@ -147,7 +148,56 @@ class FXInsert {
     this.enabled = true,
     this.mix = 0.5,
     required this.params,
+    this.irSampleName,
   });
+
+  factory FXInsert.create(FXType type) {
+    final id = 'fx_${DateTime.now().millisecondsSinceEpoch}_${type.name}';
+    switch (type) {
+      case FXType.convolutionReverb:
+        return FXInsert(
+          id: id,
+          name: 'Convolution Reverb',
+          type: FXType.convolutionReverb,
+          mix: 0.35,
+          params: {'PreDelayMs': 10.0, 'HighCut': 8000.0},
+          irSampleName: 'Great Hall',
+        );
+      case FXType.distortion:
+        return FXInsert(
+          id: id,
+          name: 'Tube Distortion',
+          type: FXType.distortion,
+          mix: 0.5,
+          params: {'Drive': 0.5, 'Tone': 5000.0},
+        );
+      case FXType.bitcrusher:
+        return FXInsert(
+          id: id,
+          name: 'Bitcrusher 8-Bit',
+          type: FXType.bitcrusher,
+          mix: 0.6,
+          params: {'Bits': 8.0, 'Downsample': 4.0},
+        );
+      case FXType.delay:
+        return FXInsert(
+          id: id,
+          name: 'Stereo Delay',
+          type: FXType.delay,
+          mix: 0.3,
+          params: {'TimeMs': 250.0, 'Feedback': 0.4},
+        );
+      case FXType.biquadFilter:
+      default:
+        return FXInsert(
+          id: id,
+          name: 'Lowpass Filter',
+          type: FXType.biquadFilter,
+          mix: 1.0,
+          params: {'Cutoff': 3500.0, 'Resonance': 1.5},
+        );
+    }
+  }
 
   Map<String, dynamic> toJson() => {
     'id': id,
@@ -156,6 +206,7 @@ class FXInsert {
     'enabled': enabled,
     'mix': mix,
     'params': params,
+    'irSampleName': irSampleName,
   };
 
   factory FXInsert.fromJson(Map<String, dynamic> json) => FXInsert(
@@ -165,8 +216,10 @@ class FXInsert {
     enabled: json['enabled'] ?? true,
     mix: (json['mix'] as num?)?.toDouble() ?? 0.5,
     params: Map<String, double>.from(json['params'] ?? {}),
+    irSampleName: json['irSampleName'] as String?,
   );
 }
+
 
 class MidiFXInsert {
   String id;

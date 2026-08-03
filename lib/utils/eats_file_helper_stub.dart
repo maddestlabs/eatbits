@@ -14,3 +14,12 @@ void pickEatsFileWebImpl(
     Function(Uint8List? bytes, String? textContent, String fileName) onFileLoaded) {
   debugPrint('Web file picking not supported on VM target');
 }
+
+void initGlobalAudioDropImpl(Function(String fileName, Uint8List bytes) onAudioDropped) {
+  debugPrint('Global audio drop not supported on VM target');
+}
+
+Future<Uint8List?> fetchUrlBytesWebImpl(String url) async {
+  return null;
+}
+

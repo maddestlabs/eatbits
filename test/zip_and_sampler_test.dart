@@ -52,6 +52,37 @@ void main() {
       expect(overview.maxPeaks.first, equals(0.8));
       expect(overview.minPeaks.first, equals(-0.8));
     });
+
+    test('addSampleTrackFromFile registers sample and creates Sampler track clip', () {
+      final dawState = DawState();
+      final wavBytes = WavExporter.encodeWav(
+        leftSamples: [0.1, 0.5, 0.9, 0.2],
+        rightSamples: [0.1, 0.5, 0.9, 0.2],
+      );
+
+      final initialTrackCount = dawState.activePattern.tracks.length;
+      dawState.addSampleTrackFromFile(fileName: 'vocal_lead.wav', fileBytes: wavBytes);
+
+      expect(dawState.activePattern.tracks.length, equals(initialTrackCount + 1));
+      final newTrack = dawState.activePattern.tracks.last;
+      expect(newTrack.sampleName, equals('vocal_lead.wav'));
+      expect(newTrack.clips.length, equals(1));
+    });
+
+    test('getPitchShiftedPcm returns an isolated copy that does not mutate cached samples', () {
+      final originalBuffer = SamplerEngine.instance.getSample('test_sample');
+      expect(originalBuffer, isNotNull);
+      final firstVal = originalBuffer!.samples.first;
+
+      final fetchedPcm = SamplerEngine.instance.getPitchShiftedPcm('test_sample', 0.0);
+      fetchedPcm[0] = 999.0; // Mutate returned list
+
+      // Original cached buffer in SamplerEngine should remain unchanged!
+      expect(originalBuffer.samples.first, equals(firstVal));
+      expect(originalBuffer.samples.first, isNot(equals(999.0)));
+    });
   });
 }
+
+
 

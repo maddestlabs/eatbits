@@ -40,4 +40,20 @@ class EatsFileHelper {
       }
     });
   }
+
+  /// Initializes global drag & drop listener for audio files (.wav, .mp3).
+  static void initGlobalAudioDrop(Function(String fileName, Uint8List fileBytes) onAudioDropped) {
+    if (kIsWeb) {
+      initGlobalAudioDropImpl(onAudioDropped);
+    }
+  }
+
+  /// Downloads binary bytes from an HTTP URL.
+  static Future<Uint8List?> fetchUrlBytes(String url) async {
+    if (kIsWeb) {
+      return fetchUrlBytesWebImpl(url);
+    }
+    return null;
+  }
 }
+

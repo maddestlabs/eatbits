@@ -7,7 +7,10 @@ import 'widgets/skeuomorphic_hardware_button.dart';
 import 'widgets/skeuomorphic_hardware_knob.dart';
 import 'widgets/skeuomorphic_hardware_slider.dart';
 import 'widgets/stereo_meter_widget.dart';
+import 'widgets/modular_fx_rack_widget.dart';
 import 'widgets/rename_track_dialog.dart';
+
+
 
 class MixerView extends StatefulWidget {
   final DawState dawState;
@@ -309,41 +312,51 @@ class _MixerViewState extends State<MixerView> {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
+        return Dialog(
           backgroundColor: EatsTheme.panelBackground,
-          title: Text('FX INSERT RACK: ${track.name}', style: TextStyle(color: EatsTheme.primaryCyan)),
-          content: SizedBox(
-            width: 320,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: EatsTheme.secondaryMagenta, width: 2),
+          ),
+          child: Container(
+            width: 500,
+            padding: const EdgeInsets.all(16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ListTile(
-                  title: Text('Bitcrusher 8-Bit', style: TextStyle(color: EatsTheme.textPrimary, fontSize: 13)),
-                  subtitle: Text('Sample reduction & bit depth', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10)),
-                  trailing: Switch(
-                    value: track.fxRack.any((f) => f.name == 'Bitcrusher'),
-                    onChanged: (val) => dawState.toggleBitcrusher(track, val),
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      'MIXER FX RACK: ${track.name.toUpperCase()}',
+                      style: EatsTheme.getPrimaryFontStyle(
+                        color: EatsTheme.secondaryMagenta,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: Icon(Icons.close, color: EatsTheme.textMuted),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ],
                 ),
-                ListTile(
-                  title: Text('Tube Distortion', style: TextStyle(color: EatsTheme.textPrimary, fontSize: 13)),
-                  subtitle: Text('Soft clipping warmth', style: TextStyle(color: EatsTheme.textMuted, fontSize: 10)),
-                  trailing: Switch(
-                    value: track.fxRack.any((f) => f.name == 'TubeDistortion'),
-                    onChanged: (val) => dawState.toggleDistortion(track, val),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: ModularFxRackWidget(
+                      dawState: dawState,
+                      track: track,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('CLOSE', style: TextStyle(color: EatsTheme.primaryCyan)),
-            ),
-          ],
         );
       },
     );
   }
 }
+

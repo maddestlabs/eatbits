@@ -107,7 +107,16 @@ if (Test-Path $swFile) {
     }
 }
 
+# Copy audio folder (e.g. audio/ir/*.zip) to build/web/audio/ if present
+$audioSource = Join-Path $rootDir "audio"
+if (Test-Path $audioSource) {
+    $audioTarget = Join-Path $buildWebDir "audio"
+    Copy-Item -Path "$audioSource\*" -Destination $audioTarget -Recurse -Force
+    Write-Host "    [+] Copied audio assets to build/web/audio/." -ForegroundColor Gray
+}
+
 Write-Host "[+] Build completed successfully!" -ForegroundColor Green
+
 
 # ------------------------------------------------------------------
 # STEP 2: Ensure Open Servers are Closed BEFORE Starting New One

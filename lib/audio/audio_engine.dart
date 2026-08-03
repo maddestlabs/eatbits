@@ -3,8 +3,11 @@ import 'package:flutter/foundation.dart';
 
 import '../models/track_model.dart';
 import '../lua/lua_engine.dart';
+import 'convolver_engine.dart';
 import 'poly_synth.dart';
+
 import 'sampler_engine.dart';
+import 'soundfont_engine.dart';
 
 import 'audio_engine_stub.dart'
     if (dart.library.js_interop) 'audio_engine_web.dart';
@@ -177,7 +180,17 @@ class AudioEngine {
 
     List<double> pcmBuffer;
 
-    if (track.type == TrackType.sampler) {
+    final sfBuffer = SoundFontEngine.instance.getPitchShiftedBuffer(
+      fontId: track.sampleName,
+      presetNum: (track.luaParams['PresetNum'] ?? 0.0).toInt(),
+      midiNote: midiNote,
+      velocity: velocity,
+    );
+
+    if (sfBuffer.isNotEmpty) {
+      pcmBuffer = sfBuffer;
+    } else if (track.type == TrackType.sampler) {
+
       final customBuffer = SamplerEngine.instance.getPitchShiftedPcm(
         track.sampleName,
         (midiNote - 60).toDouble(),
@@ -237,19 +250,46 @@ class AudioEngine {
       );
     }
 
-    for (final fx in track.fxRack) {
-      if (!fx.enabled) continue;
+    final hasReverbOrDelay = track.fxRack.any((fx) =>
+
+        fx.enabled &&
+        (fx.type == FXType.convolutionReverb ||
+            fx.type == FXType.delay ||
+            fx.name == 'Convolution Reverb'));
+
+    if (hasReverbOrDelay) {
+      final tailSamples = (44100 * 2.0).toInt();
+      final extendedBuffer = List<double>.filled(pcmBuffer.length + tailSamples, 0.0);
       for (int i = 0; i < pcmBuffer.length; i++) {
-        final t = i / 44100.0;
-        final processed = LuaEngine.evaluateEffect(
-          code: fx.name,
-          inputSample: pcmBuffer[i],
-          time: t,
-          params: fx.params,
+        extendedBuffer[i] = pcmBuffer[i];
+      }
+      pcmBuffer = extendedBuffer;
+    }
+
+    for (final fx in track.fxRack) {
+
+      if (!fx.enabled) continue;
+
+      if (fx.type == FXType.convolutionReverb || fx.name == 'Convolution Reverb') {
+        pcmBuffer = ConvolverEngine.instance.processConvolver(
+          pcmBuffer,
+          fx.irSampleName ?? 'Great Hall',
+          fx.mix,
         );
-        pcmBuffer[i] = (pcmBuffer[i] * (1.0 - fx.mix)) + (processed * fx.mix);
+      } else {
+        for (int i = 0; i < pcmBuffer.length; i++) {
+          final t = i / 44100.0;
+          final processed = LuaEngine.evaluateEffect(
+            code: fx.name,
+            inputSample: pcmBuffer[i],
+            time: t,
+            params: fx.params,
+          );
+          pcmBuffer[i] = (pcmBuffer[i] * (1.0 - fx.mix)) + (processed * fx.mix);
+        }
       }
     }
+
 
     _webImpl.playPcmBuffer(
       pcmBuffer,

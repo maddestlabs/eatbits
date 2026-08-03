@@ -1,7 +1,38 @@
+enum LuaPresetCategory {
+  instrument,
+  audioFx,
+  midiFx,
+  utility;
+
+  String get displayName {
+    switch (this) {
+      case LuaPresetCategory.instrument:
+        return 'INSTRUMENT';
+      case LuaPresetCategory.audioFx:
+        return 'AUDIO FX';
+      case LuaPresetCategory.midiFx:
+        return 'MIDI FX';
+      case LuaPresetCategory.utility:
+        return 'UTILITY';
+    }
+  }
+
+  static LuaPresetCategory parse(String categoryStr) {
+    final clean = categoryStr.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '');
+    if (clean.contains('audiofx') || clean.contains('effect') || clean.contains('fx')) {
+      if (clean.contains('midi')) return LuaPresetCategory.midiFx;
+      return LuaPresetCategory.audioFx;
+    }
+    if (clean.contains('midi')) return LuaPresetCategory.midiFx;
+    if (clean.contains('util')) return LuaPresetCategory.utility;
+    return LuaPresetCategory.instrument;
+  }
+}
+
 class LuaPreset {
   final String id;
   final String name;
-  final String category; // 'synth', 'drum', or 'effect'
+  final LuaPresetCategory category;
   final String description;
   final String code;
 
@@ -12,25 +43,80 @@ class LuaPreset {
     required this.description,
     required this.code,
   });
+
+  bool get isInstrument => category == LuaPresetCategory.instrument;
+  bool get isAudioFx => category == LuaPresetCategory.audioFx;
+  bool get isMidiFx => category == LuaPresetCategory.midiFx;
 }
 
 class LuaPresetLibrary {
-  static const List<LuaPreset> presets = [
+  static final List<LuaPreset> _customPresets = [];
+
+  static List<LuaPreset> get presets => [..._builtinPresets, ..._customPresets];
+
+  static List<LuaPreset> getPresetsByCategory(LuaPresetCategory category) {
+    return presets.where((p) => p.category == category).toList();
+  }
+
+  static void registerCustomPreset(LuaPreset preset) {
+    _customPresets.removeWhere((p) => p.id == preset.id || p.name == preset.name);
+    _customPresets.add(preset);
+  }
+
+  static LuaPreset parseFromLuaScript(String luaCode, {String fallbackName = 'Custom Script'}) {
+    String name = fallbackName;
+    LuaPresetCategory category = LuaPresetCategory.instrument;
+    String description = 'User imported Lua script';
+
+    final lines = luaCode.split('\n');
+    for (final line in lines) {
+      final trimmed = line.trim();
+      if (trimmed.startsWith('-- @name:')) {
+        name = trimmed.substring(9).trim();
+      } else if (trimmed.startsWith('-- @category:')) {
+        category = LuaPresetCategory.parse(trimmed.substring(13).trim());
+      } else if (trimmed.startsWith('-- @description:')) {
+        description = trimmed.substring(16).trim();
+      }
+    }
+
+    if (!luaCode.contains('@category:')) {
+      if (luaCode.contains('processSignal') || luaCode.contains('evaluateEffect')) {
+        category = LuaPresetCategory.audioFx;
+      } else if (luaCode.contains('transform_notes') || luaCode.contains('midi_fx')) {
+        category = LuaPresetCategory.midiFx;
+      }
+    }
+
+    final id = 'custom_${DateTime.now().millisecondsSinceEpoch}_${name.toLowerCase().replaceAll(RegExp(r'[^a-z0-9]'), '')}';
+    final preset = LuaPreset(
+      id: id,
+      name: name,
+      category: category,
+      description: description,
+      code: luaCode,
+    );
+
+    registerCustomPreset(preset);
+    return preset;
+  }
+
+  static const List<LuaPreset> _builtinPresets = [
     // 0. Eatsbits.v1 Native Node & Automation API Showcase Preset
     LuaPreset(
       id: 'eatsbits_v1_acid_automation',
       name: 'Eatsbits.v1 Native TB-303 + Delay (v1 API)',
-      category: 'synth',
+      category: LuaPresetCategory.instrument,
       description: 'Demonstrates eatsbits.v1 opaque handles (NodeHandle, ParamHandle), WebAudio graph routing, and sample-accurate parameter automation curves.',
       code: '''
--- --- Eatsbits Engine API v1 Native Graph & Automation Script (Lua) ---
+-- @name: Eatsbits.v1 Native TB-303
+-- @category: instrument
 local EatsbitsAcidPreset = {}
 
 function EatsbitsAcidPreset.onInit(config)
-  -- 1. Create native instrument & effect nodes via node registry
   local synth = eatsbits.v1.createNode("TB303", {
-    waveform = 0,       -- 0 = Sawtooth, 1 = Square
-    oversample = 2      -- 2x native Virtual Analog oversampling
+    waveform = 0,
+    oversample = 2
   })
 
   local delay = eatsbits.v1.createNode("StereoDelayFX", {
@@ -40,25 +126,19 @@ function EatsbitsAcidPreset.onInit(config)
   })
 
   local master = eatsbits.v1.getMasterBus()
-
-  -- 2. Audio Graph Routing: Synth -> Delay -> Master
   synth:connect(delay)
   delay:connect(master)
 
-  -- 3. Sample-Accurate Parameter Automation
   local cutoff = synth:getParam("Cutoff")
   local now = Scheduler.currentTime()
-
-  -- Sweep filter cutoff over 2 bars (sample-accurate on audio thread)
   cutoff:setValueAtTime(200.0, now)
   cutoff:exponentialRampToValueAtTime(8000.0, now + Scheduler.beatsToSeconds(8.0))
 end
 
 function EatsbitsAcidPreset.onTransportStart(bar, beat)
-  -- Musical time lookahead scheduler NoteOn triggers
-  Scheduler.scheduleNote(36, 0.95, 0.0, 2.0)  -- C2
-  Scheduler.scheduleNote(48, 1.00, 2.0, 1.0)  -- C3
-  Scheduler.scheduleNote(39, 0.85, 3.0, 1.0)  -- D#2
+  Scheduler.scheduleNote(36, 0.95, 0.0, 2.0)
+  Scheduler.scheduleNote(48, 1.00, 2.0, 1.0)
+  Scheduler.scheduleNote(39, 0.85, 3.0, 1.0)
 end
 
 function EatsbitsAcidPreset.getState()
@@ -72,18 +152,20 @@ end
 return EatsbitsAcidPreset
 ''',
     ),
+
     // 1. Eats 303 Acid Bass Synth (JC-303 based)
     LuaPreset(
       id: 'acid_303',
       name: 'Eats 303',
-      category: 'synth',
+      category: LuaPresetCategory.instrument,
       description: 'Roland TB-303 emulation modelled after midilab/jc303 (Eats 303 custom implementation) with 24dB 4-Pole Diode Ladder filter, leaky integrator saw/square oscillators, Accent, Slide portamento, and Overdrive.',
       code: '''
--- --- JC-303 Roland TB-303 Acid Engine (Lua) ---
+-- @name: Eats 303
+-- @category: instrument
 local Acid303 = {}
 
 function Acid303.init()
-  Param.add("Waveform", 0.0, 1.0, 0.0)    -- 0 = Saw, 1 = Square
+  Param.add("Waveform", 0.0, 1.0, 0.0)
   Param.add("Cutoff", 100.0, 6500.0, 1600.0)
   Param.add("Resonance", 0.5, 16.0, 8.0)
   Param.add("EnvMod", 0.0, 1.0, 0.75)
@@ -103,7 +185,6 @@ function Acid303.process(time, freq, note, params, targetNote, isSlide, isAccent
   local drive = params["Overdrive"] or 0.3
   local slideParam = params["Slide"] or 0.4
 
-  -- Pitch glide / Portamento logic for JC-303 continuous monophonic voice
   local currentFreq = freq
   if targetNote and targetNote > 0 then
     local targetFreq = 440.0 * (2.0 ^ ((targetNote - 69) / 12.0))
@@ -113,7 +194,6 @@ function Acid303.process(time, freq, note, params, targetNote, isSlide, isAccent
     currentFreq = targetFreq + (freq - targetFreq) * math.exp(-time / 0.060)
   end
 
-  -- JC-303 Oscillators: Leaky Integrator Sawtooth & Differentiated Square
   local phase = time * currentFreq
   local normPhase = phase - math.floor(phase)
   local sawRaw = 2.0 * normPhase - 1.0
@@ -121,18 +201,15 @@ function Acid303.process(time, freq, note, params, targetNote, isSlide, isAccent
   local sqrRaw = normPhase < 0.46 and 0.75 or -0.75
   local osc = waveType < 0.5 and sawHP or sqrRaw
 
-  -- Dynamic Accent & VCF Envelope Decay Dynamics
   local hasAccent = isAccent or (accent > 0.7 and not isSlide)
   local envBoost = hasAccent and (1.0 + accent * 1.1) or 1.0
   local envDecay = decay / (hasAccent and (1.0 + accent * 0.9) or 1.0)
   local env = math.exp(-time / envDecay)
   local accentPulse = hasAccent and (accent * 0.4 * math.exp(-time / 0.035)) or 0.0
 
-  -- 24dB 4-Pole Diode Ladder Filter simulation with feedback saturation
   local modCutoff = cutoff + (envMod * (env + accentPulse) * 6500.0 * envBoost)
   local filtered = DSP.lowpass(osc, modCutoff, res)
 
-  -- Post-VCF 150Hz 1-Pole High-Pass filter & overdrive saturation
   local highpassed = filtered * 0.98
   local output = highpassed * (hasAccent and 1.35 or 1.0)
   if drive > 0.05 then
@@ -150,10 +227,11 @@ return Acid303
     LuaPreset(
       id: 'procedural_kick',
       name: 'Eats Kick',
-      category: 'drum',
+      category: LuaPresetCategory.instrument,
       description: 'Synthesized punchy sub kick drum with exponential pitch sweep and smooth edge fade.',
       code: '''
--- --- Procedural Sub Kick Drum Script (Lua) ---
+-- @name: Eats Kick
+-- @category: instrument
 local ProceduralKick = {}
 
 function ProceduralKick.init()
@@ -171,19 +249,14 @@ function ProceduralKick.process(time, freq, note, params)
   local aDecay = params["AmpDecay"] or 0.35
   local click = params["Click"] or 0.0
 
-  -- Pitch sweep envelope
   local curFreq = endF + (startF - endF) * math.exp(-time / math.max(0.005, pDecay))
   local phase = 2.0 * math.pi * curFreq * time
   local subSine = math.sin(phase)
 
-  -- Transient click
   local clickTransient = (math.random() * 2.0 - 1.0) * math.exp(-time * 150.0) * click
-
-  -- Amplitude envelope decaying to near zero by time = aDecay
   local env = math.exp(-time * 5.0 / math.max(0.01, aDecay))
   local rawOutput = (subSine * 0.85 + clickTransient * 0.15) * env
 
-  -- Smooth fade toward edge of kick duration to guarantee clean drop to silence
   local maxDur = math.max(0.1, aDecay)
   local fadeStart = maxDur - 0.04
   local edgeFade = 1.0
@@ -203,10 +276,11 @@ return ProceduralKick
     LuaPreset(
       id: 'procedural_snare',
       name: 'Eats Snare',
-      category: 'drum',
+      category: LuaPresetCategory.instrument,
       description: 'Synthesized snare drum combining a 180Hz tonal body oscillator and high-pass filtered noise wires.',
       code: '''
--- --- Procedural Snare Drum Script (Lua) ---
+-- @name: Eats Snare
+-- @category: instrument
 local ProceduralSnare = {}
 
 function ProceduralSnare.init()
@@ -220,11 +294,9 @@ function ProceduralSnare.process(time, freq, note, params)
   local snappy = params["Snappy"] or 0.65
   local decay = params["Decay"] or 0.1
 
-  -- Body tone (pitch sweep)
   local sweepFreq = toneFreq * math.exp(-time * 40.0)
   local body = math.sin(2.0 * math.pi * sweepFreq * time) * math.exp(-time * 25.0)
 
-  -- Snare noise wires
   local noise = (math.random() * 2.0 - 1.0) * math.exp(-time / decay)
   local filteredNoise = DSP.highpass(noise, 1500.0, 1.0)
 
@@ -240,10 +312,11 @@ return ProceduralSnare
     LuaPreset(
       id: 'procedural_hihat',
       name: 'Eats Hats',
-      category: 'drum',
+      category: LuaPresetCategory.instrument,
       description: 'Synthesized hi-hat dominated by high-pass filtered white noise with adjustable metallic sheen and decay.',
       code: '''
--- --- Procedural Hi-Hat Synth Script (Lua) ---
+-- @name: Eats Hats
+-- @category: instrument
 local ProceduralHiHat = {}
 
 function ProceduralHiHat.init()
@@ -259,7 +332,6 @@ function ProceduralHiHat.process(time, freq, note, params)
 
   local env = math.exp(-time / math.max(0.005, decay))
 
-  -- Metallic ring harmonics (6 detuned square waves for TR-style metallic sheen)
   local ring1 = math.sin(2.0 * math.pi * 205.0 * time) > 0 and 1.0 or -1.0
   local ring2 = math.sin(2.0 * math.pi * 305.0 * time) > 0 and 1.0 or -1.0
   local ring3 = math.sin(2.0 * math.pi * 365.0 * time) > 0 and 1.0 or -1.0
@@ -268,11 +340,8 @@ function ProceduralHiHat.process(time, freq, note, params)
   local ring6 = math.sin(2.0 * math.pi * 700.0 * time) > 0 and 1.0 or -1.0
   local metallicRing = (ring1 + ring2 + ring3 + ring4 + ring5 + ring6) / 6.0
 
-  -- White noise generator (primary hi-hat sound source)
   local noise = (math.random() * 2.0 - 1.0)
   local rawSignal = noise * (1.0 - metallic * 0.4) + metallicRing * (metallic * 0.4)
-
-  -- High-pass filtered noise sibilance
   local filtered = DSP.highpass(rawSignal, cutoff, 1.2)
 
   return filtered * env * 0.75
@@ -286,10 +355,11 @@ return ProceduralHiHat
     LuaPreset(
       id: 'procedural_clap',
       name: 'Procedural Handclap',
-      category: 'drum',
+      category: LuaPresetCategory.instrument,
       description: 'Multi-burst noise clap synthesizer simulating human handclap reverberation.',
       code: '''
--- --- Procedural Handclap Script (Lua) ---
+-- @name: Procedural Handclap
+-- @category: instrument
 local ProceduralClap = {}
 
 function ProceduralClap.init()
@@ -301,7 +371,6 @@ function ProceduralClap.process(time, freq, note, params)
   local roomDecay = params["RoomDecay"] or 0.18
   local tone = params["Tone"] or 2200.0
 
-  -- Multi-tap burst envelope
   local burstEnv = 0.0
   if time < 0.01 then burstEnv = 1.0
   elseif time < 0.022 then burstEnv = 0.75
@@ -323,10 +392,11 @@ return ProceduralClap
     LuaPreset(
       id: 'poly_lead',
       name: 'Poly Lead Synth',
-      category: 'synth',
+      category: LuaPresetCategory.instrument,
       description: 'Dual oscillator sawtooth lead synthesizer with dynamic lowpass filter sweep.',
       code: '''
--- --- Poly Lead Synth Script (Lua) ---
+-- @name: Poly Lead Synth
+-- @category: instrument
 local PolyLeadSynth = {}
 
 function PolyLeadSynth.init()
@@ -344,7 +414,6 @@ function PolyLeadSynth.process(time, freq, note, params)
   local attack = params["Attack"] or 0.01
   local release = params["Release"] or 0.35
 
-  -- ADSR Envelope
   local env = 1.0
   if time < attack then
     env = time / attack
@@ -352,7 +421,6 @@ function PolyLeadSynth.process(time, freq, note, params)
     env = math.exp(-(time - attack) / release)
   end
 
-  -- Dual Detuned Saw Oscillators
   local f1 = freq
   local f2 = freq + detune
   local phase1 = time * f1
@@ -362,7 +430,6 @@ function PolyLeadSynth.process(time, freq, note, params)
   local saw2 = 2.0 * (phase2 - math.floor(phase2)) - 1.0
   local rawOsc = (saw1 + saw2) * 0.5
 
-  -- Resonant Filter
   local filtered = DSP.lowpass(rawOsc, cutoff, res)
   return filtered * env * 0.8
 end
@@ -375,10 +442,11 @@ return PolyLeadSynth
     LuaPreset(
       id: 'lua_delay',
       name: 'Lua Stereo Delay FX',
-      category: 'effect',
+      category: LuaPresetCategory.audioFx,
       description: 'Feedback delay line effect module with dampening and dry/wet mix controls.',
       code: '''
--- --- Lua Stereo Feedback Delay Effect ---
+-- @name: Lua Stereo Delay FX
+-- @category: audioFx
 local StereoDelayFX = {}
 
 function StereoDelayFX.init()
@@ -394,7 +462,6 @@ function StereoDelayFX.processSignal(inputSample, time, params)
   local damp = params["Dampening"] or 4500.0
   local mix = params["Mix"] or 0.4
 
-  -- Delayed sample read from WebAudio buffer
   local delayed = DSP.delay(inputSample, timeMs, fb)
   local dampened = DSP.lowpass(delayed, damp, 1.0)
 
@@ -409,10 +476,11 @@ return StereoDelayFX
     LuaPreset(
       id: 'lua_chorus',
       name: 'Lua Stereo Chorus FX',
-      category: 'effect',
+      category: LuaPresetCategory.audioFx,
       description: 'LFO modulated short delay lines creating lush stereo chorus and ensemble thickness.',
       code: '''
--- --- Lua Stereo Chorus Effect ---
+-- @name: Lua Stereo Chorus FX
+-- @category: audioFx
 local StereoChorusFX = {}
 
 function StereoChorusFX.init()
@@ -426,7 +494,6 @@ function StereoChorusFX.processSignal(inputSample, time, params)
   local depth = params["DepthMs"] or 6.0
   local mix = params["Mix"] or 0.5
 
-  -- LFO Modulation
   local lfo = math.sin(2.0 * math.pi * rate * time)
   local modulatedTime = 12.0 + (lfo * depth)
 
@@ -442,10 +509,11 @@ return StereoChorusFX
     LuaPreset(
       id: 'bitcrusher_fx',
       name: '8-Bit Retro Crusher FX',
-      category: 'effect',
+      category: LuaPresetCategory.audioFx,
       description: 'Bit-depth and sample-rate reduction effect for lo-fi chiptune textures.',
       code: '''
--- --- 8-Bit Retro Bitcrusher Effect (Lua) ---
+-- @name: 8-Bit Retro Crusher FX
+-- @category: audioFx
 local BitcrusherFX = {}
 
 function BitcrusherFX.init()
@@ -459,14 +527,10 @@ function BitcrusherFX.processSignal(inputSample, time, params)
   local downsample = params["Downsample"] or 4.0
   local mix = params["Mix"] or 0.8
 
-  -- Bit depth quantize
   local steps = math.pow(2.0, bits)
   local quantized = math.floor(inputSample * steps) / steps
-
-  -- Sample rate reduction
   local crushed = DSP.sampleHold(quantized, downsample)
 
-  -- Dry / Wet Mix
   return (inputSample * (1.0 - mix)) + (crushed * mix)
 end
 
@@ -478,10 +542,11 @@ return BitcrusherFX
     LuaPreset(
       id: 'tube_distortion',
       name: 'Warm Tube Distortion',
-      category: 'effect',
+      category: LuaPresetCategory.audioFx,
       description: 'Non-linear soft-clipping saturation and warmth.',
       code: '''
--- --- Warm Tube Overdrive (Lua) ---
+-- @name: Warm Tube Distortion
+-- @category: audioFx
 local TubeDistortion = {}
 
 function TubeDistortion.init()
@@ -495,11 +560,8 @@ function TubeDistortion.processSignal(inputSample, time, params)
   local tone = params["Tone"] or 3500.0
   local outGain = params["OutGain"] or 0.7
 
-  -- Soft clipping hyperbolic tangent curve
   local driven = inputSample * drive
   local clipped = math.tanh(driven)
-
-  -- Post tone filter
   local filtered = DSP.lowpass(clipped, tone, 1.0)
   return filtered * outGain
 end
@@ -512,10 +574,11 @@ return TubeDistortion
     LuaPreset(
       id: 'sampler_instrument',
       name: 'Sampler (Melodic / One-Shot)',
-      category: 'synth',
+      category: LuaPresetCategory.instrument,
       description: 'Pitch-shifted sample player with ADSR envelope, filter cutoff, and root key tuning.',
       code: '''
--- --- Eatsbits Sampler Instrument (Melodic / One-Shot) ---
+-- @name: Sampler (Melodic / One-Shot)
+-- @category: instrument
 local SamplerInstrument = {}
 
 function SamplerInstrument.init()
@@ -547,10 +610,11 @@ return SamplerInstrument
     LuaPreset(
       id: 'drum_kit_sampler',
       name: 'Eats Multi-Slot Drum Sampler',
-      category: 'drum',
+      category: LuaPresetCategory.instrument,
       description: 'Multi-slot drum sampler mapping notes (36=Kick, 38=Snare, 42=Hat, 39=Clap) to distinct audio sample slots.',
       code: '''
--- --- Eatsbits Multi-Slot Drum Kit Sampler ---
+-- @name: Eats Multi-Slot Drum Sampler
+-- @category: instrument
 local DrumKitSampler = {}
 
 function DrumKitSampler.init()
@@ -582,6 +646,61 @@ function DrumKitSampler.process(time, freq, note, params)
 end
 
 return DrumKitSampler
+''',
+    ),
+
+    // 13. SoundFont 2 Multi-Sample Instrument
+    LuaPreset(
+      id: 'soundfont_sampler',
+      name: 'SoundFont 2 Player',
+      category: LuaPresetCategory.instrument,
+      description: 'Multi-sampled SoundFont 2 (.sf2) bank player with key-zone mapping, bank selection, and filter control.',
+      code: '''
+-- @name: SoundFont 2 Player
+-- @category: instrument
+local SoundFontSampler = {}
+
+function SoundFontSampler.init()
+  Param.add("PresetNum", 0.0, 128.0, 0.0)
+  Param.add("BankNum", 0.0, 128.0, 0.0)
+  Param.add("FilterCutoff", 200.0, 12000.0, 10000.0)
+  Param.add("AttackSec", 0.0, 1.0, 0.005)
+  Param.add("ReleaseSec", 0.01, 2.0, 0.4)
+end
+
+function SoundFontSampler.process(time, freq, note, params)
+  local rawSample = SoundFont.readZone(note, time)
+  local attack = params["AttackSec"] or 0.005
+  local release = params["ReleaseSec"] or 0.4
+  local cutoff = params["FilterCutoff"] or 10000.0
+
+  local env = DSP.env(time, attack, release)
+  local filtered = DSP.lowpass(rawSample, cutoff, 1.0)
+  return filtered * env
+end
+
+return SoundFontSampler
+''',
+    ),
+
+    // 14. Lua MIDI Arpeggiator FX
+    LuaPreset(
+      id: 'arpeggiator_midi_fx',
+      name: 'Lua MIDI Arpeggiator FX',
+      category: LuaPresetCategory.midiFx,
+      description: 'MIDI pattern transformer generating up/down octave arpeggio note sequences.',
+      code: '''
+-- @name: Lua MIDI Arpeggiator FX
+-- @category: midiFx
+local ArpeggiatorMidiFX = {}
+
+function ArpeggiatorMidiFX.transform_notes(notes, params, timeContext)
+  local rate = params["Rate"] or 1.0
+  local octaves = params["Octaves"] or 2.0
+  return Midi.arpeggiate(notes, rate, octaves)
+end
+
+return ArpeggiatorMidiFX
 ''',
     ),
   ];

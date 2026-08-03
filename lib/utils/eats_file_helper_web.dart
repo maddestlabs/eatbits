@@ -44,17 +44,18 @@ void pickEatsFileWebImpl(
   try {
     final uploadInput = html.InputElement()
       ..type = 'file'
-      ..accept = '.eats.zip,.zip,.lua,.eats,.txt';
+      ..accept = '.eats.zip,.zip,.sf2,.wav,.mp3,.lua,.eats,.txt';
     uploadInput.click();
 
     uploadInput.onChange.listen((event) {
       final files = uploadInput.files;
       if (files != null && files.isNotEmpty) {
         final file = files.first;
-        final isZip = file.name.endsWith('.zip') || file.name.endsWith('.eats.zip');
+        final name = file.name.toLowerCase();
+        final isBinary = name.endsWith('.zip') || name.endsWith('.eats.zip') || name.endsWith('.sf2') || name.endsWith('.wav') || name.endsWith('.mp3');
         final reader = html.FileReader();
 
-        if (isZip) {
+        if (isBinary) {
           reader.readAsArrayBuffer(file);
           reader.onLoadEnd.listen((e) {
             final result = reader.result;
@@ -79,3 +80,52 @@ void pickEatsFileWebImpl(
     debugPrint('Web file picker failed: $e');
   }
 }
+
+void initGlobalAudioDropImpl(Function(String fileName, Uint8List bytes) onAudioDropped) {
+  try {
+    html.document.body?.onDragOver.listen((event) {
+      event.preventDefault();
+    });
+
+    html.document.body?.onDrop.listen((event) {
+      event.preventDefault();
+      final files = event.dataTransfer.files;
+      if (files != null && files.isNotEmpty) {
+        final file = files.first;
+        final name = file.name.toLowerCase();
+        if (name.endsWith('.wav') || name.endsWith('.mp3') || name.endsWith('.sf2') || name.endsWith('.ogg') || name.endsWith('.flac')) {
+          final reader = html.FileReader();
+          reader.readAsArrayBuffer(file);
+          reader.onLoadEnd.listen((e) {
+            final result = reader.result;
+            if (result is Uint8List) {
+              onAudioDropped(file.name, result);
+            } else if (result is ByteBuffer) {
+              onAudioDropped(file.name, result.asUint8List());
+            }
+          });
+        }
+      }
+    });
+
+  } catch (e) {
+    debugPrint('Error setting up web file drop listener: $e');
+  }
+}
+
+Future<Uint8List?> fetchUrlBytesWebImpl(String url) async {
+  try {
+    final req = await html.HttpRequest.request(
+      url,
+      responseType: 'arraybuffer',
+    );
+    if (req.status == 200 && req.response != null) {
+      final ByteBuffer buf = req.response as ByteBuffer;
+      return buf.asUint8List();
+    }
+  } catch (e) {
+    debugPrint('Error fetching URL $url: $e');
+  }
+  return null;
+}
+

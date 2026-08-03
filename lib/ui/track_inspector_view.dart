@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+import '../audio/convolver_engine.dart';
+import '../audio/soundfont_engine.dart';
+import '../audio/soundfont_decoder.dart';
+
+
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/eats_theme.dart';
@@ -7,11 +12,299 @@ import 'widgets/skeuomorphic_hardware_knob.dart';
 import 'widgets/grungy_rack_panel.dart';
 import 'widgets/glowing_nixie_display.dart';
 import 'widgets/rename_track_dialog.dart';
+import 'widgets/ir_pack_dialog.dart';
+import 'widgets/modular_fx_rack_widget.dart';
+
+
 
 class TrackInspectorView extends StatelessWidget {
   final DawState dawState;
 
   const TrackInspectorView({super.key, required this.dawState});
+
+  Widget _buildSoundFontPresetSelector(BuildContext context, TrackChannel track) {
+    final fontData = SoundFontEngine.instance.getSoundFont(track.sampleName);
+    if (fontData == null || fontData.presets.isEmpty) return const SizedBox.shrink();
+
+    final currentPresetNum = (track.luaParams['PresetNum'] ?? 0.0).toInt();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: EatsTheme.panelBackground,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: EatsTheme.accentGreen, width: 1.5),
+        boxShadow: [
+          BoxShadow(color: EatsTheme.accentGreen.withOpacity(0.15), blurRadius: 8),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.piano, color: EatsTheme.accentGreen, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'SOUNDFONT BANK: ${track.sampleName.toUpperCase()}',
+                style: EatsTheme.getPrimaryFontStyle(
+                  color: EatsTheme.accentGreen,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'SELECT PROGRAM PRESET (${fontData.presets.length} AVAILABLE):',
+            style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textMuted, fontSize: 10),
+          ),
+          const SizedBox(height: 6),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: EatsTheme.panelHeader,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: const Color(0xFF2B3245)),
+
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: fontData.presets.any((p) => p.presetNum == currentPresetNum) ? currentPresetNum : fontData.presets.first.presetNum,
+                isExpanded: true,
+                dropdownColor: EatsTheme.panelHeader,
+                style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textPrimary, fontSize: 12, fontWeight: FontWeight.bold),
+                items: fontData.presets.map((preset) {
+                  final label = GeneralMidiNames.getPresetDisplayName(preset.bankNum, preset.presetNum, preset.name);
+                  return DropdownMenuItem<int>(
+                    value: preset.presetNum,
+                    child: Text(label),
+                  );
+                }).toList(),
+                onChanged: (newPresetNum) {
+                  if (newPresetNum != null) {
+                    final p = fontData.presets.firstWhere((element) => element.presetNum == newPresetNum, orElse: () => fontData.presets.first);
+                    dawState.updateLuaParam('PresetNum', p.presetNum.toDouble());
+                    dawState.updateLuaParam('BankNum', p.bankNum.toDouble());
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildModularFxRack(BuildContext context, TrackChannel track) {
+    final availableIrs = ConvolverEngine.instance.getAvailableIrNames();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: EatsTheme.panelBackground,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: EatsTheme.secondaryMagenta.withOpacity(0.5)),
+        boxShadow: [
+          BoxShadow(color: EatsTheme.secondaryMagenta.withOpacity(0.1), blurRadius: 8),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.tune, color: EatsTheme.secondaryMagenta, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'MODULAR FX INSERT RACK (${track.fxRack.length})',
+                style: EatsTheme.getPrimaryFontStyle(
+                  color: EatsTheme.secondaryMagenta,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+              const Spacer(),
+              ElevatedButton.icon(
+                icon: const Icon(Icons.download, size: 12),
+                label: Text('IR PACKS', style: EatsTheme.getPrimaryFontStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 10)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: EatsTheme.secondaryMagenta,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (ctx) => IrPackDialog(
+                      onInstalled: () => dawState.notifyListeners(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+              PopupMenuButton<FXType>(
+                tooltip: 'Add FX Insert',
+                color: EatsTheme.panelHeader,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: EatsTheme.panelHeader,
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: EatsTheme.secondaryMagenta),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.add, color: EatsTheme.secondaryMagenta, size: 14),
+                      const SizedBox(width: 4),
+                      Text('+ ADD FX', style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.secondaryMagenta, fontWeight: FontWeight.bold, fontSize: 10)),
+                    ],
+                  ),
+                ),
+                itemBuilder: (ctx) => [
+                  const PopupMenuItem(value: FXType.convolutionReverb, child: Text('Convolution Reverb')),
+                  const PopupMenuItem(value: FXType.distortion, child: Text('Tube Distortion')),
+                  const PopupMenuItem(value: FXType.bitcrusher, child: Text('Bitcrusher 8-Bit')),
+                  const PopupMenuItem(value: FXType.delay, child: Text('Stereo Delay')),
+                  const PopupMenuItem(value: FXType.biquadFilter, child: Text('Lowpass Filter')),
+                ],
+                onSelected: (type) => dawState.addFXInsert(track, type),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          if (track.fxRack.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: Text(
+                  'No FX Inserts on this track. Click "+ ADD FX" to add Convolution Reverb, Distortion, or Bitcrusher.',
+                  style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textMuted, fontSize: 11),
+                ),
+              ),
+            )
+          else
+            ...track.fxRack.asMap().entries.map((entry) {
+              final fx = entry.value;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: EatsTheme.panelHeader,
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: fx.enabled ? EatsTheme.secondaryMagenta : const Color(0xFF2B3245)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Switch(
+                          value: fx.enabled,
+                          activeColor: EatsTheme.secondaryMagenta,
+                          onChanged: (val) => dawState.toggleFXInsert(track, fx.id, val),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          fx.name.toUpperCase(),
+                          style: EatsTheme.getPrimaryFontStyle(
+                            color: fx.enabled ? EatsTheme.textPrimary : EatsTheme.textMuted,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const Spacer(),
+                        IconButton(
+                          icon: Icon(Icons.delete_outline, color: EatsTheme.textMuted, size: 18),
+                          onPressed: () => dawState.removeFXInsert(track, fx.id),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Dry/Wet Mix Slider
+                    Row(
+                      children: [
+                        SizedBox(width: 80, child: Text('DRY/WET', style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textMuted, fontSize: 10))),
+                        Expanded(
+                          child: EatsBitsSlider(
+                            value: fx.mix,
+                            min: 0.0,
+                            max: 1.0,
+                            defaultValue: 0.5,
+                            label: 'Dry/Wet',
+                            activeColor: EatsTheme.secondaryMagenta,
+                            onChanged: (val) => dawState.updateFXMix(track, fx.id, val),
+                          ),
+                        ),
+                        SizedBox(width: 45, child: Text('${(fx.mix * 100).toInt()}%', style: EatsTheme.getDisplayFontStyle(color: EatsTheme.secondaryMagenta, fontSize: 10))),
+                      ],
+                    ),
+
+                    // FX Specific Parameters
+                    if (fx.type == FXType.convolutionReverb) ...[
+                      const SizedBox(height: 8),
+                      Text('IMPULSE RESPONSE (IR):', style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textMuted, fontSize: 10)),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: EatsTheme.panelBackground,
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(color: const Color(0xFF2B3245)),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: availableIrs.contains(fx.irSampleName) ? fx.irSampleName : (availableIrs.isNotEmpty ? availableIrs.first : 'Great Hall'),
+                            isExpanded: true,
+                            dropdownColor: EatsTheme.panelBackground,
+                            style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textPrimary, fontSize: 11, fontWeight: FontWeight.bold),
+                            items: availableIrs.map((ir) => DropdownMenuItem(value: ir, child: Text(ir))).toList(),
+                            onChanged: (newIr) {
+                              if (newIr != null) dawState.updateFXIrSample(track, fx.id, newIr);
+                            },
+                          ),
+                        ),
+                      ),
+                    ] else ...[
+                      ...fx.params.entries.map((p) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: Row(
+                            children: [
+                              SizedBox(width: 80, child: Text(p.key.toUpperCase(), style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textMuted, fontSize: 10))),
+                              Expanded(
+                                child: EatsBitsSlider(
+                                  value: p.value,
+                                  min: p.key == 'Drive' ? 0.0 : 1.0,
+                                  max: p.key == 'Drive' ? 1.0 : (p.key == 'Bits' ? 16.0 : 10000.0),
+                                  defaultValue: p.key == 'Drive' ? 0.5 : (p.key == 'Bits' ? 8.0 : 3500.0),
+                                  label: p.key,
+                                  activeColor: EatsTheme.secondaryMagenta,
+                                  onChanged: (val) => dawState.updateFXParam(track, fx.id, p.key, val),
+                                ),
+                              ),
+
+                              SizedBox(width: 45, child: Text(p.value.toStringAsFixed(1), style: EatsTheme.getDisplayFontStyle(color: EatsTheme.secondaryMagenta, fontSize: 10))),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ],
+                  ],
+                ),
+              );
+            }).toList(),
+        ],
+      ),
+    );
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -154,8 +447,12 @@ class TrackInspectorView extends StatelessWidget {
 
           const SizedBox(height: 16),
 
+          // SoundFont 2 Bank & Preset Selector Card (if SoundFont track)
+          _buildSoundFontPresetSelector(context, track),
+
           // Dynamic Lua Script Parameters (Exposed by Code)
           if ((track.type == TrackType.luaScript || track.luaParams.isNotEmpty) && dawState.compilationResult.params.isNotEmpty) ...[
+
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -209,36 +506,10 @@ class TrackInspectorView extends StatelessWidget {
             const SizedBox(height: 16),
           ],
 
-          // FX Insert Rack
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: EatsTheme.panelBackground,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF2B3245)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('FX INSERT RACK', style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.secondaryMagenta, fontWeight: FontWeight.bold, fontSize: 12)),
-                const SizedBox(height: 12),
-                SwitchListTile(
-                  title: Text('Bitcrusher 8-Bit', style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textPrimary, fontSize: 12)),
-                  subtitle: Text('Sample & bit depth reducer', style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textMuted, fontSize: 10)),
-                  value: track.fxRack.any((f) => f.name == 'Bitcrusher'),
-                  activeColor: EatsTheme.secondaryMagenta,
-                  onChanged: (val) => dawState.toggleBitcrusher(track, val),
-                ),
-                SwitchListTile(
-                  title: Text('Tube Distortion', style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textPrimary, fontSize: 12)),
-                  subtitle: Text('Soft clipping saturation', style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textMuted, fontSize: 10)),
-                  value: track.fxRack.any((f) => f.name == 'TubeDistortion'),
-                  activeColor: EatsTheme.secondaryMagenta,
-                  onChanged: (val) => dawState.toggleDistortion(track, val),
-                ),
-              ],
-            ),
-          ),
+          // Modular FX Insert Rack
+          ModularFxRackWidget(dawState: dawState, track: track),
+
+
 
           const SizedBox(height: 16),
 
@@ -301,6 +572,9 @@ class TrackInspectorView extends StatelessWidget {
                       onChanged: (val) => dawState.setTrackPan(track, val),
                       formatValue: (v) => v == 0 ? 'CTR' : (v < 0 ? 'L${(v.abs() * 100).toInt()}' : 'R${(v * 100).toInt()}'),
                     ),
+
+                    // Dynamic Script Parameters Card
+
                     if (dawState.compilationResult.params.isNotEmpty) ...[
                       SkeuomorphicHardwareKnob(
                         label: dawState.compilationResult.params.first.name.toUpperCase(),

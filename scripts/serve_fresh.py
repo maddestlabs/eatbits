@@ -65,7 +65,7 @@ def build_flutter_web(wasm=False, profile=False):
     print("=" * 60)
     
     flutter_bin = shutil.which("flutter") or shutil.which("flutter.bat") or ("flutter.bat" if os.name == 'nt' else "flutter")
-    cmd = [flutter_bin, "build", "web"]
+    cmd = [flutter_bin, "build", "web", "--no-tree-shake-icons"]
     if wasm:
         cmd.append("--wasm")
     if profile:
