@@ -6,7 +6,6 @@ import '../../models/daw_state.dart';
 import '../../models/track_model.dart';
 import '../../theme/eats_theme.dart';
 import 'eatsbits_slider.dart';
-import 'ir_pack_dialog.dart';
 
 class ModularFxRackWidget extends StatelessWidget {
   final DawState dawState;
@@ -22,20 +21,42 @@ class ModularFxRackWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final availableIrs = ConvolverEngine.instance.getAvailableIrNames();
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: EatsTheme.panelBackground,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: EatsTheme.secondaryMagenta.withOpacity(0.5)),
-        boxShadow: [
-          BoxShadow(color: EatsTheme.secondaryMagenta.withOpacity(0.1), blurRadius: 8),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
+    return DragTarget<LuaPreset>(
+      onWillAcceptWithDetails: (details) => true,
+      onAcceptWithDetails: (details) {
+        final preset = details.data;
+        dawState.applyPreset(preset, targetTrack: track);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Added FX "${preset.name}" to ${track.name} rack'),
+            backgroundColor: EatsTheme.panelHeader,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+      builder: (context, candidateData, rejectedData) {
+        final isHovering = candidateData.isNotEmpty;
+
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: isHovering ? EatsTheme.secondaryMagenta.withOpacity(0.2) : EatsTheme.panelBackground,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: isHovering ? EatsTheme.secondaryMagenta : EatsTheme.secondaryMagenta.withOpacity(0.5),
+              width: isHovering ? 2 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: EatsTheme.secondaryMagenta.withOpacity(isHovering ? 0.3 : 0.1),
+                blurRadius: isHovering ? 12 : 8,
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
           Row(
             children: [
               const Icon(Icons.tune, color: EatsTheme.secondaryMagenta, size: 18),
@@ -313,5 +334,7 @@ class ModularFxRackWidget extends StatelessWidget {
         ],
       ),
     );
+  },
+);
   }
 }

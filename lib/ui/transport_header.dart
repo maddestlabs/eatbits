@@ -8,6 +8,7 @@ import 'widgets/skeuomorphic_hardware_button.dart';
 import 'widgets/glowing_nixie_display.dart';
 import 'widgets/compact_value_dialog.dart';
 import 'widgets/ir_pack_dialog.dart';
+import 'widgets/command_palette_dialog.dart';
 
 
 class TransportHeader extends StatelessWidget {
@@ -159,6 +160,40 @@ class TransportHeader extends StatelessWidget {
               isActive: false,
               activeColor: EatsTheme.accentGold,
               onTap: () => _showProjectHubDialog(context),
+              height: 34,
+              width: 36,
+              padding: EdgeInsets.zero,
+              showLed: false,
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Quick Command Palette Button (Search / Ctrl+Shift+P)
+          Tooltip(
+            message: 'Quick Command Palette (Ctrl+Shift+P)',
+            child: SkeuomorphicHardwareButton(
+              icon: Icons.search,
+              isActive: false,
+              activeColor: EatsTheme.primaryCyan,
+              onTap: () => CommandPaletteDialog.show(context, dawState),
+              height: 34,
+              width: 36,
+              padding: EdgeInsets.zero,
+              showLed: false,
+            ),
+          ),
+
+          const SizedBox(width: 8),
+
+          // Project Browser Toggle Button (Folder / Ctrl+B)
+          Tooltip(
+            message: 'Toggle Project & Preset Browser (Ctrl+B)',
+            child: SkeuomorphicHardwareButton(
+              icon: Icons.folder_open,
+              isActive: dawState.isBrowserOpen,
+              activeColor: EatsTheme.primaryCyan,
+              onTap: dawState.toggleBrowser,
               height: 34,
               width: 36,
               padding: EdgeInsets.zero,

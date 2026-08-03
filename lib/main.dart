@@ -11,6 +11,8 @@ import 'ui/mixer_view.dart';
 import 'ui/track_inspector_view.dart';
 import 'ui/transport_header.dart';
 import 'ui/widgets/skeuomorphic_hardware_button.dart';
+import 'ui/widgets/command_palette_dialog.dart';
+import 'ui/widgets/project_browser_drawer.dart';
 import 'ui/virtual_piano_keyboard.dart';
 import 'utils/eats_file_helper.dart';
 
@@ -84,6 +86,7 @@ class _DawMainShellState extends State<DawMainShell> {
   @override
   Widget build(BuildContext context) {
     final isGrungy = EatsTheme.currentPreset == EatsThemePreset.ateTrack;
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return CallbackShortcuts(
       bindings: {
@@ -97,6 +100,24 @@ class _DawMainShellState extends State<DawMainShell> {
           }
           widget.dawState.togglePlay();
         },
+        const SingleActivator(LogicalKeyboardKey.keyP, control: true): () {
+          CommandPaletteDialog.show(context, widget.dawState);
+        },
+        const SingleActivator(LogicalKeyboardKey.keyP, control: true, shift: true): () {
+          CommandPaletteDialog.show(context, widget.dawState);
+        },
+        const SingleActivator(LogicalKeyboardKey.keyP, meta: true): () {
+          CommandPaletteDialog.show(context, widget.dawState);
+        },
+        const SingleActivator(LogicalKeyboardKey.keyP, meta: true, shift: true): () {
+          CommandPaletteDialog.show(context, widget.dawState);
+        },
+        const SingleActivator(LogicalKeyboardKey.keyB, control: true): () {
+          widget.dawState.toggleBrowser();
+        },
+        const SingleActivator(LogicalKeyboardKey.keyB, meta: true): () {
+          widget.dawState.toggleBrowser();
+        },
       },
       child: Scaffold(
         backgroundColor: EatsTheme.backgroundDark,
@@ -106,18 +127,43 @@ class _DawMainShellState extends State<DawMainShell> {
               // Top Transport Header (Always Visible)
               TransportHeader(dawState: widget.dawState),
 
-              // Main Studio Workbench Body
+              // Main Studio Workbench Body & Optional Project Browser Drawer
               Expanded(
                 child: Container(
                   color: EatsTheme.backgroundDark,
-                  child: IndexedStack(
-                    index: widget.dawState.activeTabIndex,
+                  child: Stack(
                     children: [
-                      ArrangerView(dawState: widget.dawState),
-                      EditView(dawState: widget.dawState),
-                      TrackInspectorView(dawState: widget.dawState),
-                      MixerView(dawState: widget.dawState),
-                      LuaWorkbenchView(dawState: widget.dawState),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: IndexedStack(
+                              index: widget.dawState.activeTabIndex,
+                              children: [
+                                ArrangerView(dawState: widget.dawState),
+                                EditView(dawState: widget.dawState),
+                                TrackInspectorView(dawState: widget.dawState),
+                                MixerView(dawState: widget.dawState),
+                                LuaWorkbenchView(dawState: widget.dawState),
+                              ],
+                            ),
+                          ),
+                          if (widget.dawState.isBrowserOpen && !isMobile)
+                            ProjectBrowserDrawer(
+                              dawState: widget.dawState,
+                              onClose: widget.dawState.toggleBrowser,
+                            ),
+                        ],
+                      ),
+                      if (widget.dawState.isBrowserOpen && isMobile)
+                        Positioned(
+                          top: 0,
+                          bottom: 0,
+                          right: 0,
+                          child: ProjectBrowserDrawer(
+                            dawState: widget.dawState,
+                            onClose: widget.dawState.toggleBrowser,
+                          ),
+                        ),
                     ],
                   ),
                 ),

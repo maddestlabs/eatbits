@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../audio/sampler_engine.dart';
+import '../lua/lua_preset_library.dart';
 import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/eats_theme.dart';
@@ -100,148 +101,204 @@ class _ArrangerViewState extends State<ArrangerView> {
                       ),
                     ),
                     Expanded(
-                      child: NotificationListener<ScrollNotification>(
-                        onNotification: (notification) {
-                          if (!_isSyncingScroll && notification is ScrollUpdateNotification) {
-                            _isSyncingScroll = true;
-                            if (_rightGridScroll.hasClients) {
-                              _rightGridScroll.jumpTo(_leftTrackScroll.offset);
-                            }
-                            _isSyncingScroll = false;
+                      child: DragTarget<LuaPreset>(
+                        onWillAcceptWithDetails: (details) => true,
+                        onAcceptWithDetails: (details) {
+                          final preset = details.data;
+                          if (preset.isInstrument) {
+                            widget.dawState.addNewPresetTrack(preset);
+                          } else {
+                            widget.dawState.addNewPresetTrack(
+                              LuaPresetLibrary.getPresetsByCategory(LuaPresetCategory.instrument).first,
+                            );
+                            widget.dawState.applyPreset(preset, targetTrack: widget.dawState.activeTrack);
                           }
-                          return false;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Created new track with preset "${preset.name}"'),
+                              backgroundColor: EatsTheme.panelHeader,
+                              duration: const Duration(seconds: 2),
+                            ),
+                          );
                         },
-                        child: ListView.builder(
-                          padding: EdgeInsets.zero,
-                          controller: _leftTrackScroll,
-                          itemCount: tracks.length,
-                          itemBuilder: (context, trackIdx) {
-                            final track = tracks[trackIdx];
-                            final isSelected = trackIdx == widget.dawState.activeTrackIndex;
+                        builder: (context, candidateData, rejectedData) {
+                          final isHoveringEmpty = candidateData.isNotEmpty;
 
-                            return GestureDetector(
-                              onLongPress: () => showRenameTrackDialog(context, widget.dawState, track),
-                              onTapDown: (_) {
-                                final now = DateTime.now();
-                                final isDoubleTap = _lastHeaderTapTrackIdx == trackIdx &&
-                                    _lastHeaderTapTime != null &&
-                                    now.difference(_lastHeaderTapTime!).inMilliseconds < 300;
-                                _lastHeaderTapTime = now;
-                                _lastHeaderTapTrackIdx = trackIdx;
-
-                                widget.dawState.activeTrackIndex = trackIdx;
-                                if (isDoubleTap) {
-                                  // DOUBLE-TAP TRACK HEADER: Navigate to Track Inspector tab
-                                  widget.dawState.activeTabIndex = 2; // Track section
+                          return Container(
+                            color: isHoveringEmpty ? EatsTheme.primaryCyan.withOpacity(0.15) : Colors.transparent,
+                            child: NotificationListener<ScrollNotification>(
+                              onNotification: (notification) {
+                                if (!_isSyncingScroll && notification is ScrollUpdateNotification) {
+                                  _isSyncingScroll = true;
+                                  if (_rightGridScroll.hasClients) {
+                                    _rightGridScroll.jumpTo(_leftTrackScroll.offset);
+                                  }
+                                  _isSyncingScroll = false;
                                 }
+                                return false;
                               },
-                              child: Container(
-                                height: trackRowHeight,
-                                margin: const EdgeInsets.only(bottom: 2),
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: isSelected ? EatsTheme.controlBackground : EatsTheme.panelBackground,
-                                  border: Border(
-                                    left: BorderSide(color: track.color, width: 4),
-                                    bottom: BorderSide(color: EatsTheme.panelHeader, width: 1),
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    // Row 1: Track Icon, Readable Name & M, S, FX Action Buttons
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          track.iconData,
-                                          size: 13,
-                                          color: isSelected ? EatsTheme.primaryCyan : track.color,
+                              child: ListView.builder(
+                                padding: EdgeInsets.zero,
+                                controller: _leftTrackScroll,
+                                itemCount: tracks.length,
+                                itemBuilder: (context, trackIdx) {
+                                  final track = tracks[trackIdx];
+                                  final isSelected = trackIdx == widget.dawState.activeTrackIndex;
+
+                                  return DragTarget<LuaPreset>(
+                                    onWillAcceptWithDetails: (details) => true,
+                                    onAcceptWithDetails: (details) {
+                                      final preset = details.data;
+                                      widget.dawState.applyPreset(preset, targetTrack: track);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(preset.isInstrument
+                                              ? 'Applied instrument "${preset.name}" to ${track.name}'
+                                              : 'Added FX "${preset.name}" to ${track.name} chain'),
+                                          backgroundColor: EatsTheme.panelHeader,
+                                          duration: const Duration(seconds: 2),
                                         ),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            track.name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: EatsTheme.getPrimaryFontStyle(
-                                              color: isSelected ? EatsTheme.primaryCyan : EatsTheme.textPrimary,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 11,
+                                      );
+                                    },
+                                    builder: (context, trackHoverData, _) {
+                                      final isTrackHovering = trackHoverData.isNotEmpty;
+
+                                      return GestureDetector(
+                                        onLongPress: () => showRenameTrackDialog(context, widget.dawState, track),
+                                        onTapDown: (_) {
+                                          final now = DateTime.now();
+                                          final isDoubleTap = _lastHeaderTapTrackIdx == trackIdx &&
+                                              _lastHeaderTapTime != null &&
+                                              now.difference(_lastHeaderTapTime!).inMilliseconds < 300;
+                                          _lastHeaderTapTime = now;
+                                          _lastHeaderTapTrackIdx = trackIdx;
+
+                                          widget.dawState.activeTrackIndex = trackIdx;
+                                          if (isDoubleTap) {
+                                            // DOUBLE-TAP TRACK HEADER: Navigate to Track Inspector tab
+                                            widget.dawState.activeTabIndex = 2; // Track section
+                                          }
+                                        },
+                                        child: Container(
+                                          height: trackRowHeight,
+                                          margin: const EdgeInsets.only(bottom: 2),
+                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: isTrackHovering
+                                                ? EatsTheme.primaryCyan.withOpacity(0.3)
+                                                : (isSelected ? EatsTheme.controlBackground : EatsTheme.panelBackground),
+                                            border: Border(
+                                              left: BorderSide(
+                                                color: isTrackHovering ? EatsTheme.primaryCyan : track.color,
+                                                width: isTrackHovering ? 6 : 4,
+                                              ),
+                                              bottom: BorderSide(color: EatsTheme.panelHeader, width: 1),
                                             ),
+                                            boxShadow: isTrackHovering
+                                                ? [BoxShadow(color: EatsTheme.primaryCyan.withOpacity(0.3), blurRadius: 6)]
+                                                : null,
                                           ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        _buildMuteButton(track),
-                                        const SizedBox(width: 2),
-                                        _buildSoloButton(track),
-                                        const SizedBox(width: 2),
-                                        _buildFXButton(track),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
-                                    // Row 2: Volume Slider with Level Readout & Skeuomorphic Pan Knob
-                                    Row(
-                                      children: [
-                                        // Volume Control & Level Readout
-                                        Expanded(
                                           child: Column(
                                             crossAxisAlignment: CrossAxisAlignment.start,
-                                            mainAxisSize: MainAxisSize.min,
+                                            mainAxisAlignment: MainAxisAlignment.center,
                                             children: [
+                                              // Row 1: Track Icon, Readable Name & M, S, FX Action Buttons
                                               Row(
                                                 children: [
-                                                  Text(
-                                                    'VOL',
-                                                    style: TextStyle(color: EatsTheme.textMuted, fontSize: 8, fontWeight: FontWeight.bold),
+                                                  Icon(
+                                                    track.iconData,
+                                                    size: 13,
+                                                    color: isSelected ? EatsTheme.primaryCyan : track.color,
                                                   ),
-                                                  const Spacer(),
-                                                  Text(
-                                                    '${(track.volume * 100).round()}%',
-                                                    style: TextStyle(
-                                                      color: isSelected ? EatsTheme.primaryCyan : EatsTheme.textPrimary,
-                                                      fontSize: 8,
-                                                      fontWeight: FontWeight.bold,
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      track.name,
+                                                      maxLines: 1,
+                                                      overflow: TextOverflow.ellipsis,
+                                                      style: EatsTheme.getPrimaryFontStyle(
+                                                        color: isSelected ? EatsTheme.primaryCyan : EatsTheme.textPrimary,
+                                                        fontWeight: FontWeight.bold,
+                                                        fontSize: 11,
+                                                      ),
                                                     ),
                                                   ),
+                                                  const SizedBox(width: 4),
+                                                  _buildMuteButton(track),
+                                                  const SizedBox(width: 2),
+                                                  _buildSoloButton(track),
+                                                  const SizedBox(width: 2),
+                                                  _buildFXButton(track),
                                                 ],
                                               ),
-                                              const SizedBox(height: 2),
-                                              SizedBox(
-                                                height: 14,
-                                                child: EatsBitsSlider(
-                                                  value: track.volume,
-                                                  min: 0.0,
-                                                  max: 1.5,
-                                                  defaultValue: 1.0,
-                                                  label: '${track.name} Volume',
-                                                  activeColor: track.color,
-                                                  onChanged: (val) => widget.dawState.setTrackVolume(track, val),
-                                                ),
+                                              const SizedBox(height: 4),
+                                              // Row 2: Volume Slider with Level Readout & Skeuomorphic Pan Knob
+                                              Row(
+                                                children: [
+                                                  // Volume Control & Level Readout
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      mainAxisSize: MainAxisSize.min,
+                                                      children: [
+                                                        Row(
+                                                          children: [
+                                                            Text(
+                                                              'VOL',
+                                                              style: TextStyle(color: EatsTheme.textMuted, fontSize: 8, fontWeight: FontWeight.bold),
+                                                            ),
+                                                            const Spacer(),
+                                                            Text(
+                                                              '${(track.volume * 100).round()}%',
+                                                              style: TextStyle(
+                                                                color: isSelected ? EatsTheme.primaryCyan : EatsTheme.textPrimary,
+                                                                fontSize: 8,
+                                                                fontWeight: FontWeight.bold,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        const SizedBox(height: 2),
+                                                        SizedBox(
+                                                          height: 14,
+                                                          child: EatsBitsSlider(
+                                                            value: track.volume,
+                                                            min: 0.0,
+                                                            max: 1.5,
+                                                            defaultValue: 1.0,
+                                                            label: '${track.name} Volume',
+                                                            activeColor: track.color,
+                                                            onChanged: (val) => widget.dawState.setTrackVolume(track, val),
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  // Skeuomorphic Hardware Pan Knob
+                                                  SkeuomorphicHardwareKnob(
+                                                    value: track.pan,
+                                                    min: -1.0,
+                                                    max: 1.0,
+                                                    defaultValue: 0.0,
+                                                    size: 28.0,
+                                                    accentColor: EatsTheme.accentGold,
+                                                    formatValue: (v) => v == 0 ? 'C' : (v < 0 ? 'L${(v.abs() * 100).round()}' : 'R${(v * 100).round()}'),
+                                                    onChanged: (val) => widget.dawState.setTrackPan(track, val),
+                                                  ),
+                                                ],
                                               ),
                                             ],
                                           ),
                                         ),
-                                        const SizedBox(width: 8),
-                                        // Skeuomorphic Hardware Pan Knob
-                                        SkeuomorphicHardwareKnob(
-                                          value: track.pan,
-                                          min: -1.0,
-                                          max: 1.0,
-                                          defaultValue: 0.0,
-                                          size: 28.0,
-                                          accentColor: EatsTheme.accentGold,
-                                          formatValue: (v) => v == 0 ? 'C' : (v < 0 ? 'L${(v.abs() * 100).round()}' : 'R${(v * 100).round()}'),
-                                          onChanged: (val) => widget.dawState.setTrackPan(track, val),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                                      );
+                                    },
+                                  );
+                                },
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                   ],

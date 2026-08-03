@@ -63,6 +63,64 @@ class DawState extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool isBrowserOpen = false;
+  int browserTabIndex = 0;
+
+  void toggleBrowser() {
+    isBrowserOpen = !isBrowserOpen;
+    notifyListeners();
+  }
+
+  void applyPreset(LuaPreset preset, {TrackChannel? targetTrack}) {
+    final track = targetTrack ?? activeTrack;
+    if (preset.isInstrument) {
+      track.name = preset.name;
+      track.type = TrackType.luaScript;
+      compileLuaCode(preset.code);
+    } else if (preset.isAudioFx) {
+      addFXInsert(track, FXType.distortion);
+      final fx = track.fxRack.last;
+      fx.name = preset.name;
+    } else {
+      track.luaScriptCode = preset.code;
+      compileLuaCode(preset.code);
+    }
+    notifyListeners();
+  }
+
+  void addNewPresetTrack(LuaPreset preset) {
+    final trackId = 'track_${DateTime.now().millisecondsSinceEpoch}';
+    final trackColors = [
+      const Color(0xFF21F4E8),
+      const Color(0xFFFF8C00),
+      const Color(0xFF00FF66),
+      const Color(0xFFFF0055),
+      const Color(0xFFBD00FF),
+    ];
+    final color = trackColors[activePattern.tracks.length % trackColors.length];
+
+    final newTrack = TrackChannel(
+      id: trackId,
+      name: preset.name,
+      type: TrackType.luaScript,
+      color: color,
+      luaScriptCode: preset.code,
+    );
+
+    final clip = TrackClip(
+      id: 'clip_${trackId}_0',
+      name: preset.name,
+      trackId: trackId,
+      startBar: 0,
+      barLength: 2,
+    );
+
+    newTrack.clips.add(clip);
+    activePattern.tracks.add(newTrack);
+    activeTrackIndex = activePattern.tracks.length - 1;
+    notifyListeners();
+  }
+
   void setThemePreset(EatsThemePreset preset) {
     EatsTheme.currentPreset = preset;
     notifyListeners();
@@ -72,6 +130,7 @@ class DawState extends ChangeNotifier {
     EatsTheme.applyLuaThemeMap(themeConfig);
     notifyListeners();
   }
+
 
 
   // Playback & Clock State

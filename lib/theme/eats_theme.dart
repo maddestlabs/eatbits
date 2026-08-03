@@ -151,6 +151,8 @@ class EatsTheme {
     return currentPreset == EatsThemePreset.lightSnack ? const Color(0xFF0F172A) : const Color(0xFFF0F4F8);
   }
 
+  static Color get textLight => textPrimary;
+
   static Color get textSecondary {
     return currentPreset == EatsThemePreset.lightSnack ? const Color(0xFF334155) : const Color(0xFF8E9BAE);
   }
