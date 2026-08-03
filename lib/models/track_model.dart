@@ -159,10 +159,11 @@ class FXInsert {
           id: id,
           name: 'Convolution Reverb',
           type: FXType.convolutionReverb,
-          mix: 0.35,
-          params: {'PreDelayMs': 10.0, 'HighCut': 8000.0},
+          mix: 0.5,
+          params: {'DryLevel': 1.0, 'WetLevel': 0.5, 'PreDelayMs': 10.0, 'HighCut': 8000.0},
           irSampleName: 'Great Hall',
         );
+
       case FXType.distortion:
         return FXInsert(
           id: id,
@@ -390,6 +391,45 @@ class TrackChannel {
       luaScriptCode.contains('polyphony = 1') ||
       luaScriptCode.contains('setPolyphony(1)');
 
+  String iconName; // e.g. 'synth', 'drums', 'bass', 'vocal', 'lead', 'fx', 'sampler', 'piano', 'guitar', 'waveform', 'code', 'music'
+
+  IconData get iconData {
+    switch (iconName.toLowerCase()) {
+      case 'synth':
+      case 'piano':
+        return Icons.piano;
+      case 'drums':
+        return Icons.album;
+      case 'bass':
+        return Icons.waves;
+      case 'vocal':
+      case 'mic':
+        return Icons.mic;
+      case 'lead':
+        return Icons.bolt;
+      case 'fx':
+        return Icons.tune;
+      case 'sampler':
+      case 'wav':
+        return Icons.graphic_eq;
+      case 'guitar':
+        return Icons.queue_music;
+      case 'headset':
+        return Icons.headset;
+      case 'speaker':
+        return Icons.speaker;
+      case 'code':
+      case 'lua':
+        return Icons.code;
+      case 'memory':
+      case 'bits':
+        return Icons.memory;
+      case 'music':
+      default:
+        return Icons.music_note;
+    }
+  }
+
   TrackChannel({
     required this.id,
     required this.name,
@@ -405,6 +445,7 @@ class TrackChannel {
     this.resonance = 1.0,
     this.attack = 0.01,
     this.release = 0.3,
+    String? iconName,
     String luaScriptCode = '',
     String wrenScriptCode = '',
     this.trackerColumns = 4,
@@ -417,13 +458,27 @@ class TrackChannel {
     List<TrackClip>? clips,
     List<FXInsert>? fxRack,
     List<MidiFXInsert>? midiFXRack,
-  })  : luaScriptCode = luaScriptCode.isNotEmpty ? luaScriptCode : wrenScriptCode,
+  })  : iconName = iconName ?? _defaultIconForType(type),
+        luaScriptCode = luaScriptCode.isNotEmpty ? luaScriptCode : wrenScriptCode,
         luaParams = luaParams ?? wrenParams ?? {},
         steps = steps ?? List.generate(32, (_) => StepEvent()),
         notes = notes ?? [],
         clips = clips ?? [],
         fxRack = fxRack ?? [],
         midiFXRack = midiFXRack ?? [];
+
+  static String _defaultIconForType(TrackType type) {
+    switch (type) {
+      case TrackType.synth:
+        return 'synth';
+      case TrackType.sampler:
+        return 'sampler';
+      case TrackType.bass:
+        return 'bass';
+      case TrackType.luaScript:
+        return 'code';
+    }
+  }
 
   TrackChannel copyWith({
     String? id,
@@ -440,6 +495,7 @@ class TrackChannel {
     double? resonance,
     double? attack,
     double? release,
+    String? iconName,
     String? luaScriptCode,
     String? wrenScriptCode,
     int? trackerColumns,
@@ -468,6 +524,7 @@ class TrackChannel {
       resonance: resonance ?? this.resonance,
       attack: attack ?? this.attack,
       release: release ?? this.release,
+      iconName: iconName ?? this.iconName,
       luaScriptCode: luaScriptCode ?? wrenScriptCode ?? this.luaScriptCode,
       trackerColumns: trackerColumns ?? this.trackerColumns,
       activeView: activeView ?? this.activeView,
@@ -486,6 +543,7 @@ class TrackChannel {
     'name': name,
     'color': color.value,
     'type': type.name,
+    'iconName': iconName,
     'volume': volume,
     'pan': pan,
     'isMuted': isMuted,

@@ -5,7 +5,9 @@ import '../models/daw_state.dart';
 import '../models/track_model.dart';
 import '../theme/eats_theme.dart';
 import 'widgets/eatsbits_slider.dart';
+import 'widgets/fx_rack_dialog.dart';
 import 'widgets/rename_track_dialog.dart';
+import 'widgets/skeuomorphic_hardware_knob.dart';
 
 class ArrangerView extends StatefulWidget {
   final DawState dawState;
@@ -18,7 +20,7 @@ class ArrangerView extends StatefulWidget {
 
 class _ArrangerViewState extends State<ArrangerView> {
   static const double barWidth = 60.0;
-  static const double trackRowHeight = 72.0;
+  static const double trackRowHeight = 82.0;
   static const int totalBars = 32;
 
   final ScrollController _horizontalScroll = ScrollController();
@@ -58,14 +60,14 @@ class _ArrangerViewState extends State<ArrangerView> {
             children: [
               // Left Panel: Vertical Track Control Strips (Synced Scroll)
               SizedBox(
-                width: 140,
+                width: 210,
                 child: Column(
                   children: [
                     // Top Left Track Header & Loop Toggle Button
                     Container(
                       height: 24,
                       color: EatsTheme.panelHeader,
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
                       child: Row(
                         children: [
                           Text('TRACKS', style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
@@ -136,7 +138,7 @@ class _ArrangerViewState extends State<ArrangerView> {
                               child: Container(
                                 height: trackRowHeight,
                                 margin: const EdgeInsets.only(bottom: 2),
-                                padding: const EdgeInsets.all(6),
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: isSelected ? EatsTheme.controlBackground : EatsTheme.panelBackground,
                                   border: Border(
@@ -148,35 +150,89 @@ class _ArrangerViewState extends State<ArrangerView> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Text(
-                                      track.name,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: EatsTheme.getPrimaryFontStyle(
-                                        color: isSelected ? EatsTheme.primaryCyan : EatsTheme.textPrimary,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 11,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
+                                    // Row 1: Track Icon, Readable Name & M, S, FX Action Buttons
                                     Row(
                                       children: [
-                                        _buildMuteButton(track),
+                                        Icon(
+                                          track.iconData,
+                                          size: 13,
+                                          color: isSelected ? EatsTheme.primaryCyan : track.color,
+                                        ),
                                         const SizedBox(width: 4),
-                                        _buildSoloButton(track),
-                                        const Spacer(),
-                                        SizedBox(
-                                          width: 50,
-                                          height: 20,
-                                          child: EatsBitsSlider(
-                                            value: track.volume,
-                                            min: 0.0,
-                                            max: 1.5,
-                                            defaultValue: 1.0,
-                                            label: '${track.name} Volume',
-                                            activeColor: track.color,
-                                            onChanged: (val) => widget.dawState.setTrackVolume(track, val),
+                                        Expanded(
+                                          child: Text(
+                                            track.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: EatsTheme.getPrimaryFontStyle(
+                                              color: isSelected ? EatsTheme.primaryCyan : EatsTheme.textPrimary,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 11,
+                                            ),
                                           ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        _buildMuteButton(track),
+                                        const SizedBox(width: 2),
+                                        _buildSoloButton(track),
+                                        const SizedBox(width: 2),
+                                        _buildFXButton(track),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    // Row 2: Volume Slider with Level Readout & Skeuomorphic Pan Knob
+                                    Row(
+                                      children: [
+                                        // Volume Control & Level Readout
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    'VOL',
+                                                    style: TextStyle(color: EatsTheme.textMuted, fontSize: 8, fontWeight: FontWeight.bold),
+                                                  ),
+                                                  const Spacer(),
+                                                  Text(
+                                                    '${(track.volume * 100).round()}%',
+                                                    style: TextStyle(
+                                                      color: isSelected ? EatsTheme.primaryCyan : EatsTheme.textPrimary,
+                                                      fontSize: 8,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 2),
+                                              SizedBox(
+                                                height: 14,
+                                                child: EatsBitsSlider(
+                                                  value: track.volume,
+                                                  min: 0.0,
+                                                  max: 1.5,
+                                                  defaultValue: 1.0,
+                                                  label: '${track.name} Volume',
+                                                  activeColor: track.color,
+                                                  onChanged: (val) => widget.dawState.setTrackVolume(track, val),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        // Skeuomorphic Hardware Pan Knob
+                                        SkeuomorphicHardwareKnob(
+                                          value: track.pan,
+                                          min: -1.0,
+                                          max: 1.0,
+                                          defaultValue: 0.0,
+                                          size: 28.0,
+                                          accentColor: EatsTheme.accentGold,
+                                          formatValue: (v) => v == 0 ? 'C' : (v < 0 ? 'L${(v.abs() * 100).round()}' : 'R${(v * 100).round()}'),
+                                          onChanged: (val) => widget.dawState.setTrackPan(track, val),
                                         ),
                                       ],
                                     ),
@@ -567,6 +623,35 @@ class _ArrangerViewState extends State<ArrangerView> {
           borderRadius: BorderRadius.circular(3),
         ),
         child: Text('S', style: TextStyle(color: track.isSoloed ? Colors.black : EatsTheme.textMuted, fontSize: 9, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+
+  Widget _buildFXButton(TrackChannel track) {
+    final hasFX = track.fxRack.any((f) => f.enabled);
+    return GestureDetector(
+      onTap: () {
+        final tIdx = widget.dawState.activePattern.tracks.indexWhere((t) => t.id == track.id);
+        if (tIdx != -1) {
+          widget.dawState.activeTrackIndex = tIdx;
+        }
+        showFxRackDialog(context, widget.dawState, track);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        decoration: BoxDecoration(
+          color: hasFX ? EatsTheme.primaryCyan.withOpacity(0.3) : EatsTheme.panelHeader,
+          borderRadius: BorderRadius.circular(3),
+          border: Border.all(color: hasFX ? EatsTheme.primaryCyan : Colors.transparent, width: 0.5),
+        ),
+        child: Text(
+          'FX',
+          style: TextStyle(
+            color: hasFX ? EatsTheme.primaryCyan : EatsTheme.textMuted,
+            fontSize: 9,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }

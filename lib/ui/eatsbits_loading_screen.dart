@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../theme/eats_theme.dart';
 import '../utils/html_preloader_helper.dart';
+import 'transport_header.dart';
 
 /// Skeuomorphic vintage rack panel loading screen for Eatsbits startup.
 class EatsbitsLoadingScreen extends StatefulWidget {
@@ -129,22 +130,25 @@ class _EatsbitsLoadingScreenState extends State<EatsbitsLoadingScreen> with Sing
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Container(
-                              width: 38,
-                              height: 38,
+                              width: 44,
+                              height: 44,
+                              padding: const EdgeInsets.all(4),
                               decoration: BoxDecoration(
-                                color: accentAmber,
-                                borderRadius: BorderRadius.circular(8),
+                                color: const Color(0xFF0F1218),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: accentAmber, width: 1.5),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: accentAmber.withOpacity(0.5),
+                                    color: accentAmber.withOpacity(0.35),
                                     blurRadius: 10,
                                   )
                                 ],
                               ),
-                              child: const Icon(
-                                Icons.graphic_eq,
-                                color: Color(0xFF141210),
-                                size: 24,
+                              child: EatsBitsMonsterIcon(
+                                size: 36,
+                                backgroundColor: accentAmber,
+                                iconColor: const Color(0xFF0F1218),
+                                eyeColor: accentAmber,
                               ),
                             ),
                             const SizedBox(width: 14),

@@ -542,6 +542,12 @@ class DawState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setTrackClipBarLength(TrackClip clip, int newBarLength) {
+    final clamped = newBarLength.clamp(1, 16);
+    clip.barLength = clamped;
+    notifyListeners();
+  }
+
   // Mixer Editing
   void setTrackVolume(TrackChannel track, double volume) {
     track.volume = volume.clamp(0.0, 1.5);

@@ -49,31 +49,6 @@ class ModularFxRackWidget extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.download, size: 12),
-                label: Text(
-                  'IR PACKS',
-                  style: EatsTheme.getPrimaryFontStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: EatsTheme.secondaryMagenta,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                ),
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (ctx) => IrPackDialog(
-                      onInstalled: () => dawState.notifyListeners(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(width: 8),
               PopupMenuButton<FXType>(
                 tooltip: 'Add FX Insert',
                 color: EatsTheme.panelHeader,
@@ -110,6 +85,7 @@ class ModularFxRackWidget extends StatelessWidget {
               ),
             ],
           ),
+
           const SizedBox(height: 12),
 
           if (track.fxRack.isEmpty)
@@ -197,6 +173,68 @@ class ModularFxRackWidget extends StatelessWidget {
 
                     // FX Specific Parameters
                     if (fx.type == FXType.convolutionReverb) ...[
+                      const SizedBox(height: 6),
+                      // Dry Level Slider
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 80,
+                            child: Text(
+                              'DRY LEVEL',
+                              style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textMuted, fontSize: 10),
+                            ),
+                          ),
+                          Expanded(
+                            child: EatsBitsSlider(
+                              value: fx.params['DryLevel'] ?? 1.0,
+                              min: 0.0,
+                              max: 1.5,
+                              defaultValue: 1.0,
+                              label: 'Dry Level',
+                              activeColor: EatsTheme.accentGreen,
+                              onChanged: (val) => dawState.updateFXParam(track, fx.id, 'DryLevel', val),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 45,
+                            child: Text(
+                              '${((fx.params['DryLevel'] ?? 1.0) * 100).toInt()}%',
+                              style: EatsTheme.getDisplayFontStyle(color: EatsTheme.accentGreen, fontSize: 10),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      // Wet Level Slider
+                      Row(
+                        children: [
+                          SizedBox(
+                            width: 80,
+                            child: Text(
+                              'WET LEVEL',
+                              style: EatsTheme.getPrimaryFontStyle(color: EatsTheme.textMuted, fontSize: 10),
+                            ),
+                          ),
+                          Expanded(
+                            child: EatsBitsSlider(
+                              value: fx.params['WetLevel'] ?? 0.5,
+                              min: 0.0,
+                              max: 1.5,
+                              defaultValue: 0.5,
+                              label: 'Wet Level',
+                              activeColor: EatsTheme.secondaryMagenta,
+                              onChanged: (val) => dawState.updateFXParam(track, fx.id, 'WetLevel', val),
+                            ),
+                          ),
+                          SizedBox(
+                            width: 45,
+                            child: Text(
+                              '${((fx.params['WetLevel'] ?? 0.5) * 100).toInt()}%',
+                              style: EatsTheme.getDisplayFontStyle(color: EatsTheme.secondaryMagenta, fontSize: 10),
+                            ),
+                          ),
+                        ],
+                      ),
                       const SizedBox(height: 8),
                       Text(
                         'IMPULSE RESPONSE (IR):',
@@ -232,6 +270,7 @@ class ModularFxRackWidget extends StatelessWidget {
                         ),
                       ),
                     ] else ...[
+
                       ...fx.params.entries.map((p) {
                         return Padding(
                           padding: const EdgeInsets.only(top: 4.0),

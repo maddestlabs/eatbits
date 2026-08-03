@@ -266,16 +266,25 @@ class AudioEngine {
       pcmBuffer = extendedBuffer;
     }
 
-    for (final fx in track.fxRack) {
+    List<double>? webIrBuffer;
+    String? webIrName;
+    double webIrMix = 0.0;
 
+    for (final fx in track.fxRack) {
       if (!fx.enabled) continue;
 
       if (fx.type == FXType.convolutionReverb || fx.name == 'Convolution Reverb') {
-        pcmBuffer = ConvolverEngine.instance.processConvolver(
-          pcmBuffer,
-          fx.irSampleName ?? 'Great Hall',
-          fx.mix,
-        );
+        if (kIsWeb) {
+          webIrName = fx.irSampleName ?? 'Great Hall';
+          webIrMix = fx.mix;
+          webIrBuffer = ConvolverEngine.instance.getIrSample(webIrName);
+        } else {
+          pcmBuffer = ConvolverEngine.instance.processConvolver(
+            pcmBuffer,
+            fx.irSampleName ?? 'Great Hall',
+            fx.mix,
+          );
+        }
       } else {
         for (int i = 0; i < pcmBuffer.length; i++) {
           final t = i / 44100.0;
@@ -290,7 +299,6 @@ class AudioEngine {
       }
     }
 
-
     _webImpl.playPcmBuffer(
       pcmBuffer,
       track.volume * velocity,
@@ -300,7 +308,13 @@ class AudioEngine {
       track.isMonophonicTrack,
       isSlide,
       loop,
+      webIrBuffer,
+      webIrName,
+      webIrMix,
+      track.fxRack,
     );
+
+
   }
 
   void stopNote(TrackChannel track, [int? pitch]) {

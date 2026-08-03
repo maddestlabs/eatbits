@@ -7,6 +7,8 @@ import '../utils/eats_file_helper.dart';
 import 'widgets/skeuomorphic_hardware_button.dart';
 import 'widgets/glowing_nixie_display.dart';
 import 'widgets/compact_value_dialog.dart';
+import 'widgets/ir_pack_dialog.dart';
+
 
 class TransportHeader extends StatelessWidget {
   final DawState dawState;
@@ -38,15 +40,15 @@ class TransportHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // EatsBits Monster Icon drawn directly on background
+          // EatsBits Monster Icon drawn directly on background (Theme Accent Recolorable)
           Tooltip(
             message: 'Eatsbits Settings',
             child: InkWell(
               onTap: () => _showSettingsDialog(context),
               borderRadius: BorderRadius.circular(6),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
-                child: EatsBitsMonsterIcon(size: 28),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+                child: EatsBitsMonsterIcon(size: 28, color: EatsTheme.primaryCyan),
               ),
             ),
           ),
@@ -273,7 +275,7 @@ class TransportHeader extends StatelessWidget {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Row(
             children: [
-              const EatsBitsMonsterIcon(size: 28),
+              EatsBitsMonsterIcon(size: 28, color: EatsTheme.primaryCyan),
               const SizedBox(width: 10),
               Text(
                 'EATSBITS SETTINGS',
@@ -409,7 +411,28 @@ class TransportHeader extends StatelessWidget {
                   icon: const Icon(Icons.folder_special, size: 18),
                   label: const Text('OPEN PROJECT & COMPOSITION HUB', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
                 ),
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: EatsTheme.secondaryMagenta,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                  ),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    showDialog(
+                      context: context,
+                      builder: (ctx) => IrPackDialog(
+                        onInstalled: () => dawState.notifyListeners(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.download_for_offline, size: 18),
+                  label: const Text('IMPULSE RESPONSE (IR) PACK MANAGER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                ),
                 const SizedBox(height: 16),
+
 
                 Text(
                   'AUDIO ENGINE CONFIG',
@@ -766,32 +789,81 @@ class _HeaderMeterGlassReflectionPainter extends CustomPainter {
 // Custom EatsBits Monster Icon Widget
 class EatsBitsMonsterIcon extends StatelessWidget {
   final double size;
-  const EatsBitsMonsterIcon({super.key, this.size = 24.0});
+  final Color? color;
+  final Color? backgroundColor;
+  final Color? iconColor;
+  final Color? eyeColor;
+  final bool isBadge;
+
+  const EatsBitsMonsterIcon({
+    super.key,
+    this.size = 24.0,
+    this.color,
+    this.backgroundColor,
+    this.iconColor,
+    this.eyeColor,
+    this.isBadge = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: EatsTheme.primaryCyan,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Center(
-        child: CustomPaint(
-          size: Size(size * 0.85, size * 0.85),
-          painter: _EatsBitsMonsterPainter(),
+    if (isBadge || backgroundColor != null) {
+      final effectiveBg = backgroundColor ?? EatsTheme.primaryCyan;
+      final effectiveIcon = iconColor ?? Colors.black;
+      final effectiveEye = eyeColor ?? effectiveBg;
+
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: effectiveBg,
+          borderRadius: BorderRadius.circular(4),
         ),
-      ),
-    );
+        child: Center(
+          child: CustomPaint(
+            size: Size(size * 0.85, size * 0.85),
+            painter: _EatsBitsMonsterPainter(
+              bodyColor: effectiveIcon,
+              eyeColor: effectiveEye,
+            ),
+          ),
+        ),
+      );
+    } else {
+      final effectiveColor = color ?? EatsTheme.primaryCyan;
+      final effectiveEye = eyeColor ?? (EatsTheme.isLight ? Colors.white : EatsTheme.backgroundDark);
+
+      return Container(
+        width: size,
+        height: size,
+        color: Colors.transparent,
+        child: Center(
+          child: CustomPaint(
+            size: Size(size * 0.9, size * 0.9),
+            painter: _EatsBitsMonsterPainter(
+              bodyColor: effectiveColor,
+              eyeColor: effectiveEye,
+            ),
+          ),
+        ),
+      );
+    }
   }
 }
 
 class _EatsBitsMonsterPainter extends CustomPainter {
+  final Color bodyColor;
+  final Color eyeColor;
+
+  _EatsBitsMonsterPainter({
+    required this.bodyColor,
+    required this.eyeColor,
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black
+      ..color = bodyColor
       ..style = PaintingStyle.fill;
 
     // Monster head & open mouth
@@ -808,17 +880,19 @@ class _EatsBitsMonsterPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     // Eye
-    final eyePaint = Paint()..color = EatsTheme.primaryCyan;
+    final eyePaint = Paint()..color = eyeColor;
     canvas.drawCircle(Offset(size.width * 0.5, size.height * 0.28), size.width * 0.08, eyePaint);
 
     // Eating bits
-    final bitPaint = Paint()..color = Colors.black;
+    final bitPaint = Paint()..color = bodyColor;
     canvas.drawRect(Rect.fromLTWH(size.width * 0.82, size.height * 0.45, size.width * 0.12, size.width * 0.12), bitPaint);
     canvas.drawRect(Rect.fromLTWH(size.width * 0.82, size.height * 0.65, size.width * 0.1, size.width * 0.1), bitPaint);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _EatsBitsMonsterPainter oldDelegate) {
+    return oldDelegate.bodyColor != bodyColor || oldDelegate.eyeColor != eyeColor;
+  }
 }
 
 // Vector Canvas Transport Symbols (Zero Font Dependency)

@@ -28,6 +28,12 @@ class AudioEngineWebImpl {
     bool isMonophonic = false,
     bool isSlide = false,
     bool loop = false,
+    List<double>? convolutionIrBuffer,
+    String? convolutionIrName,
+    double convolutionMix = 0.0,
+    List<dynamic>? fxRack,
   ]) {}
+
+
   void stopTrackNotes(String trackId) {}
 }

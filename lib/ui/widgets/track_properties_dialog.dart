@@ -6,8 +6,11 @@ import '../../theme/eats_theme.dart';
 Future<void> showTrackPropertiesDialog(BuildContext context, DawState dawState, TrackChannel track) async {
   final controller = TextEditingController(text: track.name);
   Color selectedColor = track.color;
+  String selectedIconName = track.iconName;
+  bool isColorsExpanded = false;
+  bool isIconsExpanded = false;
 
-  final List<Color> colorPalette = [
+  final List<Color> initialColorPalette = [
     const Color(0xFF21F4E8), // Neon Cyan
     const Color(0xFFFF8C00), // Vintage Amber
     const Color(0xFF00FF66), // Acid Green
@@ -16,6 +19,57 @@ Future<void> showTrackPropertiesDialog(BuildContext context, DawState dawState, 
     const Color(0xFFFF3333), // Crimson Red
     const Color(0xFFFFD700), // Gold
     const Color(0xFF3399FF), // Sky Blue
+  ];
+
+  final List<Color> expandedColorPalette = [
+    const Color(0xFF21F4E8), const Color(0xFFFF8C00), const Color(0xFF00FF66), const Color(0xFFFF007A),
+    const Color(0xFFBD00FF), const Color(0xFFFF3333), const Color(0xFFFFD700), const Color(0xFF3399FF),
+    const Color(0xFF00E5FF), const Color(0xFFFFAB00), const Color(0xFF76FF03), const Color(0xFFF50057),
+    const Color(0xFFD500F9), const Color(0xFFFF1744), const Color(0xFFFFEA00), const Color(0xFF2979FF),
+    const Color(0xFF1DE9B6), const Color(0xFFFF6D00), const Color(0xFFAEEA00), const Color(0xFFE040FB),
+    const Color(0xFF651FFF), const Color(0xFFFF5252), const Color(0xFFFFC400), const Color(0xFF00B0FF),
+  ];
+
+  final List<Map<String, dynamic>> initialIconOptions = [
+    {'name': 'synth', 'icon': Icons.piano},
+    {'name': 'drums', 'icon': Icons.album},
+    {'name': 'bass', 'icon': Icons.waves},
+    {'name': 'vocal', 'icon': Icons.mic},
+    {'name': 'lead', 'icon': Icons.bolt},
+    {'name': 'fx', 'icon': Icons.tune},
+    {'name': 'sampler', 'icon': Icons.graphic_eq},
+    {'name': 'guitar', 'icon': Icons.queue_music},
+    {'name': 'headset', 'icon': Icons.headset},
+    {'name': 'speaker', 'icon': Icons.speaker},
+    {'name': 'code', 'icon': Icons.code},
+    {'name': 'music', 'icon': Icons.music_note},
+  ];
+
+  final List<Map<String, dynamic>> expandedIconOptions = [
+    {'name': 'synth', 'icon': Icons.piano},
+    {'name': 'drums', 'icon': Icons.album},
+    {'name': 'bass', 'icon': Icons.waves},
+    {'name': 'vocal', 'icon': Icons.mic},
+    {'name': 'lead', 'icon': Icons.bolt},
+    {'name': 'fx', 'icon': Icons.tune},
+    {'name': 'sampler', 'icon': Icons.graphic_eq},
+    {'name': 'guitar', 'icon': Icons.queue_music},
+    {'name': 'headset', 'icon': Icons.headset},
+    {'name': 'speaker', 'icon': Icons.speaker},
+    {'name': 'code', 'icon': Icons.code},
+    {'name': 'music', 'icon': Icons.music_note},
+    {'name': 'spatial_audio', 'icon': Icons.spatial_audio},
+    {'name': 'equalizer', 'icon': Icons.equalizer},
+    {'name': 'radio', 'icon': Icons.radio},
+    {'name': 'memory', 'icon': Icons.memory},
+    {'name': 'subtitles', 'icon': Icons.subtitles},
+    {'name': 'videogame_asset', 'icon': Icons.videogame_asset},
+    {'name': 'star', 'icon': Icons.star},
+    {'name': 'favorite', 'icon': Icons.favorite},
+    {'name': 'flare', 'icon': Icons.flare},
+    {'name': 'brush', 'icon': Icons.brush},
+    {'name': 'palette', 'icon': Icons.palette},
+    {'name': 'auto_awesome', 'icon': Icons.auto_awesome},
   ];
 
   return showDialog<void>(
@@ -108,54 +162,160 @@ Future<void> showTrackPropertiesDialog(BuildContext context, DawState dawState, 
                     const SizedBox(height: 16),
 
                     // 2. Track Color Swatches
-                    Text(
-                      'TRACK COLOR',
-                      style: EatsTheme.getPrimaryFontStyle(
-                        color: EatsTheme.textMuted,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          'TRACK COLOR',
+                          style: EatsTheme.getPrimaryFontStyle(
+                            color: EatsTheme.textMuted,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (!isColorsExpanded)
+                          GestureDetector(
+                            onTap: () => setState(() => isColorsExpanded = true),
+                            child: Text(
+                              '+ MORE COLORS',
+                              style: TextStyle(color: EatsTheme.primaryCyan, fontSize: 9, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 8),
                     Wrap(
                       spacing: 8,
                       runSpacing: 8,
-                      children: colorPalette.map((color) {
-                        final isSelected = color.value == selectedColor.value;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedColor = color;
-                            });
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: color,
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: isSelected ? Colors.white : Colors.black26,
-                                width: isSelected ? 2.5 : 1.0,
+                      children: [
+                        ...(isColorsExpanded ? expandedColorPalette : initialColorPalette).map((color) {
+                          final isSelected = color.value == selectedColor.value;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedColor = color;
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: color,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isSelected ? Colors.white : Colors.black26,
+                                  width: isSelected ? 2.5 : 1.0,
+                                ),
+                                boxShadow: isSelected
+                                    ? [
+                                        BoxShadow(color: color.withOpacity(0.6), blurRadius: 8, spreadRadius: 1),
+                                      ]
+                                    : null,
                               ),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(color: color.withOpacity(0.6), blurRadius: 8, spreadRadius: 1),
-                                    ]
+                              child: isSelected
+                                  ? const Icon(Icons.check, size: 18, color: Colors.black)
                                   : null,
                             ),
-                            child: isSelected
-                                ? const Icon(Icons.check, size: 18, color: Colors.black)
-                                : null,
+                          );
+                        }),
+                        if (!isColorsExpanded)
+                          GestureDetector(
+                            onTap: () => setState(() => isColorsExpanded = true),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: EatsTheme.controlBackground,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: EatsTheme.panelHeader, width: 1.5),
+                              ),
+                              child: Icon(Icons.add, size: 18, color: EatsTheme.textMuted),
+                            ),
                           ),
-                        );
-                      }).toList(),
+                      ],
                     ),
 
                     const SizedBox(height: 16),
 
-                    // 3. Quick Mute / Solo Toggles
+                    // 3. Track Icon Swatches
+                    Row(
+                      children: [
+                        Text(
+                          'TRACK ICON',
+                          style: EatsTheme.getPrimaryFontStyle(
+                            color: EatsTheme.textMuted,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        if (!isIconsExpanded)
+                          GestureDetector(
+                            onTap: () => setState(() => isIconsExpanded = true),
+                            child: Text(
+                              '+ MORE ICONS',
+                              style: TextStyle(color: EatsTheme.primaryCyan, fontSize: 9, fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        ...(isIconsExpanded ? expandedIconOptions : initialIconOptions).map((opt) {
+                          final String name = opt['name'];
+                          final IconData icon = opt['icon'];
+                          final isSelected = name.toLowerCase() == selectedIconName.toLowerCase();
+
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                selectedIconName = name;
+                              });
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: isSelected ? selectedColor.withOpacity(0.2) : EatsTheme.controlBackground,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: isSelected ? selectedColor : EatsTheme.panelHeader,
+                                  width: isSelected ? 2.0 : 1.0,
+                                ),
+                              ),
+                              child: Icon(
+                                icon,
+                                size: 16,
+                                color: isSelected ? selectedColor : EatsTheme.textMuted,
+                              ),
+                            ),
+                          );
+                        }),
+                        if (!isIconsExpanded)
+                          GestureDetector(
+                            onTap: () => setState(() => isIconsExpanded = true),
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
+                                color: EatsTheme.controlBackground,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: EatsTheme.panelHeader, width: 1.5),
+                              ),
+                              child: Icon(Icons.add, size: 18, color: EatsTheme.textMuted),
+                            ),
+                          ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // 4. Quick Mute / Solo Toggles
                     Row(
                       children: [
                         Text(
@@ -217,7 +377,7 @@ Future<void> showTrackPropertiesDialog(BuildContext context, DawState dawState, 
                     const Divider(color: Colors.white12, height: 1),
                     const SizedBox(height: 12),
 
-                    // 4. Duplicate & Delete Actions
+                    // 5. Duplicate & Delete Actions
                     Row(
                       children: [
                         OutlinedButton.icon(
@@ -270,6 +430,7 @@ Future<void> showTrackPropertiesDialog(BuildContext context, DawState dawState, 
                   if (trimmed.isNotEmpty) {
                     track.name = trimmed;
                   }
+                  track.iconName = selectedIconName;
                   dawState.setTrackColor(track, selectedColor);
                   Navigator.of(context).pop();
                 },

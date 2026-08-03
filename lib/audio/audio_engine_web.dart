@@ -11,7 +11,9 @@ class AudioEngineWebImpl {
   final Map<String, web.AudioNode> _nodeRegistry = {};
   final Map<String, web.AudioParam> _paramRegistry = {};
   final Map<String, web.AudioBufferSourceNode> _activeTrackSources = {};
+  final Map<String, web.AudioBuffer> _irWebBufferCache = {};
   int _nodeCounter = 0;
+
 
   bool _initialized = false;
   bool get isInitialized => _initialized;
@@ -197,6 +199,10 @@ class AudioEngineWebImpl {
     bool isMonophonic = false,
     bool isSlide = false,
     bool loop = false,
+    List<double>? convolutionIrBuffer,
+    String? convolutionIrName,
+    double convolutionMix = 0.0,
+    List<dynamic>? fxRack,
   ]) {
     if (_audioContext == null) return;
     try {
@@ -235,7 +241,99 @@ class AudioEngineWebImpl {
       final panner = _audioContext!.createStereoPanner();
       panner.pan.value = pan.clamp(-1.0, 1.0);
 
-      source.connect(trackGain);
+      // WebAudio Native Multi-FX C++ Audio Graph Chain
+      web.AudioNode currentNode = source;
+
+      if (fxRack != null && fxRack.isNotEmpty) {
+        for (final fx in fxRack) {
+          if (fx == null) continue;
+          final bool enabled = fx.enabled == true;
+          if (!enabled) continue;
+
+          final String fxName = (fx.name ?? '').toString();
+          final String fxTypeName = (fx.type?.toString() ?? '');
+          final Map<dynamic, dynamic> params = (fx.params as Map?) ?? {};
+          final double mix = ((fx.mix as num?)?.toDouble() ?? 0.5).clamp(0.0, 1.0);
+
+          if (fxTypeName.contains('convolutionReverb') || fxName == 'Convolution Reverb') {
+            final dryLevel = ((params['DryLevel'] as num?)?.toDouble() ?? (1.0 - mix)).clamp(0.0, 2.0);
+            final wetLevel = ((params['WetLevel'] as num?)?.toDouble() ?? mix).clamp(0.0, 2.0);
+            final String irName = (fx.irSampleName ?? convolutionIrName ?? 'Great Hall').toString();
+
+            web.AudioBuffer? irBuf = _irWebBufferCache[irName];
+            if (irBuf == null && convolutionIrBuffer != null && convolutionIrBuffer.isNotEmpty) {
+              irBuf = _audioContext!.createBuffer(1, convolutionIrBuffer.length, 44100);
+              final irData = irBuf.getChannelData(0).toDart;
+              for (int i = 0; i < convolutionIrBuffer.length; i++) {
+                irData[i] = convolutionIrBuffer[i];
+              }
+              _irWebBufferCache[irName] = irBuf;
+            }
+
+            if (irBuf != null) {
+              final nextBus = _audioContext!.createGain();
+              final dryGain = _audioContext!.createGain();
+              dryGain.gain.value = dryLevel;
+
+              final wetGain = _audioContext!.createGain();
+              wetGain.gain.value = wetLevel;
+
+              final convolver = _audioContext!.createConvolver();
+              convolver.buffer = irBuf;
+
+              currentNode.connect(dryGain);
+              dryGain.connect(nextBus);
+
+              currentNode.connect(convolver);
+              convolver.connect(wetGain);
+              wetGain.connect(nextBus);
+
+              currentNode = nextBus;
+            }
+          } else if (fxTypeName.contains('delay') || fxName == 'Stereo Delay') {
+            final timeMs = ((params['TimeMs'] as num?)?.toDouble() ?? 250.0).clamp(10.0, 1000.0);
+            final feedback = ((params['Feedback'] as num?)?.toDouble() ?? 0.4).clamp(0.0, 0.95);
+
+            final nextBus = _audioContext!.createGain();
+            final delayNode = _audioContext!.createDelay(2.0);
+            delayNode.delayTime.value = timeMs / 1000.0;
+
+            final fbGain = _audioContext!.createGain();
+            fbGain.gain.value = feedback;
+
+            final dryGain = _audioContext!.createGain();
+            dryGain.gain.value = 1.0 - mix;
+
+            final wetGain = _audioContext!.createGain();
+            wetGain.gain.value = mix;
+
+            delayNode.connect(fbGain);
+            fbGain.connect(delayNode);
+
+            currentNode.connect(dryGain);
+            dryGain.connect(nextBus);
+
+            currentNode.connect(delayNode);
+            delayNode.connect(wetGain);
+            wetGain.connect(nextBus);
+
+            currentNode = nextBus;
+          } else if (fxTypeName.contains('biquadFilter') || fxName == 'Lowpass Filter') {
+            final cutoff = ((params['Cutoff'] as num?)?.toDouble() ?? 3500.0).clamp(20.0, 20000.0);
+            final res = ((params['Resonance'] as num?)?.toDouble() ?? 1.5).clamp(0.1, 20.0);
+
+            final filterNode = _audioContext!.createBiquadFilter();
+            filterNode.type = 'lowpass';
+            filterNode.frequency.value = cutoff;
+            filterNode.Q.value = res;
+
+            currentNode.connect(filterNode);
+            currentNode = filterNode;
+          }
+        }
+      }
+
+      currentNode.connect(trackGain);
       trackGain.connect(panner);
       panner.connect(_masterGainNode!);
 
@@ -248,6 +346,8 @@ class AudioEngineWebImpl {
       debugPrint('Error playing WebAudio PCM buffer: $e');
     }
   }
+
+
 
   void stopTrackNotes(String trackId) {
     if (_audioContext == null) return;

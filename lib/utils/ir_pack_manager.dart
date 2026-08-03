@@ -49,11 +49,18 @@ class IrPackManager {
       onProgress?.call(0.1, 'Downloading IR Pack ZIP...');
       debugPrint('IrPackManager: Downloading ${pack.zipUrl}...');
 
-      final Uint8List? zipBytes = await EatsFileHelper.fetchUrlBytes(pack.zipUrl);
+      Uint8List? zipBytes = await EatsFileHelper.fetchUrlBytes(pack.zipUrl);
+      if (zipBytes == null || zipBytes.isEmpty) {
+        final fallbackUrl = 'https://raw.githubusercontent.com/maddestlabs/eatsbits/main/web/${pack.zipUrl}';
+        debugPrint('IrPackManager: Primary fetch failed, trying fallback: $fallbackUrl');
+        zipBytes = await EatsFileHelper.fetchUrlBytes(fallbackUrl);
+      }
+
       if (zipBytes == null || zipBytes.isEmpty) {
         onProgress?.call(0.0, 'Download failed (Network error)');
         return false;
       }
+
 
       onProgress?.call(0.5, 'Unzipping Impulse Responses...');
       debugPrint('IrPackManager: Unzipping archive (${zipBytes.length} bytes)...');
